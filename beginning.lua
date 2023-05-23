@@ -112,6 +112,7 @@ end
 Fk:loadTranslationTable{
   ["#StartDiscussionReason"] = "%from 由于 %arg 而发起议事",
   ["#askForDiscussion"] = "请展示一张手牌进行议事",
+  ["AskForDiscussion"] = "议事",
   ["#ShowDiscussionResult"] = "%from 的议事结果为 %arg",
   ["noresult"] = "无结果",
 }
@@ -391,19 +392,19 @@ Fk:loadTranslationTable{
 }
 
 local liuhong = General(extension, "js__liuhong", "qun", 4)
-local chaozheng = fk.CreateActiveSkill{
+local chaozheng = fk.CreateTriggerSkill{
   name = "chaozheng",
   anim_type = "control",
-  card_num = 0,
-  target_num = 0,
-  can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start and
+      not table.every(player.room:getOtherPlayers(player), function(p) return p:isKongcheng() end)
   end,
-  card_filter = function(self, to_select, selected)
-    return false
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#chaozheng-invoke")
   end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
+  on_use = function(self, event, target, player, data)
+    local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
     local discussion = Discussion{
       reason = self.name,
@@ -429,7 +430,8 @@ local chaozheng = fk.CreateActiveSkill{
         end
       end
     end
-    if table.every(targets, function(p) return p:getMark("singleDiscussionData-phase") == targets[1]:getMark("singleDiscussionData-phase") end) then
+    if table.every(targets, function(p)
+      return p:getMark("singleDiscussionData-phase") == targets[1]:getMark("singleDiscussionData-phase") end) then
       player:drawCards(#targets, self.name)
     end
   end,
@@ -459,7 +461,7 @@ local shenchong = fk.CreateActiveSkill{
 local shenchong_trigger = fk.CreateTriggerSkill{
   name = "#shenchong_trigger",
 
-  refresh_events = {fk.Death},
+  refresh_events = {fk.BeforeGameOverJudge},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("shenchong") ~= 0
   end,
@@ -537,6 +539,7 @@ Fk:loadTranslationTable{
   ["julian"] = "聚敛",
   [":julian"] = "主公技，其他群势力角色每回合限两次，当其于其摸牌阶段外不因此技能而摸牌后，其可以摸一张牌；<br>"..
   "结束阶段，你可以获得所有其他群势力角色各一张手牌。",
+  ["#chaozheng-invoke"] = "朝争：你可以令所有其他角色议事！",
   ["#julian-draw"] = "聚敛：你可以摸一张牌",
   ["#julian-invoke"] = "聚敛：你可以获得所有其他群势力角色各一张手牌",
 }
@@ -630,6 +633,91 @@ Fk:loadTranslationTable{
 }
 
 --桥玄 许劭 何进 董白 南华老仙 杨彪 孔融 王荣 段煨 朱儁 刘焉 刘备 王允
+local duanwei = General(extension, "duanwei", "qun", 4)
+local langmie = fk.CreateTriggerSkill{
+  name = "langmie",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and target ~= player and target.phase == Player.Finish then
+      for _, mark in ipairs(target:getMarkNames()) do
+        if string.find(mark, "langmie_use") and target:getMark(mark) > 1 then
+          player.room:addPlayerMark(target, "langmie_use-turn", 1)
+          return true
+        end
+      end
+      return target:getMark("langmie_damage-turn") > 1
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local prompt
+    if target:getMark("langmie_use-turn") > 0 and target:getMark("langmie_damage-turn") > 1 then
+      prompt = "#langmie3::"..target.id
+    elseif target:getMark("langmie_use-turn") > 0 then
+      prompt = "#langmie1"
+    else
+      prompt = "#langmie2::"..target.id
+    end
+    if #room:askForDiscard(player, 1, 1, true, self.name, true, ".", prompt) > 0 then
+      self.cost_data = prompt
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if string.sub(self.cost_data, 9, 9) == "1" then
+      player:drawCards(2, self.name)
+    elseif string.sub(self.cost_data, 9, 9) == "2" then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    else
+      local choice = room:askForChoice(player, {"draw2", "langmie_damage"}, self.name)
+      if choice == "draw2" then
+        player:drawCards(2, self.name)
+      else
+        room:damage{
+          from = player,
+          to = target,
+          damage = 1,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+
+  refresh_events = {fk.AfterCardUseDeclared, fk.Damage},
+  can_refresh = function(self, event, target, player, data)
+    return target == player and player.phase ~= Player.NotActive
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.AfterCardUseDeclared then
+      room:addPlayerMark(player, "langmie_use_"..data.card:getTypeString().."-turn", 1)
+    else
+      room:addPlayerMark(player, "langmie_damage-turn", data.damage)
+    end
+  end,
+}
+duanwei:addSkill(langmie)
+Fk:loadTranslationTable{
+  ["duanwei"] = "段煨",
+  ["langmie"] = "狼灭",
+  [":langmie"] = "其他角色的结束阶段，你可以选择一项：<br>1.若其本回合使用过至少两张相同类型的牌，你可以弃置一张牌，摸两张牌；<br>"..
+  "若其本回合造成过至少2点伤害，你可以弃置一张牌，对其造成1点伤害。",
+  ["#langmie1"] = "狼灭：你可以弃置一张牌，摸两张牌",
+  ["#langmie2"] = "狼灭：你可以弃置一张牌，对 %dest 造成1点伤害",
+  ["#langmie3"] = "狼灭：你可以弃置一张牌，然后摸两张牌或对 %dest 造成1点伤害",
+  ["langmie_damage"] = "对其造成1点伤害",
+
+  ["$langmie1"] = "群狼四起，灭其一威众。",
+  ["$langmie2"] = "贪狼强力，寡义而趋利。",
+  ["~duanwei"] = "狼伴其侧，终不胜防。",
+}
 
 --local zhujun = General(extension, "js__zhujun", "qun", 4)
 local fendi = fk.CreateTriggerSkill{
