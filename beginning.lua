@@ -216,15 +216,6 @@ local zhenglve_distance = fk.CreateDistanceSkill{
     return 0
   end,
 }
-local zhenglve_attackrange = fk.CreateAttackRangeSkill{
-  name = "#zhenglve_attackrange",
-  correct_func = function (self, from, to)
-    if from:hasSkill(self.name) and to:getMark("@@caocao_lie") > 0 then  --FIXME: 伪实现
-      return 999
-    end
-    return 0
-  end,
-}
 local huilie = fk.CreateTriggerSkill{
   name = "huilie",
   frequency = Skill.Wake,
@@ -283,7 +274,6 @@ local pingrong = fk.CreateTriggerSkill{
 }
 zhenglve:addRelatedSkill(zhenglve_trigger)
 zhenglve:addRelatedSkill(zhenglve_distance)
-zhenglve:addRelatedSkill(zhenglve_attackrange)
 caocao:addSkill(zhenglve)
 caocao:addSkill(huilie)
 caocao:addRelatedSkill(pingrong)
