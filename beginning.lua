@@ -520,6 +520,8 @@ shenchong:addRelatedSkill(shenchong_trigger)
 liuhong:addSkill(chaozheng)
 liuhong:addSkill(shenchong)
 liuhong:addSkill(julian)
+liuhong:addRelatedSkill("m_feiyang")
+liuhong:addRelatedSkill("m_bahu")
 Fk:loadTranslationTable{
   ["js__liuhong"] = "刘宏",
   ["chaozheng"] = "朝争",
