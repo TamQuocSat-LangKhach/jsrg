@@ -1501,7 +1501,9 @@ local jishan_trigger = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:recover{
+    local room = player.room
+    room:broadcastSkillInvoke("jishan")
+    room:recover{
       who = player.room:getPlayerById(self.cost_data),
       num = 1,
       recoverBy = player,
@@ -1564,6 +1566,13 @@ Fk:loadTranslationTable{
   ["#jishan-invoke"] = "积善：你可以失去1点体力防止 %dest 受到的伤害，然后你与其各摸一张牌",
   ["#jishan_trigger"] = "积善",
   ["#jishan-choose"] = "积善：你可以令一名角色回复1点体力",
+
+  -- CV: 玖心粽子
+  ["$jishan1"] = "勿以善小而不为。",
+  ["$jishan2"] = "积善成德，而神明自得。",
+  ["$zhenqiao1"] = "豺狼满朝，且看我剑出鞘。",
+  ["$zhenqiao2"] = "欲信大义，此剑一匡天下。",
+  ["~js__liubei"] = "大义未信…唯念黎庶之苦。",
 }
 
 Fk:loadTranslationTable{
