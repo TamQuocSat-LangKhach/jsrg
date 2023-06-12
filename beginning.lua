@@ -617,7 +617,183 @@ Fk:loadTranslationTable{
   ["#juxia-invoke"] = "居下：你可以令%arg对 %src 无效并令其摸两张牌",
 }
 
---桥玄 许劭
+--桥玄
+
+local xushao = General(extension, "js__xushao", "qun", 3)
+xushao.hidden = true
+xushao.total_hidden = true
+
+---@param player ServerPlayer
+local addFangkeSkill = function(player, skillName)
+  local room = player.room
+  local skill = Fk.skills[skillName]
+  if (not skill) or skill.lordSkill or skill.switchSkillName
+    or skill.frequency > 3 -- 锁定技=3 后面的都是特殊标签
+    or player:hasSkill(skill.name) then
+    return
+  end
+
+  local fangke_skills = player:getMark("js_fangke_skills")
+  if fangke_skills == 0 then fangke_skills = {} end
+  table.insert(fangke_skills, skillName)
+  room:setPlayerMark(player, "js_fangke_skills", fangke_skills)
+
+  -- room:handleAddLoseSkills(player, skillName, nil, false)
+  player:doNotify("AddSkill", json.encode{ player.id, skillName })
+
+  if skill:isInstanceOf(TriggerSkill) or table.find(skill.related_skills,
+    function(s) return s:isInstanceOf(TriggerSkill) end) then
+    player:doNotify("AddSkill", json.encode{ player.id, skillName, true })
+  end
+
+  if skill.frequency ~= Skill.Compulsory then
+    player:prelightSkill(skill.name, true)
+  end
+end
+
+---@param player ServerPlayer
+local removeFangkeSkill = function(player, skillName)
+  local room = player.room
+  local skill = Fk.skills[skillName]
+
+  local fangke_skills = player:getMark("js_fangke_skills")
+  if fangke_skills == 0 then return end
+  if not table.contains(fangke_skills, skillName) then
+    return
+  end
+  table.removeOne(fangke_skills, skillName)
+  room:setPlayerMark(player, "js_fangke_skills", fangke_skills)
+
+  if player:hasSkill(skillName) then -- FIXME: 预亮的bug，预亮技能会导致服务器为玩家直接添加技能
+    player:loseSkill(Fk.skills[skillName])
+  end
+  player:doNotify("LoseSkill", json.encode{ player.id, skillName })
+
+  if skill:isInstanceOf(TriggerSkill) or table.find(skill.related_skills,
+    function(s) return s:isInstanceOf(TriggerSkill) end) then
+    player:doNotify("LoseSkill", json.encode{ player.id, skillName, true })
+  end
+end
+
+---@param player ServerPlayer
+---@param general General
+local function addFangke(player, general, addSkill)
+  local room = player.room
+  local glist = player:getMark("js_fangke")
+  if glist == 0 then glist = {} end
+  table.insertIfNeed(glist, general.name)
+  player:setMark("js_fangke", glist) -- 这个没必要传输
+  room:setPlayerMark(player, "@js_fangke_num", #glist)
+  for i = 1, 4 do
+    room:setPlayerMark(player, "@js_fangke" .. i, glist[i] or 0)
+  end
+
+  if not addSkill then return end
+  for _, s in ipairs(general.skills) do
+    addFangkeSkill(player, s.name)
+  end
+  for _, sname in ipairs(general.other_skills) do
+    addFangkeSkill(player, sname)
+  end
+end
+
+local yingmen = fk.CreateTriggerSkill{
+  name = "yingmen",
+  events = {fk.GameStart, fk.TurnStart},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, _)
+    if event == fk.GameStart then
+      return player:hasSkill(self.name)
+    else
+      return target == player and player:hasSkill(self.name) and
+        player:getMark("@js_fangke_num") < 4
+    end
+  end,
+  on_use = function(self, _, _, player, _)
+    local room = player.room
+    local exclude_list = table.map(room.players, function(p)
+      return p.general
+    end)
+    for _, p in ipairs(room.players) do
+      local deputy = p.deputyGeneral
+      if deputy and deputy ~= "" then
+        table.insert(exclude_list, deputy)
+      end
+    end
+
+    local n = 4 - player:getMark("@js_fangke_num")
+    local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
+    for _, g in ipairs(generals) do
+      addFangke(player, g, player:hasSkill("js__pingjian"))
+    end
+  end,
+}
+
+xushao:addSkill(yingmen)
+
+---@param player ServerPlayer
+---@param general string
+local function removeFangke(player, general)
+  local room = player.room
+  local glist = player:getMark("js_fangke")
+  if glist == 0 then return end
+  table.removeOne(glist, general)
+  player:setMark("js_fangke", glist) -- 这个没必要传输
+  room:setPlayerMark(player, "@js_fangke_num", #glist)
+  for i = 1, 4 do
+    room:setPlayerMark(player, "@js_fangke" .. i, glist[i] or 0)
+  end
+
+  general = Fk.generals[general]
+  for _, s in ipairs(general.skills) do
+    removeFangkeSkill(player, s.name)
+  end
+  for _, sname in ipairs(general.other_skills) do
+    removeFangkeSkill(player, sname)
+  end
+end
+
+local pingjian = fk.CreateTriggerSkill{
+  name = "js__pingjian",
+  events = {fk.AfterSkillEffect},
+  can_trigger = function(self, _, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      player:getMark("js_fangke_skills") ~= 0 and
+      table.contains(player:getMark("js_fangke_skills"), data.name)
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, _, target, player, data)
+    local room = player.room
+    local choices = player:getMark("js_fangke")
+    local choice = room:askForChoice(player, choices, self.name, "#js_lose_fangke")
+    removeFangke(player, choice)
+
+    local general = Fk.generals[choice]
+    if table.contains(general.skills, data) or table.contains(general.other_skills, data.name) then
+      player:drawCards(1)
+    end
+  end,
+}
+xushao:addSkill(pingjian)
+
+Fk:loadTranslationTable{
+  ["js__xushao"] = "许劭",
+  ["yingmen"] = "盈门",
+  [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌" ..
+    "置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，" ..
+    "则你从剩余武将牌堆中将“访客”补至四张。",
+  ["@js_fangke1"] = "",
+  ["@js_fangke2"] = "",
+  ["@js_fangke3"] = "",
+  ["@js_fangke4"] = "",
+  ["@js_fangke_num"] = "访客",
+  ["#js_lose_fangke"] = "评鉴：请选择移除一张访客，若移除的是本次发技能的访客则摸一张",
+  ["js__pingjian"] = "评鉴",
+  [":js__pingjian"] = "当“访客”上的无类型标签或者只有锁定技标签的技能满足发动时机时，" ..
+    "你可以发动该技能。此技能的效果结束后，你须移除一张“访客”，" ..
+    "若移除的是含有该技能的“访客”，你摸一张牌。",
+}
+
 local hejin = General(extension, "js__hejin", "qun", 4)
 local zhaobing = fk.CreateTriggerSkill{
   name = "zhaobing",
