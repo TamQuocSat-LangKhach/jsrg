@@ -194,26 +194,18 @@ local zhenglve_trigger = fk.CreateTriggerSkill{
       room:obtainCard(player, data.card, true, fk.ReasonJustMove)
     end
   end,
-
-  refresh_events = {fk.TargetSpecified},
-  can_refresh = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and player.room:getPlayerById(data.to):getMark("@@caocao_lie") > 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player:addCardUseHistory(data.card.trueName, -1)
-  end,
 }
-local zhenglve_distance = fk.CreateDistanceSkill{
-  name = "#zhenglve_distance",
-  correct_func = function(self, from, to)
-    if from:hasSkill(self.name) and from ~= to and from.phase ~= Player.NotActive then  --FIXME: 伪实现
-      if to:getMark("@@caocao_lie") > 0 then
-        from:setFixedDistance(to, 1)
-      else
-        from:removeFixedDistance(to)
-      end
+local zhenglve_targetmod = fk.CreateTargetModSkill{
+  name = "#zhenglve_targetmod",
+  residue_func = function(self, player, skill, scope, card, to)
+    if player:hasSkill(self.name) and scope == Player.HistoryPhase and to:getMark("@@caocao_lie") > 0 then
+      return 999
     end
-    return 0
+  end,
+  distance_limit_func =  function(self, player, skill, card, to)
+    if player:hasSkill(self.name) and to:getMark("@@caocao_lie") > 0 then
+      return 999
+    end
   end,
 }
 local huilie = fk.CreateTriggerSkill{
@@ -273,7 +265,7 @@ local pingrong = fk.CreateTriggerSkill{
   end,
 }
 zhenglve:addRelatedSkill(zhenglve_trigger)
-zhenglve:addRelatedSkill(zhenglve_distance)
+zhenglve:addRelatedSkill(zhenglve_targetmod)
 caocao:addSkill(zhenglve)
 caocao:addSkill(huilie)
 caocao:addRelatedSkill(pingrong)
@@ -1501,9 +1493,7 @@ local jishan_trigger = fk.CreateTriggerSkill{
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:broadcastSkillInvoke("jishan")
-    room:recover{
+    player.room:recover{
       who = player.room:getPlayerById(self.cost_data),
       num = 1,
       recoverBy = player,
@@ -1572,7 +1562,7 @@ Fk:loadTranslationTable{
   ["$jishan2"] = "积善成德，而神明自得。",
   ["$zhenqiao1"] = "豺狼满朝，且看我剑出鞘。",
   ["$zhenqiao2"] = "欲信大义，此剑一匡天下。",
-  ["~js__liubei"] = "大义未信…唯念黎庶之苦。",
+  ["~js__liubei"] = "大义未信，唯念黎庶之苦……",
 }
 
 Fk:loadTranslationTable{
