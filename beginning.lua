@@ -1314,15 +1314,6 @@ local js__tushe = fk.CreateTriggerSkill{
     end
   end,
 }
-local limu_targetmod = fk.CreateTargetModSkill{
-  name = "#limu_targetmod",
-  residue_func = function(self, player, skill)
-    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
-  end,
-  distance_limit_func = function(self, player, skill)
-    return player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and 999 or 0
-  end,
-}
 local js__limu = fk.CreateActiveSkill{
   name = "js__limu",
   anim_type = "control",
@@ -1349,10 +1340,14 @@ local js__limu = fk.CreateActiveSkill{
 }
 local js__limu_targetmod = fk.CreateTargetModSkill{
   name = "#js__limu_targetmod",
-  distance_limit_func =  function(self, player, skill, card)
-    if player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and
-      (card.name == "snatch" or card.name == "supply_shortage") then
-      return player:getAttackRange() -1
+  residue_func = function(self, player, skill, scope, card, to)
+    if player:hasSkill(self.name) and scope == Player.HistoryPhase and #player:getCardIds(Player.Judge) > 0 and player:inMyAttackRange(to) then
+      return 999
+    end
+  end,
+  distance_limit_func =  function(self, player, skill, card, to)
+    if player:hasSkill(self.name) and #player:getCardIds(Player.Judge) > 0 and player:inMyAttackRange(to) then
+      return 999
     end
   end,
 }
