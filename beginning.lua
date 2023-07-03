@@ -2079,8 +2079,8 @@ local zhenqiao = fk.CreateTriggerSkill{
     return data.extra_data and data.extra_data.zhenqiao
   end,
   on_refresh = function(self, event, target, player, data)
-    data.extra_data.zhenqiao = false
     player.room:doCardUseEffect(data)
+    data.extra_data.zhenqiao = false
   end,
 }
 local zhenqiao_attackrange = fk.CreateAttackRangeSkill{
