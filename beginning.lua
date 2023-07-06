@@ -178,7 +178,7 @@ local zhenglve = fk.CreateTriggerSkill{
 }
 local zhenglve_trigger = fk.CreateTriggerSkill{
   name = "#zhenglve_trigger",
-  anim_type = "drawcard",
+  mute = true,
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill("zhenglve") and data.to:getMark("@@caocao_lie") > 0 and
@@ -189,6 +189,8 @@ local zhenglve_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:broadcastSkillInvoke("zhenglve")
+    room:notifySkillInvoked(player, "zhenglve", "drawcard")
     player:drawCards(1, "zhenglve")
     if data.card and room:getCardArea(data.card) == Card.Processing then
       room:obtainCard(player, data.card, true, fk.ReasonJustMove)
@@ -282,6 +284,14 @@ Fk:loadTranslationTable{
   ["#zhenglve_trigger"] = "政略",
   ["#zhenglve-trigger"] = "政略：你可以摸一张牌并获得造成伤害的牌",
   ["#pingrong-choose"] = "平戎：你可以移去一名角色的“猎”标记，然后你执行一个额外回合",
+
+  ["$zhenglve1"] = "治政用贤不以德，则四方定。",
+  ["$zhenglve2"] = "秉至公而服天下，孤大略成。",
+  ["$huilie1"] = "孤上承天命，会猎于江夏，幸勿观望。",
+  ["$huilie2"] = "今雄兵百万，奉词伐罪，敢不归顺？",
+  ["$pingrong1"] = "万里平戎，岂曰功名，孤心昭昭鉴日月。",
+  ["$pingrong2"] = "四极倾颓，民心思定，试以只手补天裂。",
+  ["~js__caocao"] = "汉征西，归去兮，复汉土兮…挽汉旗…",
 }
 
 local sunjian = General(extension, "js__sunjian", "qun", 4)
