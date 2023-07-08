@@ -285,6 +285,7 @@ Fk:loadTranslationTable{
   ["#zhenglve-trigger"] = "政略：你可以摸一张牌并获得造成伤害的牌",
   ["#pingrong-choose"] = "平戎：你可以移去一名角色的“猎”标记，然后你执行一个额外回合",
 
+  -- CV: 樰默
   ["$zhenglve1"] = "治政用贤不以德，则四方定。",
   ["$zhenglve2"] = "秉至公而服天下，孤大略成。",
   ["$huilie1"] = "孤上承天命，会猎于江夏，幸勿观望。",
