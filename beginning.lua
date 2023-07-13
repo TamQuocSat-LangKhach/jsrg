@@ -32,6 +32,7 @@ local function Discussion(self)
       arg = discussionData.reason,
     }
   end
+  discussionData.color = "noresult"
 
   local extraData = {
     num = 1,
@@ -88,7 +89,6 @@ local function Discussion(self)
     }
 
     --logic:trigger(fk.DiscussionResultConfirmed, nil, singleDiscussionData)
-    room:setPlayerMark(to, "singleDiscussionData-phase", singleDiscussionData.color)  --TODO:
   end
 
   local discussionResult = "noresult"
@@ -97,6 +97,7 @@ local function Discussion(self)
   elseif red < black then
       discussionResult = "black"
   end
+  discussionData.color = discussionResult
 
   room:sendLog{
     type = "#ShowDiscussionResult",
@@ -104,10 +105,11 @@ local function Discussion(self)
     arg = discussionResult
   }
 
-  --[[if logic:trigger(fk.DiscussionFinished, discussionData.from, discussionData) then
+  --if logic:trigger(fk.DiscussionFinished, discussionData.from, discussionData) then
+  if logic:trigger("fk.DiscussionFinished", discussionData.from, discussionData) then
     logic:breakEvent()
-  end]]--
-  return discussionResult  --TODO:
+  end
+  return discussionData  --FIXME
 end
 
 Fk:loadTranslationTable{
@@ -396,15 +398,17 @@ local chaozheng = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+    if #targets == 0 then return end
+    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
     local discussion = Discussion{
       reason = self.name,
       from = player,
       tos = targets,
       results = {},
     }
-    if discussion == "red" then
+    if discussion.color == "red" then
       for _, p in ipairs(targets) do
-        if p:isWounded() and p:getMark("singleDiscussionData-phase") == "red" then
+        if p:isWounded() and not p.dead and discussion.results[p.id].toCard.color == Card.Red then
           room:recover({
             who = p,
             num = 1,
@@ -413,15 +417,15 @@ local chaozheng = fk.CreateTriggerSkill{
           })
         end
       end
-    elseif discussion == "black" then
+    elseif discussion.color == "black" then
       for _, p in ipairs(targets) do
-        if p:getMark("singleDiscussionData-phase") == "red" then
+        if not p.dead and discussion.results[p.id].toCard.color == Card.Red then
           room:loseHp(p, 1, self.name)
         end
       end
     end
     if table.every(targets, function(p)
-      return p:getMark("singleDiscussionData-phase") == targets[1]:getMark("singleDiscussionData-phase") end) then
+      return discussion.results[p.id].toCard.color == discussion.results[targets[1].id].toCard.color end) then
       player:drawCards(#targets, self.name)
     end
   end,
@@ -633,7 +637,7 @@ Fk:loadTranslationTable{
   [":jizhaoq"] = "准备阶段和结束阶段，你可以令一名角色选择一项：1.使用一张手牌；2.令你可以移动其区域里的一张牌。",
 }
 
-local xushao = General(extension, "js__xushao", "qun", 3)
+local xushao = General(extension, "js__xushaox", "qun", 3)
 xushao.hidden = true
 xushao.total_hidden = true
 
@@ -791,7 +795,7 @@ local pingjian = fk.CreateTriggerSkill{
 xushao:addSkill(pingjian)
 
 Fk:loadTranslationTable{
-  ["js__xushao"] = "许劭",
+  ["js__xushaox"] = "许劭",
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
@@ -2127,6 +2131,82 @@ Fk:loadTranslationTable{
   ["~js__liubei"] = "大义未信，唯念黎庶之苦……",
 }
 
+local wangyun = General(extension, "js__wangyun", "qun", 3)
+local shelun = fk.CreateActiveSkill{
+  name = "shelun",
+  anim_type = "offensive",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#shelun",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and Self:inMyAttackRange(Fk:currentRoom():getPlayerById(to_select))
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local targets = table.filter(room:getOtherPlayers(target), function(p)
+      return not p:isKongcheng() and p:getHandcardNum() <= player:getHandcardNum() end)
+    room:delay(1500)
+    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    local discussion = Discussion{
+      reason = self.name,
+      from = player,
+      tos = targets,
+      results = {},
+    }
+    if discussion.color == "red" then
+      if not target.dead and not target:isNude() and not player.dead then
+        local id = room:askForCardChosen(player, target, "he", self.name)
+        room:throwCard({id}, self.name, target, player)
+      end
+    elseif discussion.color == "black" then
+      room:damage{
+        from = player,
+        to = target,
+        damage = 1,
+        skillName = self.name,
+      }
+    end
+  end,
+}
+local fayi = fk.CreateTriggerSkill{
+  name = "fayi",
+  anim_type = "offensive",
+  events = {"fk.DiscussionFinished"},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and data.results[player.id] then
+      return table.find(data.tos, function(p)
+        return not p.dead and data.results[p.id] and data.results[player.id].toCard.color ~= data.results[p.id].toCard.color end)
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local targets = table.filter(data.tos, function(p)
+      return not p.dead and data.results[p.id] and data.results[player.id].toCard.color ~= data.results[p.id].toCard.color
+    end)
+    local to = player.room:askForChoosePlayers(player, table.map(targets, function(p)
+      return p.id end), 1, 1, "#fayi-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:damage{
+      from = player,
+      to = player.room:getPlayerById(self.cost_data),
+      damage = 1,
+      skillName = self.name,
+    }
+  end,
+}
+wangyun:addSkill(shelun)
+wangyun:addSkill(fayi)
 Fk:loadTranslationTable{
   ["js__wangyun"] = "王允",
   ["shelun"] = "赦论",
@@ -2134,6 +2214,8 @@ Fk:loadTranslationTable{
   "黑色，你对其造成1点伤害。",
   ["fayi"] = "伐异",
   [":fayi"] = "当你参与议事结束后，你可以对一名意见与你不同的角色造成1点伤害。",
+  ["#shelun"] = "赦论：指定一名角色，除其外所有手牌数不大于你的角色议事<br>红色：你弃置目标一张牌；黑色，你对目标造成1点伤害",
+  ["#fayi-choose"] = "伐异：你可以对一名意见与你不同的角色造成1点伤害",
 }
 
 return extension
