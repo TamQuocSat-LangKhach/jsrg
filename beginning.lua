@@ -2,7 +2,7 @@ local extension = Package("beginning")
 extension.extensionName = "jsrg"
 
 Fk:loadTranslationTable{
-  ["beginning"] = "起",
+  ["beginning"] = "江山如故-起包",
   ["js"] = "江山",
 }
 
@@ -381,6 +381,13 @@ Fk:loadTranslationTable{
   ["@@pingtao-phase"] = "平讨",
   ["#pingtao-card"] = "平讨：交给 %src 一张牌令其可以多使用一张【杀】，否则其视为对你使用【杀】",
   ["#juelie-discard"] = "绝烈：你可以弃置任意张牌，然后弃置 %dest 至多等量的牌",
+
+  -- CV: 樰默
+  ["$pingtao1"] = "平贼之功，非我莫属。",
+  ["$pingtao2"] = "贼乱数郡，宜速讨灭！",
+  ["$juelie1"] = "诸君放手，祸福，某一肩担之！",
+  ["$juelie2"] = "先登破城，方不负孙氏勇烈！",
+  ["~js__sunjian"] = "我，竟会被暗箭所伤…",
 }
 
 local liuhong = General(extension, "js__liuhong", "qun", 4)
