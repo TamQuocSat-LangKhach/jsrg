@@ -644,9 +644,8 @@ Fk:loadTranslationTable{
   [":jizhaoq"] = "准备阶段和结束阶段，你可以令一名角色选择一项：1.使用一张手牌；2.令你可以移动其区域里的一张牌。",
 }
 
-local xushao = General(extension, "js__xushaox", "qun", 3)
+local xushao = General(extension, "js__xushao", "qun", 3)
 xushao.hidden = true
-xushao.total_hidden = true
 
 ---@param player ServerPlayer
 local addFangkeSkill = function(player, skillName)
@@ -800,9 +799,8 @@ local pingjian = fk.CreateTriggerSkill{
   end,
 }
 xushao:addSkill(pingjian)
-
 Fk:loadTranslationTable{
-  ["js__xushaox"] = "许劭",
+  ["js__xushao"] = "许劭",
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
