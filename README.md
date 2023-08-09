@@ -1,5 +1,5 @@
-# FreeKill 玩点论杀
+# FreeKill 江山如故
 
 ___
 
-FreeKill中实现民间扩展包 玩点论杀系列.
+线下江山如故系列在新月杀（FreeKill）中的实现
