@@ -826,7 +826,200 @@ Fk:loadTranslationTable{
   ["#guitu-choose"] = "诡图：你可以交换场上两张武器牌，攻击范围减小的角色回复1点体力",
 }
 
--- local zhenfu = General(extension, "js__zhenji", "qun", 3, 3, General.Female)
+local zhenfu = General(extension, "js__zhenji", "qun", 3, 3, General.Female)
+local function initializeAllCardNames(player, mark)
+  if type(player:getMark(mark)) == "table" then
+    return player:getMark(mark)
+  end
+  local names = {}
+  for _, id in ipairs(Fk:getAllCardIds()) do
+    local card = Fk:getCardById(id)
+    if card.type == Card.TypeBasic and not card.is_derived then
+      table.insertIfNeed(names, card.name)
+    end
+  end
+  player.room:setPlayerMark(player, mark, names)
+  return names
+end
+local jixiang = fk.CreateTriggerSkill{
+  name = "jixiang",
+  anim_type = "defensive",
+  events = {fk.AskForCardUse, fk.AskForCardResponse},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) and player.phase ~= Player.NotActive and player ~= target and data.pattern then
+      local names = initializeAllCardNames(player, "jixiang_names")
+      local mark = player:getMark("jixiang-turn")
+      for _, name in ipairs(names) do
+        local card = Fk:cloneCard(name)
+        if (type(mark) ~= "table" or not table.contains(mark, card.trueName)) and Exppattern:Parse(data.pattern):match(card) then
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#jixiang-invoke::"..target.id, true)
+    if #card > 0 then
+      self.cost_data = card
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data, self.name, player, player)
+    local names = initializeAllCardNames(player, "jixiang_names")
+    local names2 = {}
+    local mark = player:getMark("jixiang-turn")
+    for _, name in ipairs(names) do
+      local card = Fk:cloneCard(name)
+      if (type(mark) ~= "table" or not table.contains(mark, card.trueName)) and Exppattern:Parse(data.pattern):match(card) then
+        table.insertIfNeed(names2, name)
+      end
+    end
+    if #names2 == 0 then return false end
+    if event == fk.AskForCardUse then
+      local extra_data = data.extraData
+      local isAvailableTarget = function(card, p)
+        if extra_data then
+          if type(extra_data.must_targets) == "table" and #extra_data.must_targets > 0 and
+              not table.contains(extra_data.must_targets, p.id) then
+            return false
+          end
+          if type(extra_data.exclusive_targets) == "table" and #extra_data.exclusive_targets > 0 and
+              not table.contains(extra_data.exclusive_targets, p.id) then
+            return false
+          end
+        end
+        return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target.id, card, true)
+      end
+      local findCardTarget = function(card)
+        local tos = {}
+        for _, p in ipairs(room.alive_players) do
+          if isAvailableTarget(card, p) then
+            table.insert(tos, p.id)
+          end
+        end
+        return tos
+      end
+      names2 = table.filter(names2, function (c_name)
+        local card = Fk:cloneCard(c_name)
+        return not target:prohibitUse(card) and (card.skill:getMinTargetNum() == 0 or #findCardTarget(card) > 0)
+      end)
+      if #names2 == 0 then return false end
+      local name = room:askForChoice(player, names2, self.name, "#jixiang-name::" .. target.id, false, names)
+      local card = Fk:cloneCard(name)
+      card.skillName = self.name
+      data.result = {
+        from = target.id,
+        card = card,
+      }
+      if card.skill:getMinTargetNum() == 1 then
+        local tos = findCardTarget(card)
+        if #tos > 0 then
+          data.result.tos = {room:askForChoosePlayers(target, tos, 1, 1, "#jixiang-target:::" .. name, self.name, false, true)}
+        else
+          return false
+        end
+      end
+      if data.eventData then
+        data.result.toCard = data.eventData.toCard
+        data.result.responseToEvent = data.eventData.responseToEvent
+      end
+      local mark = player:getMark("jixiang-turn")
+      if type(mark) ~= "table" then mark = {} end
+      table.insert(mark, card.trueName)
+      room:setPlayerMark(player, "jixiang-turn", mark)
+      return true
+    else
+      names2 = table.filter(names2, function (c_name)
+        return not target:prohibitResponse(Fk:cloneCard(c_name))
+      end)
+      if #names2 == 0 then return false end
+      local name = room:askForChoice(player, names2, self.name, "#jixiang-name::" .. target.id, false, names)
+      local card = Fk:cloneCard(name)
+      card.skillName = self.name
+      data.result = card
+      local mark = player:getMark("jixiang-turn")
+      if type(mark) ~= "table" then mark = {} end
+      table.insert(mark, card.trueName)
+      room:setPlayerMark(player, "jixiang-turn", mark)
+      return true
+    end
+  end
+}
+local jixiang_delay = fk.CreateTriggerSkill{
+  name = "#jixiang_delay",
+  events = {fk.CardUseFinished, fk.CardRespondFinished},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return not player.dead and player.phase ~= Player.NotActive and table.contains(data.card.skillNames, jixiang.name)
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    player:drawCards(1, jixiang.name)
+    player.room:addPlayerMark(player, "chengxian_extratimes-phase")
+  end,
+}
+local chengxian = fk.CreateViewAsSkill{
+  name = "chengxian",
+  prompt = "#chengxian-active",
+  interaction = function()
+    local names = {}
+    local mark = Self:getMark("chengxian-turn")
+    for _, id in ipairs(Fk:getAllCardIds()) do
+      local card = Fk:getCardById(id)
+      if card:isCommonTrick() and not card.is_derived then
+        local to_use = Fk:cloneCard(card.name)
+        if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
+          if type(mark) ~= "table" or (not table.contains(mark, card.trueName)) then
+            table.insertIfNeed(names, card.name)
+          end
+        end
+      end
+    end
+    return UI.ComboBox { choices = names }
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 + player:getMark("chengxian_extratimes-phase")
+  end,
+  card_filter = function(self, to_select, selected)
+    local targetsNum = function(card)
+      if Self:prohibitUse(card) or not Self:canUse(card) then return 0 end
+      if card.skill:getMinTargetNum() == 0 and not card.multiple_targets then
+        return 1
+      else
+        local x = 0
+        for _, p in ipairs(Fk:currentRoom().alive_players) do
+          if not Self:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, Self.id, card, true) then
+            x = x + 1
+          end
+        end
+        return x
+      end
+    end
+    if self.interaction.data == nil or #selected > 0 or Fk:currentRoom():getCardArea(to_select) == Player.Equip then return false end
+    local to_use = Fk:cloneCard(self.interaction.data)
+    to_use:addSubcard(to_select)
+    to_use.skillName = self.name
+    return targetsNum(to_use) == targetsNum(Fk:getCardById(to_select))
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 or not self.interaction.data then return nil end
+    local card = Fk:cloneCard(self.interaction.data)
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local mark = player:getMark("chengxian-turn")
+    if mark == 0 then mark = {} end
+    table.insert(mark, use.card.trueName)
+    player.room:setPlayerMark(player, "chengxian-turn", mark)
+  end,
+}
+jixiang:addRelatedSkill(jixiang_delay)
+zhenfu:addSkill(jixiang)
+zhenfu:addSkill(chengxian)
 Fk:loadTranslationTable{
   ["js__zhenji"] = "甄宓",
   ["jixiang"] = "济乡",
@@ -834,6 +1027,11 @@ Fk:loadTranslationTable{
   "于此阶段可发动次数+1。",
   ["chengxian"] = "称贤",
   [":chengxian"] = "出牌阶段限两次，你可以将一张手牌当一张本回合未以此法使用过的普通锦囊牌使用，以此法转化后普通锦囊牌须与原牌名的牌合法目标角色数相同。",
+
+  ["#jixiang-invoke"] = "是否使用 济乡，弃置一张牌，令%dest视为使用或打出所需的基本牌",
+  ["#jixiang-name"] = "济乡：选择%dest视为使用或打出的所需的基本牌的牌名",
+  ["#jixiang-target"] = "济乡：选择使用【%arg】的目标角色",
+  ["#chengxian-active"] = "发动称贤，将一张手牌当普通锦囊牌使用（两者必须合法目标数相同）",
 }
 
 local zhangliao = General(extension, "js__zhangliao", "qun", 4)
