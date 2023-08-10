@@ -854,13 +854,15 @@ local js__xianzhu_trigger = fk.CreateTriggerSkill{
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     if target == player and data.card and table.contains(data.card.skillNames, "js__xianzhu") and not player.dead and not data.to.dead then
-      local room = player.room
-      local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-      if e then
-        local use = e.data[1]
-        if #TargetGroup:getRealTargets(use.tos) == 1 and TargetGroup:getRealTargets(use.tos)[1] == data.to.id then
-          local card = Fk:getCardById(use.card.subcards[1], true)
-          return data.card.skill:modTargetFilter(data.to.id, {}, player.id, card, true)
+      local card = Fk:getCardById(data.card.subcards[1])
+      local to_use = Fk:cloneCard(card.name)
+      if card:isCommonTrick() and not player:prohibitUse(to_use) and not player:isProhibited(data.to, to_use) and
+          card.skill:modTargetFilter(data.to.id, {}, player.id, card, true) then
+        local room = player.room
+        local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+        if e then
+          local use = e.data[1]
+          return #TargetGroup:getRealTargets(use.tos) == 1 and TargetGroup:getRealTargets(use.tos)[1] == data.to.id
         end
       end
     end
@@ -870,12 +872,33 @@ local js__xianzhu_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
-    if e then
-      local use = e.data[1]
-      local card = Fk:getCardById(use.card.subcards[1], true)
-      room:useVirtualCard(card.name, nil, player, data.to, "js__xianzhu", true)
+    local card = Fk:getCardById(data.card.subcards[1])
+    local tos = {data.to.id}
+    local to_use = Fk:cloneCard(card.name)
+    to_use.skillName = self.name
+    if not card:isCommonTrick() or card.skill:getMinTargetNum() > 2 then
+      return false
+    elseif card.skill:getMinTargetNum() == 2 then
+      local targets = table.filter(room.alive_players, function (p)
+        return card.skill:targetFilter(p.id, tos, {}, to_use)
+      end)
+      if #targets > 0 then
+        local to_slash = room:askForChoosePlayers(player, table.map(targets, function (p)
+          return p.id
+        end), 1, 1, "#js__xianzhu-choose::"..data.to.id..":"..card.name, self.name, false)
+        if #to_slash > 0 then
+          table.insert(tos, to_slash[1])
+        end
+      else
+        return false
+      end
     end
+    room:useCard({
+      from = player.id,
+      tos = table.map(tos, function(pid) return { pid } end),
+      card = to_use,
+      extraUse = true,
+    })
   end,
 }
 qiongtu:addRelatedSkill(qiongtu_trigger)
@@ -895,16 +918,151 @@ Fk:loadTranslationTable{
   ["#qiongtu"] = "穷途：将一张非基本牌置于武将牌上，视为使用【无懈可击】",
   ["#js__xianzhu"] = "先著：你可以将一张普通锦囊牌当无次数限制的【杀】使用，若对唯一目标造成伤害，视为对其使用此锦囊",
   ["#js__xianzhu_trigger"] = "先著",
+  ["#js__xianzhu-choose"] = "先著：选择对%dest使用的【%arg】的副目标",
 }
 
--- local zoushi = General(extension, "js__zoushi", "qun", 3, 3, General.Female)
+local zoushi = General(extension, "js__zoushi", "qun", 3, 3, General.Female)
+local guyin = fk.CreateTriggerSkill{
+  name = "guyin",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    player:turnOver()
+    local room = player.room
+    for _, p in ipairs(room:getOtherPlayers(player)) do
+      if not p.dead and p.gender == General.Male and
+          room:askForChoice(p, {"turnOver", "Cancel"}, self.name, "#guyin-choice:" .. player.id) == "turnOver" then
+        p:turnOver()
+      end
+    end
+    local x = #table.filter(room.players, function (p)
+      return p.gender == General.Male
+    end)
+    local drawer = player
+    for _ = 1, x, 1 do
+      if drawer.dead then break end
+      room:drawCards(drawer, 1, self.name)
+      local all_player = room:getAllPlayers()
+      local index = table.indexOf(all_player, drawer)
+      local next_drawer = player
+      if index < #all_player then
+        for i = index+1, #all_player, 1 do
+          local p = all_player[i]
+          if not (p.dead or p.faceup) then
+            next_drawer = p
+            break
+          end
+        end
+      end
+      drawer = next_drawer
+    end
+  end,
+}
+local zhangdeng = fk.CreateViewAsSkill{
+  name = "zhangdeng",
+  prompt = "#zhangdeng-active",
+  pattern = "analeptic",
+  card_filter = function() return false end,
+  before_use = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      room:addPlayerMark(p, "zhangdeng_used-turn")
+    end
+  end,
+  view_as = function(self, cards)
+    local c = Fk:cloneCard("analeptic")
+    c.skillName = self.name
+    return c
+  end,
+  enabled_at_play = function (self, player)
+    return not player.faceup
+  end,
+  enabled_at_response = function (self, player, response)
+    return not response and not player.faceup
+  end,
+}
+local zhangdeng_trigger = fk.CreateTriggerSkill{
+  name = "#zhangdeng_trigger",
+  events = {fk.CardUsing},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self.name) and not player.faceup and table.contains(data.card.skillNames, zhangdeng.name) and
+    player:getMark("zhangdeng_used-turn") > 1
+  end,
+  on_cost = function() return true end,
+  on_use = function(self, event, target, player, data)
+    player:turnOver()
+  end,
+
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
+      return data == self
+    elseif event == fk.BuryVictim then
+      return player:hasSkill(self.name, true, true)
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if table.every(room.alive_players, function(p) return not p:hasSkill(self.name, true) or p == player end) then
+      if player:hasSkill("zhangdeng&", true, true) then
+        room:handleAddLoseSkills(player, "-zhangdeng&", nil, false, true)
+      end
+    else
+      if not player:hasSkill("zhangdeng&", true, true) then
+        room:handleAddLoseSkills(player, "zhangdeng&", nil, false, true)
+      end
+    end
+  end,
+}
+local zhangdeng_attached = fk.CreateViewAsSkill{
+  name = "zhangdeng&",
+  prompt = "#zhangdeng-active",
+  pattern = "analeptic",
+  card_filter = function() return false end,
+  before_use = function(self, player)
+    local room = player.room
+    for _, p in ipairs(room.alive_players) do
+      room:addPlayerMark(p, "zhangdeng_used-turn")
+    end
+  end,
+  view_as = function(self, cards)
+    local c = Fk:cloneCard("analeptic")
+    c.skillName = zhangdeng.name
+    return c
+  end,
+  enabled_at_play = function (self, player)
+    return not player.faceup and not table.every(Fk:currentRoom().alive_players, function (p)
+      return not p:hasSkill(zhangdeng.name) or p.faceup
+    end)
+  end,
+  enabled_at_response = function (self, player, response)
+    return not response and not player.faceup and  not table.every(Fk:currentRoom().alive_players, function (p)
+      return not p:hasSkill(zhangdeng.name) or p.faceup
+    end)
+  end,
+}
+
+Fk:addSkill(zhangdeng_attached)
+zhangdeng:addRelatedSkill(zhangdeng_trigger)
+zoushi:addSkill(guyin)
+zoushi:addSkill(zhangdeng)
+
 Fk:loadTranslationTable{
   ["js__zoushi"] = "邹氏",
   ["guyin"] = "孤吟",
   [":guyin"] = "准备阶段，你可以翻面，然后令所有其他男性角色各选择其是否翻面，然后你和所有翻面的角色轮流各摸一张牌直到以此法摸牌数达到X张"..
   "（X为本局游戏男性角色数）。",
   ["zhangdeng"] = "帐灯",
-  ["zhangdeng:"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次发动时，你翻面至正面朝上。",
+  ["#zhangdeng_trigger"] = "帐灯",
+  [":zhangdeng"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次及以上发动时，你翻面至正面朝上。",
+  ["zhangdeng&"] = "帐灯",
+  [":zhangdeng&"] = "当你需要使用【酒】时，若邹氏的武将牌背面朝上，你可以视为使用之。",
+  ["#guyin-choice"] = "%src发动了孤吟，是否将武将牌翻面",
+  ["turnOver"] = "翻面",
+  ["#zhangdeng-active"] = "发动帐灯，视为使用一张【酒】",
 }
 
 local guanyu = General(extension, "js__guanyu", "shu", 5)--蓝框
@@ -1321,6 +1479,7 @@ zhenfu:addSkill(chengxian)
 Fk:loadTranslationTable{
   ["js__zhenji"] = "甄宓",
   ["jixiang"] = "济乡",
+  ["#jixiang_delay"] = "济乡",
   [":jixiang"] = "回合内对每种牌名限一次，当一名其他角色需要使用或打出一张基本牌，你可以弃置一张牌令其视为使用或打出之，然后你摸一张牌并令〖称贤〗"..
   "于此阶段可发动次数+1。",
   ["chengxian"] = "称贤",
