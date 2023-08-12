@@ -155,72 +155,50 @@ local zhasi_distance = fk.CreateDistanceSkill{
     return 0
   end,
 }
-local bashi = fk.CreateViewAsSkill{
+local bashi = fk.CreateTriggerSkill{
   name = "bashi$",
   anim_type = "defensive",
-  pattern = "slash,jink",
-  prompt = "#bashi",
-  interaction = function()
-    local names = {"slash", "jink"}
-    for _, name in ipairs({"slash", "jink"}) do
-      local card = Fk:cloneCard(name)
-      if Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card) then
-        table.insertIfNeed(names, name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
-  end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  view_as = function(self, cards)
-    if #cards ~= 0 or not self.interaction.data then return end
-    local c = Fk:cloneCard(self.interaction.data)
-    c.skillName = self.name
-    return c
-  end,
-  enabled_at_play = function(self, player)
-    return false
-  end,
-  enabled_at_response = function(self, player, response)
-    return response and table.find(Fk:currentRoom().alive_players, function(p) return p.kingdom == "wu" and p ~= player end)
-  end,
-}
-local bashiResponse = fk.CreateTriggerSkill{
-  name = "#bashiResponse",
-  events = {fk.PreCardRespond},
-  mute = true,
-  priority = 10,
+  events = {fk.AskForCardResponse},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, true) and table.contains(data.card.skillNames, "bashi")
+    return target == player and player:hasSkill(self.name) and
+      table.find(Fk:currentRoom().alive_players, function(p) return p.kingdom == "wu" and p ~= player end) and
+      ((data.cardName and (data.cardName == "slash" or data.cardName == "jink")) or
+      (data.pattern and Exppattern:Parse(data.pattern):matchExp("slash,jink")))
   end,
   on_cost = function(self, event, target, player, data)
-    return true
+    return player.room:askForSkillInvoke(player, self.name, nil, "#bashi-invoke")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    local choices = {}
+    for _, name in ipairs({"slash", "jink"}) do
+      local card = Fk:cloneCard(name)
+      if data.pattern then
+        if Exppattern:Parse(data.pattern):match(card) then
+          table.insert(choices, name)
+        end
+      elseif data.cardName and data.cardName == name then
+        table.insert(choices, name)
+      end
+    end
+    local name = room:askForChoice(player, choices, self.name, "#bashi-choice")
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if p.kingdom == "wu" then
-        local name = data.card.trueName
         local cardResponded = room:askForResponse(p, name, name, "#bashi-ask:"..player.id.."::"..name, true)
         if cardResponded then
           room:responseCard({
             from = p.id,
             card = cardResponded,
-            skipDrop = true,
           })
-          data.card = cardResponded
-          return false
+          data.result = Fk:cloneCard(cardResponded.name, cardResponded.suit, cardResponded.number)
+          data.result.skillName = self.name
         end
       end
     end
-    return true
   end,
 }
 duxing:addRelatedSkill(duxing_filter)
 zhasi:addRelatedSkill(zhasi_distance)
-bashi:addRelatedSkill(bashiResponse)
 sunce:addSkill(duxing)
 sunce:addSkill(zhihengs)
 sunce:addSkill(zhasi)
@@ -241,7 +219,8 @@ Fk:loadTranslationTable{
   ["#duxing"] = "独行：视为使用一张指定任意个目标的【决斗】，结算中所有目标角色的手牌均视为【杀】！",
   ["#zhasi-invoke"] = "诈死：你可以防止受到的致命伤害，不计入距离和座次！",
   ["@@zhasi"] = "诈死",
-  ["#bashi"] = "霸世：你可以令其他吴势力角色替你打出【杀】或【闪】",
+  ["#bashi-invoke"] = "霸世：你可令其他吴势力角色替你打出【杀】或【闪】",
+  ["#bashi-choice"] = "霸世：选择你想打出的牌，令其他吴势力角色替你打出之",
   ["#bashi-ask"] = "霸世：你可打出一张【%arg】，视为 %src 打出之",
 }
 
