@@ -392,7 +392,7 @@ local js__cangchu = fk.CreateTriggerSkill{
     local events = room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
       local move = e.data[1]
       if move.to == player.id and move.toArea == Card.PlayerHand then
-        n = n + #move.ids
+        n = n + #move.moveInfo
       end
     end, Player.HistoryTurn)
     self:doCost(event, target, player, n)
