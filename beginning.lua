@@ -635,13 +635,140 @@ Fk:loadTranslationTable{
   ["#juxia-invoke"] = "居下：你可以令%arg对 %src 无效并令其摸两张牌",
 }
 
+local qiaoxuan = General(extension, "qiaoxuan", "qun", 3)
+local js__juezhi = fk.CreateTriggerSkill{
+  name = "js__juezhi",
+  anim_type = "special",
+  events = {fk.AfterCardsMove},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self.name) then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerEquip then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_trigger = function(self, event, target, player, data)
+    for _, move in ipairs(data) do
+      if move.from == player.id then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.PlayerEquip and player:hasSkill(self.name) and
+            #player:getAvailableEquipSlots(Fk:getCardById(info.cardId).sub_type) > 0 then
+            local e = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
+            if e and e.data[3] == self then  --FIXME：防止顶替装备时重复触发
+              return false
+            end
+            self:doCost(event, target, player, info.cardId)
+          end
+        end
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    return player.room:askForSkillInvoke(player, self.name, nil, "#js__juezhi-invoke:::"..Fk:getCardById(data):toLogString())
+  end,
+  on_use = function(self, event, target, player, data)
+    player.room:abortPlayerArea(player, {Util.convertSubtypeAndEquipSlot(Fk:getCardById(data).sub_type)})
+  end,
+}
+local js__juezhi_trigger = fk.CreateTriggerSkill{
+  name = "#js__juezhi_trigger",
+  mute = true,
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill("js__juezhi") and data.card and not data.chain and
+      #player.sealedSlots > 0 and table.find(data.to:getCardIds("e"), function(id)
+        return table.contains(player.sealedSlots, Util.convertSubtypeAndEquipSlot(Fk:getCardById(id).sub_type)) end) and
+      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  on_cost = function(self, event, target, player, data)
+    return true
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:broadcastSkillInvoke("js__juezhi")
+    room:notifySkillInvoked(player, "js__juezhi", "offensive")
+    local n = 0
+    for _, id in ipairs(data.to:getCardIds("e")) do
+      if table.contains(player.sealedSlots, Util.convertSubtypeAndEquipSlot(Fk:getCardById(id).sub_type)) then
+        n = n + 1
+      end
+    end
+    data.damage = data.damage + n
+  end,
+}
+local jizhaoq = fk.CreateTriggerSkill{
+  name = "jizhaoq",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and (player.phase == Player.Start or player.phase == Player.Finish)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local targets = table.map(table.filter(room.alive_players, function(p)
+      return not p:isKongcheng() or table.find(room.alive_players, function(to)
+        return p:canMoveCardsInBoardTo(to, nil)
+      end)
+    end), function(p)
+      return p.id
+    end)
+    if #targets == 0 then return end
+    local to = room:askForChoosePlayers(player, targets, 1, 1, "#jizhaoq-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local use = nil
+    if not to:isKongcheng() then
+      local pattern = "^(jink,nullification)|.|.|.|.|.|"
+      for _, id in ipairs(to:getCardIds("h")) do
+        local card = Fk:getCardById(id)
+        if not to:prohibitUse(card) and card.skill:canUse(to, card) then
+          pattern = pattern..id..","
+        end
+      end
+      pattern = string.sub(pattern, 1, #pattern - 1)
+      use = room:askForUseCard(to, "", pattern, "#jizhaoq-use:"..player.id, true, {bypass_times = true})
+    end
+    if use then
+      use.extraUse = true
+      room:useCard(use)
+    else
+      local targets = table.map(table.filter(room.alive_players, function(p)
+        return to:canMoveCardsInBoardTo(p, nil) end), function(p) return p.id end)
+      if #targets > 0 then
+        local t = room:askForChoosePlayers(player, targets, 1, 1, "#jizhaoq-move::"..to.id, self.name, true)
+        if #t > 0 then
+          room:askForMoveCardInBoard(player, to, room:getPlayerById(t[1]), self.name, nil, to, {})
+        end
+      end
+    end
+  end,
+}
+js__juezhi:addRelatedSkill(js__juezhi_trigger)
+qiaoxuan:addSkill(js__juezhi)
+qiaoxuan:addSkill(jizhaoq)
 Fk:loadTranslationTable{
   ["qiaoxuan"] = "桥玄",
-  ["juezhi"] = "绝质",
-  [":juezhi"] = "当你失去一张装备区里的装备牌后，你可以废除对应的装备栏；你回合内每阶段限一次，当你使用牌对目标角色造成伤害时，"..
+  ["js__juezhi"] = "绝质",
+  [":js__juezhi"] = "当你失去一张装备区里的装备牌后，你可以废除对应的装备栏；你回合内每阶段限一次，当你使用牌对目标角色造成伤害时，"..
   "其装备区里每有一张与你已废除装备栏对应的装备牌，此伤害便+1。",
   ["jizhaoq"] = "急召",
   [":jizhaoq"] = "准备阶段和结束阶段，你可以令一名角色选择一项：1.使用一张手牌；2.令你可以移动其区域里的一张牌。",
+  ["#js__juezhi-invoke"] = "绝质：你失去了%arg，是否废除对应的装备栏？",
+  ["#jizhaoq-choose"] = "急召：你可以指定一名角色，令其选择使用一张手牌或你移动其区域内一张牌",
+  ["#jizhaoq-use"] = "急召：使用一张手牌，或点“取消” %src 可以移动你区域内一张牌",
+  ["#jizhaoq-move"] = "急召：你可以选择一名角色，将 %dest 区域内的一张牌移至目标角色区域",
 }
 
 local xushao = General(extension, "js__xushao", "qun", 3)
