@@ -380,8 +380,9 @@ local js__cangchu = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self.name) and target.phase == Player.Finish and player:getMark("@js__cangchu") == 0 then
       local events = player.room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-        local move = e.data[1]
-        return move.to == player.id and move.toArea == Card.PlayerHand
+        for _, move in ipairs(e.data) do
+          return move.to == player.id and move.toArea == Card.PlayerHand
+        end
       end, Player.HistoryTurn)
       return #events > 0
     end
@@ -390,9 +391,10 @@ local js__cangchu = fk.CreateTriggerSkill{
     local room = player.room
     local n = 0
     local events = room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-      local move = e.data[1]
-      if move.to == player.id and move.toArea == Card.PlayerHand then
-        n = n + #move.moveInfo
+      for _, move in ipairs(e.data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand then
+          n = n + #move.moveInfo
+        end
       end
     end, Player.HistoryTurn)
     self:doCost(event, target, player, n)

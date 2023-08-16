@@ -684,7 +684,7 @@ local js__juezhi_trigger = fk.CreateTriggerSkill{
     return target == player and player:hasSkill("js__juezhi") and data.card and not data.chain and
       #player.sealedSlots > 0 and table.find(data.to:getCardIds("e"), function(id)
         return table.contains(player.sealedSlots, Util.convertSubtypeAndEquipSlot(Fk:getCardById(id).sub_type)) end) and
-      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+      player.phase ~= Player.NotActive and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   on_cost = function(self, event, target, player, data)
     return true
@@ -1429,19 +1429,18 @@ local js__rangjie = fk.CreateTriggerSkill{
     local card = room:askForMoveCardInBoard(player, room:getPlayerById(targets[1]), room:getPlayerById(targets[2]), self.name).card
     if player.dead then return end
     local suit = card:getSuitString(true)
-    local events = room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-      local move = e.data[1]
-      return move.toArea == Card.DiscardPile
-    end, Player.HistoryTurn)
     local ids = {}
-    for _, e in ipairs(events) do
-      local move = e.data[1]
-      for _, id in ipairs(move.ids) do
-        if room:getCardArea(id) == Card.DiscardPile and Fk:getCardById(id, true):getSuitString(true) == suit then
-          table.insertIfNeed(ids, id)
+    local events = room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId, true):getSuitString(true) == suit then
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
         end
       end
-    end
+    end, Player.HistoryTurn)
     if #ids == 0 then return end
     if room:askForSkillInvoke(player, self.name, nil, "#js__rangjie-card:::"..suit) then
       local result = room:askForGuanxing(player, ids, nil, {1, 1}, self.name, true, {"DiscardPile", "$Hand"})
