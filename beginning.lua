@@ -1521,13 +1521,12 @@ local js__lirang = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.EventPhaseStart, fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self.name) and target ~= player then
+    if target ~= player then
       if event == fk.EventPhaseStart then
-        return target.phase == Player.Draw and #player:getCardIds{Player.Hand, Player.Equip} > 1 and
+        return player:hasSkill(self.name) and target.phase == Player.Draw and #player:getCardIds("he") > 1 and
           player:usedSkillTimes(self.name, Player.HistoryRound) == 0
       else
-        return target.phase == Player.Discard and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0 and
-          target:getMark("js__lirang-phase") ~= 0
+        return target.phase == Player.Discard and player:usedSkillTimes(self.name, Player.HistoryTurn) > 0
       end
     end
   end,
@@ -1550,34 +1549,21 @@ local js__lirang = fk.CreateTriggerSkill{
       room:obtainCard(target, dummy, false, fk.ReasonGive)
       room:setPlayerMark(player, "js__lirang-round", target.id)
     else
-      local mark = target:getMark("js__lirang-phase")
-      for _, id in ipairs(mark) do
-        if room:getCardArea(id) == Card.DiscardPile then
-          dummy:addSubcard(id)
+      local ids = {}
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+        for _, move in ipairs(e.data) do
+          if move.from and move.from == target.id and move.moveReason == fk.ReasonDiscard then
+            for _, info in ipairs(move.moveInfo) do
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
         end
-      end
-      if #dummy.subcards > 0 then
-        room:obtainCard(player, dummy, true, fk.ReasonJustMove)
-      end
-    end
-  end,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return player.phase == Player.Discard
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local mark = player:getMark("js__lirang-phase")
-    if mark == 0 then mark = {} end
-    for _, move in ipairs(data) do
-      if move.from == player.id and move.moveReason == fk.ReasonDiscard then
-        for _, info in ipairs(move.moveInfo) do
-          table.insertIfNeed(mark, info.cardId)
-        end
-      end
-    end
-    if #mark > 0 then
-      player.room:setPlayerMark(player, "js__lirang-phase", mark)
+        return false
+      end, Player.HistoryPhase)
+      ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
+      if #ids == 0 then return end
+      dummy:addSubcards(ids)
+      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
     end
   end,
 }
