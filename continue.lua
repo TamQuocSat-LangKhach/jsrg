@@ -625,8 +625,8 @@ Fk:loadTranslationTable{
 
 local lvbu = General(extension, "js__lvbu", "qun", 5)
 lvbu.subkingdom = "shu"  --傻逼
-local wudang = fk.CreateTriggerSkill{
-  name = "wudang",
+local wuchang = fk.CreateTriggerSkill{
+  name = "wuchang",
   mute = true,
   frequency = Skill.Compulsory,
   events = {fk.AfterCardsMove, fk.DamageCaused},
@@ -729,7 +729,7 @@ local chengxu = fk.CreateTriggerSkill{
     end
   end,
 }
-lvbu:addSkill(wudang)
+lvbu:addSkill(wuchang)
 qingjiaol:addRelatedSkill(qingjiaol_prohibit)
 qingjiaol:addAttachedKingdom("qun")
 chengxu:addAttachedKingdom("shu")
@@ -737,8 +737,8 @@ lvbu:addSkill(qingjiaol)
 lvbu:addSkill(chengxu)
 Fk:loadTranslationTable{
   ["js__lvbu"] = "吕布",
-  ["wudang"] = "无当",
-  [":wudang"] = "当你得到其他角色的牌后，你变更势力至与其相同；当你使用【杀】或【决斗】对势力与你相同的角色造成伤害时，你令此伤害+1，然后你变更势力至群。",
+  ["wuchang"] = "无常",
+  [":wuchang"] = "当你得到其他角色的牌后，你变更势力至与其相同；当你使用【杀】或【决斗】对势力与你相同的角色造成伤害时，你令此伤害+1，然后你变更势力至群。",
   ["qingjiaol"] = "轻狡",
   [":qingjiaol"] = "群势力技，出牌阶段各限一次，你可以将一张牌当【推心置腹】/【趁火打劫】对一名手牌数大于/小于你的角色使用。",
   ["chengxu"] = "乘虚",
