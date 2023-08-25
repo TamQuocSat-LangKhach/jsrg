@@ -191,7 +191,7 @@ local zhenglve_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("zhenglve")
+    player:broadcastSkillInvoke("zhenglve")
     room:notifySkillInvoked(player, "zhenglve", "drawcard")
     player:drawCards(1, "zhenglve")
     if data.card and room:getCardArea(data.card) == Card.Processing then
@@ -691,7 +691,7 @@ local js__juezhi_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("js__juezhi")
+    player:broadcastSkillInvoke("js__juezhi")
     room:notifySkillInvoked(player, "js__juezhi", "offensive")
     local n = 0
     for _, id in ipairs(data.to:getCardIds("e")) do
@@ -1377,7 +1377,7 @@ local js__zhaohan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getMark(self.name) == 0 then
-      room:broadcastSkillInvoke("zhaohan", 1)
+      player:broadcastSkillInvoke("zhaohan", 1)
       room:notifySkillInvoked(player, self.name, "support")
       room:recover({
         who = player,
@@ -1386,7 +1386,7 @@ local js__zhaohan = fk.CreateTriggerSkill{
         skillName = self.name,
       })
     else
-      room:broadcastSkillInvoke("zhaohan", 2)
+      player:broadcastSkillInvoke("zhaohan", 2)
       room:notifySkillInvoked(player, self.name, "negative")
       room:loseHp(player, 1, self.name)
     end

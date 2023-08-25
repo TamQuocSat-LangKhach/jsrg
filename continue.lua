@@ -309,7 +309,7 @@ local js__biaozhao_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("js__biaozhao")
+    player:broadcastSkillInvoke("js__biaozhao")
     room:notifySkillInvoked(data.to, "js__biaozhao", "negative")
     data.damage = data.damage + 1
   end,
@@ -348,7 +348,7 @@ local js__yechou_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke("js__yechou")
+    player:broadcastSkillInvoke("js__yechou")
     room:notifySkillInvoked(player, "js__yechou", "negative")
     data.damage = data.damage * (2 ^ player:getMark("@@js__yechou"))
   end,
@@ -645,7 +645,7 @@ local wuchang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:broadcastSkillInvoke(self.name)
+    player:broadcastSkillInvoke(self.name)
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
         if move.to == player.id and move.from and move.from ~= player.id and move.toArea == Card.PlayerHand then
