@@ -309,7 +309,7 @@ local js__biaozhao_trigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("js__biaozhao")
+    data.to:broadcastSkillInvoke("js__biaozhao")
     room:notifySkillInvoked(data.to, "js__biaozhao", "negative")
     data.damage = data.damage + 1
   end,
