@@ -129,6 +129,7 @@ local zhasi = fk.CreateTriggerSkill{
     local room = player.room
     room:handleAddLoseSkills(player, "-zhihengs|ex__zhiheng", nil, true, false)
     room:setPlayerMark(player, "@@zhasi", 1)
+    room:addPlayerMark(player, MarkEnum.PlayerRemoved, 1)
     return true
   end,
 
@@ -144,17 +145,10 @@ local zhasi = fk.CreateTriggerSkill{
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@zhasi", 0)
+    player.room:removePlayerMark(player, MarkEnum.PlayerRemoved, 1)
   end,
 }
-local zhasi_distance = fk.CreateDistanceSkill{
-  name = "#zhasi_distance",
-  correct_func = function(self, from, to)
-    if to:getMark("@@zhasi") > 0 then
-      return 10086
-    end
-    return 0
-  end,
-}
+
 local bashi = fk.CreateTriggerSkill{
   name = "bashi$",
   anim_type = "defensive",
@@ -198,7 +192,6 @@ local bashi = fk.CreateTriggerSkill{
   end,
 }
 duxing:addRelatedSkill(duxing_filter)
-zhasi:addRelatedSkill(zhasi_distance)
 sunce:addSkill(duxing)
 sunce:addSkill(zhihengs)
 sunce:addSkill(zhasi)
@@ -212,8 +205,7 @@ Fk:loadTranslationTable{
   [":zhihengs"] = "锁定技，当你使用牌对目标角色造成伤害时，若其本回合使用或打出牌响应过你使用的牌，此伤害+1。",
   ["zhasi"] = "诈死",
   [":zhasi"] = "限定技，当你受到致命伤害时，你可以防止之，失去〖猘横〗并获得〖制衡〗，" ..
-    --"然后你不计入座次和距离计算，直到你对其他角色使用牌或当你受到伤害后。",
-    "<font color='red'>然后其他角色计算与你的距离+10086，</font>直到你使用牌指定其他角色为目标后或当你受到伤害后。",
+    "然后你不计入座次和距离计算，直到你对其他角色使用牌或当你受到伤害后。",
   ["bashi"] = "霸世",
   [":bashi"] = "主公技，当你需要打出【杀】或【闪】时，你可令其他吴势力角色各选择是否代替你打出。",
   ["#duxing"] = "独行：视为使用一张指定任意个目标的【决斗】，结算中所有目标角色的手牌均视为【杀】！",
@@ -480,9 +472,9 @@ xuyou.subkingdom = "wei"
 local lipan = fk.CreateTriggerSkill{
   name = "lipan",
   anim_type = "drawcard",
-  events = {fk.EventPhaseChanging},
+  events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.to == Player.NotActive
+    return target == player and player:hasSkill(self.name) and player.phase == Player.Finish
   end,
   on_cost = function(self, event, target, player, data)
     local kingdoms = {"Cancel", "wei", "shu", "wu", "qun", "jin"}
@@ -608,7 +600,7 @@ xuyou:addSkill(jinmie)
 Fk:loadTranslationTable{
   ["js__xuyou"] = "许攸",
   ["lipan"] = "离叛",
-  [":lipan"] = "回合结束时，你可以变更势力，然后摸X张牌并执行一个额外的出牌阶段（X为势力与你相同的其他角色数）。此阶段结束时，"..
+  [":lipan"] = "结束阶段结束时，你可以变更势力，然后摸X张牌并执行一个额外的出牌阶段（X为势力与你相同的其他角色数）。此阶段结束时，"..
   "所有势力与你相同的其他角色可以将一张牌当【决斗】对你使用。",
   ["qingxix"] = "轻袭",
   [":qingxix"] = "群势力技，出牌阶段对每名角色限一次，你可以选择一名手牌数小于你的角色，你将手牌弃至与其相同，"..

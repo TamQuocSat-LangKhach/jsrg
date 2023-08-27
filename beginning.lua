@@ -1933,7 +1933,7 @@ local fendi = fk.CreateTriggerSkill{
           room:setCardMark(Fk:getCardById(id), "@@fendi", 0)
         end
       end
-      room:setPlayerMark(to, "fendi_prohibit", #mark > 0 and mark or 0)
+      room:setPlayerMark(to, "fendi_prohibit", #mark2 > 0 and mark2 or 0)
     end
   end,
 }
