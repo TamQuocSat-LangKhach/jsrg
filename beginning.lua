@@ -785,8 +785,6 @@ Fk:loadTranslationTable{
 }
 
 local xushao = General(extension, "js__xushao", "qun", 3)
--- xushao.hidden = true
-
 ---@param player ServerPlayer
 local addFangkeSkill = function(player, skillName)
   local room = player.room
@@ -958,19 +956,19 @@ Fk:loadTranslationTable{
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
-  --[[
-  ["@js_fangke1"] = "",
-  ["@js_fangke2"] = "",
-  ["@js_fangke3"] = "",
-  ["@js_fangke4"] = "",
-  ["@js_fangke_num"] = "访客",
-  --]]
   ["@&js_fangke"] = "访客",
   ["#js_lose_fangke"] = "评鉴：请选择移除一张访客，若移除的是本次发技能的访客则摸一张牌",
   ["js__pingjian"] = "评鉴",
   [":js__pingjian"] = "当“访客”上的无类型标签或者只有锁定技标签的技能满足发动时机时，你可以发动该技能。"..
-    "此技能的效果结束后，你须移除一张“访客”，若移除的是含有该技能的“访客”，你摸一张牌。" ..
-    '<br /><font color="red">（注：由于判断发动技能的相关机制尚不完善，请不要汇报发动技能后某些情况下访客不丢的bug）</font>',
+  "此技能的效果结束后，你须移除一张“访客”，若移除的是含有该技能的“访客”，你摸一张牌。" ..
+  '<br/><font color="red">（注：由于判断发动技能的相关机制尚不完善，请不要汇报发动技能后某些情况下访客不丢的bug）</font>',
+
+  --CV：樰默
+  ["$yingmen1"] = "韩侯不顾？德高，门楣自盈。",
+  ["$yingmen2"] = "贫而不阿，名广，胜友满座。",
+  ["$js__pingjian1"] = "太丘道广，广则不周。仲举性峻，峻则少通。",
+  ["$js__pingjian2"] = "君生清平则为奸逆，处乱世当居豪雄。",
+  ["~js__xushao"] = "运去朋友散，满屋余风雨……",
 }
 
 local hejin = General(extension, "js__hejin", "qun", 4)
