@@ -5,45 +5,6 @@ Fk:loadTranslationTable{
   ["continue"] = "江山如故-承包",
 }
 
----@param player ServerPlayer @ 目标玩家
----@param kingdom string @ 要变为的势力
---变更势力并增删势力技
-local function ChangeKingdom(player, kingdom)
-  kingdom = kingdom or "qun"
-  local room = player.room
-  if player.kingdom == kingdom then return end
-  local skills = {}
-  for _, s in ipairs(Fk.generals[player.general].skills) do
-    if #s.attachedKingdom > 0 and table.contains(s.attachedKingdom, player.kingdom) then
-      table.insertIfNeed(skills, "-"..s.name)
-    end
-  end
-  if player.deputyGeneral ~= "" then
-    for _, s in ipairs(Fk.generals[player.deputyGeneral].skills) do
-      if #s.attachedKingdom > 0 and table.contains(s.attachedKingdom, player.kingdom) then
-        table.insertIfNeed(skills, "-"..s.name)
-      end
-    end
-  end
-  player.kingdom = kingdom
-  room:broadcastProperty(player, "kingdom")
-  for _, s in ipairs(Fk.generals[player.general].skills) do
-    if #s.attachedKingdom > 0 and table.contains(s.attachedKingdom, player.kingdom) then
-      table.insertIfNeed(skills, s.name)
-    end
-  end
-  if player.deputyGeneral ~= "" then
-    for _, s in ipairs(Fk.generals[player.deputyGeneral].skills) do
-      if #s.attachedKingdom > 0 and table.contains(s.attachedKingdom, player.kingdom) then
-        table.insertIfNeed(skills, s.name)
-      end
-    end
-  end
-  if #skills > 0 then
-    room:handleAddLoseSkills(player, table.concat(skills, "|"), nil, true, false)
-  end
-end
-
 local sunce = General(extension, "js__sunce", "wu", 4)
 local duxing = fk.CreateActiveSkill{
   name = "duxing",
@@ -488,7 +449,7 @@ local lipan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    ChangeKingdom(player, self.cost_data)
+    room:changeKingdom(player, self.cost_data, true)
     local tos = table.filter(room:getOtherPlayers(player), function(p) return p.kingdom == player.kingdom end)
     if #tos > 0 then
       player:drawCards(#tos, self.name)
@@ -644,14 +605,14 @@ local wuchang = fk.CreateTriggerSkill{
           local p = room:getPlayerById(move.from)
           if p.kingdom ~= player.kingdom then
             room:notifySkillInvoked(player, self.name, "special")
-            ChangeKingdom(player, p.kingdom)
+            room:changeKingdom(player, p.kingdom, true)
           end
         end
       end
     else
       room:notifySkillInvoked(player, self.name, "offensive")
       data.damage = data.damage + 1
-      ChangeKingdom(player, "qun")
+      room:changeKingdom(player, "qun", true)
     end
   end,
 }
@@ -784,7 +745,7 @@ local qiongtu_trigger = fk.CreateTriggerSkill{
       end
     else
       if data.qiongtu then
-        ChangeKingdom(player, "wei")
+        room:changeKingdom(player, "wei", true)
         if #player:getPile("qiongtu") > 0 then
           local dummy = Fk:cloneCard("dilu")
           dummy:addSubcards(player:getPile("qiongtu"))
@@ -1458,10 +1419,17 @@ Fk:loadTranslationTable{
   ["chengxian"] = "称贤",
   [":chengxian"] = "出牌阶段限两次，你可以将一张手牌当一张本回合未以此法使用过的普通锦囊牌使用，以此法转化后普通锦囊牌须与原牌名的牌合法目标角色数相同。",
 
-  ["#jixiang-invoke"] = "是否使用 济乡，弃置一张牌，令%dest视为使用或打出所需的基本牌",
+  ["#jixiang-invoke"] = "济乡：你可以弃置一张牌，令%dest视为使用或打出所需的基本牌",
   ["#jixiang-name"] = "济乡：选择%dest视为使用或打出的所需的基本牌的牌名",
   ["#jixiang-target"] = "济乡：选择使用【%arg】的目标角色",
-  ["#chengxian-active"] = "发动称贤，将一张手牌当普通锦囊牌使用（两者必须合法目标数相同）",
+  ["#chengxian-active"] = "称贤：将一张手牌当普通锦囊牌使用（两者必须合法目标数相同）",
+
+  --CV：离瞳鸭
+  ["$jixiang1"] = "珠玉不足贵，德行传家久。",
+  ["$jixiang2"] = "人情一日不食则饥，愿母亲慎思之。",
+  ["$chengxian1"] = "所愿广求淑媛，以丰继嗣。",
+  ["$chengxian2"] = "贤妻夫祸少，夫宽妻多福。",
+  ["~js__zhenji"] = "乱世人如苇，随波雨打浮……",
 }
 
 local zhangliao = General(extension, "js__zhangliao", "qun", 4)
@@ -1488,7 +1456,7 @@ local zhengbing = fk.CreateActiveSkill{
     elseif name == "jink" then
       player:drawCards(1, self.name)
     elseif name == "peach" then
-      ChangeKingdom(player, "wei")
+      room:changeKingdom(player, "wei", true)
     end
   end,
 }
