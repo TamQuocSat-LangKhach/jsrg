@@ -2,7 +2,7 @@ local extension = Package("beginning")
 extension.extensionName = "jsrg"
 
 Fk:loadTranslationTable{
-  ["beginning"] = "江山如故-起包",
+  ["beginning"] = "江山如故·起",
   ["js"] = "江山",
 }
 

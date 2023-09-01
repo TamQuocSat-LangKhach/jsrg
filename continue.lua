@@ -2,7 +2,7 @@ local extension = Package("continue")
 extension.extensionName = "jsrg"
 
 Fk:loadTranslationTable{
-  ["continue"] = "江山如故-承包",
+  ["continue"] = "江山如故·承",
 }
 
 local sunce = General(extension, "js__sunce", "wu", 4)
@@ -144,8 +144,9 @@ local bashi = fk.CreateTriggerSkill{
           room:responseCard({
             from = p.id,
             card = cardResponded,
+            skipDrop = true,
           })
-          data.result = Fk:cloneCard(cardResponded.name, cardResponded.suit, cardResponded.number)
+          data.result = cardResponded
           data.result.skillName = self.name
         end
       end
@@ -175,6 +176,19 @@ Fk:loadTranslationTable{
   ["#bashi-invoke"] = "霸世：你可令其他吴势力角色替你打出【杀】或【闪】",
   ["#bashi-choice"] = "霸世：选择你想打出的牌，令其他吴势力角色替你打出之",
   ["#bashi-ask"] = "霸世：你可打出一张【%arg】，视为 %src 打出之",
+
+  --CV：凉水汐月
+  ["$duxing1"] = "尔辈世族皆碌碌，千里函关我独行！",
+  ["$duxing2"] = "江东英豪，可当我一人乎？",
+  ["$zhihengs1"] = "杀尽逆竖，何人还敢平视！",
+  ["$zhihengs2"] = "畏罪而返，区区螳臂，我何惧之！",
+  ["$zhasi1"] = "内外大事悉付权弟，无需问我。",
+  ["$zhasi2"] = "今遭小人暗算，不如将计就计。",
+  ["$ex__zhiheng_js__sunce1"] = "省身以严，用权以慎，方能上使下力。",
+  ["$ex__zhiheng_js__sunce2"] = "惩前毖后，宽严相济，士人自念吾恩。",
+  ["$bashi1"] = "江东多逆，必兴兵戈，敢战者，进禄加官。",
+  ["$bashi2"] = "汉失其鹿，群雄竞逐，从我者，封妻荫子。",
+  ["~js__sunce"] = "天不假年……天不假年！",
 }
 
 local xugong = General(extension, "js__xugong", "wu", 3)
