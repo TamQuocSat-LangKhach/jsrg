@@ -1162,7 +1162,7 @@ local shoushu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(self.name) and not table.find(player.room.alive_players, function(p)
-      return p:getEquipment(Card.SubtypeArmor) and Fk:getCardById(p:getEquipment(Card.SubtypeArmor), true).name == "peace_spell" end)
+      return p:getEquipment(Card.SubtypeArmor) and Fk:getCardById(p:getEquipment(Card.SubtypeArmor), true).name == "js__peace_spell" end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -1175,7 +1175,7 @@ local shoushu = fk.CreateTriggerSkill{
       to = table.random(targets)
     end
     for _, id in ipairs(Fk:getAllCardIds()) do
-      if Fk:getCardById(id, true).name == "peace_spell" and room:getCardArea(id) == Card.Void then
+      if Fk:getCardById(id, true).name == "js__peace_spell" and room:getCardArea(id) == Card.Void then
         room:moveCards({
           ids = {id},
           fromArea = Card.Void,
@@ -1201,7 +1201,7 @@ local shoushu = fk.CreateTriggerSkill{
       if move.toArea ~= Card.Void then
         for j = #move.moveInfo, 1, -1 do
           local info = move.moveInfo[j]
-          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "peace_spell" then
+          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "js__peace_spell" then
             id = info.cardId
             table.removeOne(move.moveInfo, info)
             break

@@ -8,8 +8,8 @@ Fk:loadTranslationTable{
 }
 
 local peaceSpellSkill = fk.CreateTriggerSkill{
-  name = "#peace_spell_skill",
-  attached_equip = "peace_spell",
+  name = "#js__peace_spell_skill",
+  attached_equip = "js__peace_spell",
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
@@ -19,10 +19,10 @@ local peaceSpellSkill = fk.CreateTriggerSkill{
     return true
   end,
 }
-local peace_spell_maxcards = fk.CreateMaxCardsSkill{
-  name = "#peace_spell_maxcards",
+local js__peace_spell_maxcards = fk.CreateMaxCardsSkill{
+  name = "#js__peace_spell_maxcards",
   correct_func = function(self, player)
-    if player:hasSkill("#peace_spell_skill") then
+    if player:hasSkill("#js__peace_spell_skill") then
       local kingdoms = {}
       for _, p in ipairs(Fk:currentRoom().alive_players) do
         table.insertIfNeed(kingdoms, p.kingdom)
@@ -33,10 +33,10 @@ local peace_spell_maxcards = fk.CreateMaxCardsSkill{
     end
   end,
 }
-peaceSpellSkill:addRelatedSkill(peace_spell_maxcards)
+peaceSpellSkill:addRelatedSkill(js__peace_spell_maxcards)
 Fk:addSkill(peaceSpellSkill)
-local peace_spell = fk.CreateArmor{
-  name = "&peace_spell",
+local js__peace_spell = fk.CreateArmor{
+  name = "&js__peace_spell",
   suit = Card.Heart,
   number = 3,
   equip_skill = peaceSpellSkill,
@@ -52,10 +52,10 @@ local peace_spell = fk.CreateArmor{
     end
   end,
 }
-extension:addCard(peace_spell)
+extension:addCard(js__peace_spell)
 Fk:loadTranslationTable{
-  ["peace_spell"] = "太平要术",
-  [":peace_spell"] = "装备牌·防具<br/><b>防具技能</b>：锁定技，防止你受到的属性伤害；你的手牌上限+X（X为存活势力数-1）；"..
+  ["js__peace_spell"] = "太平要术",
+  [":js__peace_spell"] = "装备牌·防具<br/><b>防具技能</b>：锁定技，防止你受到的属性伤害；你的手牌上限+X（X为存活势力数-1）；"..
   "当你失去装备区里的【太平要术】后，你摸两张牌，然后若你的体力值大于1，则你失去1点体力。",
 }
 
