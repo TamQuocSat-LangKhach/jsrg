@@ -78,6 +78,7 @@ local zhihengs = fk.CreateTriggerSkill{
 local zhasi = fk.CreateTriggerSkill{
   name = "zhasi",
   anim_type = "defensive",
+  frequency = Skill.Limited,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self.name) and data.damage >= player.hp and
