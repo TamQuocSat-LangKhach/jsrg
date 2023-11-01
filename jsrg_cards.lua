@@ -59,4 +59,22 @@ Fk:loadTranslationTable{
   "当你失去装备区里的【太平要术】后，你摸两张牌，然后若你的体力值大于1，则你失去1点体力。",
 }
 
+local shadeSkill = fk.CreateActiveSkill{
+  name = "shade_skill",
+  can_use = function()
+    return false
+  end,
+}
+local shade = fk.CreateTrickCard{
+  name = "&shade",
+  suit = Card.Spade,
+  number = 1,
+  skill = shadeSkill,
+}
+extension:addCard(shade)
+Fk:loadTranslationTable{
+  ["shade"] = "影",
+	[":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏；当一名角色获得【影】时均为从游戏外获得♠A的【影】。",
+}
+
 return extension
