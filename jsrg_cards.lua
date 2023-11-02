@@ -76,5 +76,75 @@ Fk:loadTranslationTable{
   ["shade"] = "影",
 	[":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏；当一名角色获得【影】时均为从游戏外获得♠A的【影】。",
 }
+local qingFengSkill = fk.CreateTriggerSkill{
+  name = "#qingfeng_sword_skill",
+  attached_equip = "qingfeng_sword",
+  frequency = Skill.Compulsory,
+  events = { fk.TargetSpecified },
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self.name) and
+      data.card and data.card.trueName == "slash"
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:addPlayerMark(room:getPlayerById(data.to), fk.MarkArmorNullified)
+   room:addPlayerMark(room:getPlayerById(data.to), "qingfengMark")
+    data.extra_data = data.extra_data or {}
+    data.extra_data.qingfengNullified = data.extra_data.qingfengNullified or {}
+    data.extra_data.qingfengNullified[tostring(data.to)] = (data.extra_data.qingfengNullified[tostring(data.to)] or 0) + 1
+  end,
 
+  refresh_events = { fk.CardUseFinished },
+  can_refresh = function(self, event, target, player, data)
+    return data.extra_data and data.extra_data.qingfengNullified
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    for key, num in pairs(data.extra_data.qingfengNullified) do
+      local p = room:getPlayerById(tonumber(key))
+      if p:getMark(fk.MarkArmorNullified) > 0 then
+        room:removePlayerMark(p, fk.MarkArmorNullified, num)
+      end
+      if p:getMark("qingfengMark") > 0 then
+        room:removePlayerMark(p, "qingfengMark", num)
+      end
+    end
+
+    data.qingfengNullified = nil
+  end,
+}
+
+local qingfeng_prohibit = fk.CreateProhibitSkill{
+  name = "#qingfeng_prohibit",
+prohibit_use = function(self, player, card)
+    if player:getMark("qingfengMark") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    if player:getMark("qingfengMark") > 0 then
+      local subcards = card:isVirtual() and card.subcards or {card.id}
+      return #subcards > 0 and table.every(subcards, function(id)
+        return table.contains(player:getCardIds(Player.Hand), id)
+      end)
+    end
+  end,
+}
+qingFengSkill:addRelatedSkill(qingfeng_prohibit)
+Fk:addSkill(qingFengSkill)
+local qingFeng = fk.CreateWeapon{
+  name = "&qingfeng_sword",
+  suit = Card.Spade,
+  number = 6,
+  attack_range = 2,
+  equip_skill = qingFengSkill,
+}
+extension:addCard(qingFeng)
+Fk:loadTranslationTable{
+  ["qingfeng_sword"] = "赤血青峰",
+  [":qingfeng_sword"] = "装备牌·武器<br /><b>攻击范围</b>：２<br /><b>武器技能</b>：锁定技。你的【杀】无视目标角色的防具且目标不能使用或打出手牌，直至此杀结束。",
+}
 return extension
