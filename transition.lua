@@ -1048,12 +1048,173 @@ Fk:loadTranslationTable{
   ["#jiaohao&"] = "骄豪：你可以将手牌中的一张装备牌置入孙尚香的装备区",
 }
 
+local pangtong = General(extension, "js__pangtong", "qun", 3)
+local js__manjuan = fk.CreateTriggerSkill{
+  name = "js__manjuan",
+  anim_type = "special",
+  events = {fk.PreCardUse, fk.PreCardRespond},
+  can_trigger = function (self, event, target, player, data)
+    if target == player then
+      local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
+      if #cards == 0 then return end
+      local yes = true
+      local use = player.room.logic:getCurrentEvent()
+      use:searchEvents(GameEvent.MoveCards, 1, function(e)
+        if e.parent and e.parent.id == use.id then
+          local subcheck = cards
+          for _, move in ipairs(e.data) do
+            if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse then
+              for _, info in ipairs(move.moveInfo) do
+                if table.removeOne(subcheck, info.cardId) and info.fromArea ~= Card.DiscardPile then
+                  yes = false
+                end
+              end
+            end
+          end
+        end
+      end)
+      return yes
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function (self, event, target, player, data)
+    local room = player.room
+    local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
+    local mark = player:getMark("js__manjuan-turn")
+    if mark == 0 then mark = {} end
+    for _, id in ipairs(cards) do
+      table.insertIfNeed(mark, Fk:getCardById(id, true).number)
+    end
+    room:setPlayerMark(player, "js__manjuan-turn", mark)
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.TurnStart},
+  can_refresh = function(self, event, target, player, data)
+    if player:hasSkill(self.name, true) then
+      if event == fk.AfterCardsMove then
+        for _, move in ipairs(data) do
+          if move.toArea == Card.DiscardPile then
+            return true
+          end
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.DiscardPile then
+              return true
+            end
+          end
+        end
+      else
+        return true
+      end
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      local room = player.room
+      local ids = {}
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              if room:getCardArea(info.cardId) == Card.DiscardPile then
+                table.insertIfNeed(ids, info.cardId)
+              end
+            end
+          end
+        end
+      end, Player.HistoryTurn)
+      player.special_cards["js__manjuan&"] = table.simpleClone(ids)
+    else
+      player.special_cards["js__manjuan&"] = {}
+    end
+    player:doNotify("ChangeSelf", json.encode {
+      id = player.id,
+      handcards = player:getCardIds("h"),
+      special_cards = player.special_cards,
+    })
+  end,
+}
+local js__manjuan_prohibit = fk.CreateProhibitSkill{
+  name = "#js__manjuan_prohibit",
+  prohibit_use = function(self, player, card)
+    if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
+      return not player:isKongcheng() or
+        player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number)
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
+      return not player:isKongcheng() or
+        player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number)
+    end
+  end,
+}
+local yangming = fk.CreateActiveSkill{
+  name = "yangming",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  can_use = function(self, player)
+    return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    while not (player.dead or target.dead or player:isKongcheng() or target:isKongcheng()) do
+      local pindian = player:pindian({target}, self.name)
+      if pindian.results[target.id].winner ~= target then
+        if player.dead or target.dead or player:isKongcheng() or target:isKongcheng() then
+          break
+        else
+          if room:askForSkillInvoke(player, self.name, nil, "#yangming-invoke::"..target.id) then
+            player:broadcastSkillInvoke(self.name)
+            room:notifySkillInvoked(player, self.name)
+            room:doIndicate(player.id, {target.id})
+          else
+            break
+          end
+        end
+      else
+        if not target.dead then
+          local n = #room.logic:getEventsOfScope(GameEvent.Pindian, 999, function (e)
+            local dat = e.data[1]
+            if dat.results[target.id] and dat.results[target.id].winner ~= target then
+              return true
+            end
+          end, Player.HistoryPhase)
+          if n > 0 then
+            target:drawCards(n, self.name)
+          end
+        end
+        if not player.dead and player:isWounded() then
+          room:recover{
+            who = player,
+            num = 1,
+            recoverBy = player,
+            skillName = self.name
+          }
+        end
+        break
+      end
+    end
+  end,
+}
+js__manjuan:addRelatedSkill(js__manjuan_prohibit)
+pangtong:addSkill(js__manjuan)
+pangtong:addSkill(yangming)
 Fk:loadTranslationTable{
   ["js__pangtong"] = "庞统",
   ["js__manjuan"] = "漫卷",
   [":js__manjuan"] = "若你没有手牌，你可以如手牌般使用或打出本回合进入弃牌堆的牌（每种点数每回合限一次）。",
   ["yangming"] = "养名",
-  [":yangming"] = "出牌阶段限一次，你可以与一名角色拼点：若其没赢，你可以与其重复此流程；若其赢，其摸等同于其本阶段拼点没赢次数的牌然后你回复1点体力。",
+  [":yangming"] = "出牌阶段限一次，你可以与一名角色拼点：若其没赢，你可以与其重复此流程；若其赢，其摸等同于其本阶段拼点没赢次数的牌，你回复1点体力。",
+  ["js__manjuan&"] = "漫卷",
+  ["#yangming-invoke"] = "养名：你可以继续发动“养名”与 %dest 拼点",
 }
 
 local hansui = General(extension, "js__hansui", "qun", 4)
