@@ -1061,7 +1061,7 @@ local js__manjuan = fk.CreateTriggerSkill{
       local use = player.room.logic:getCurrentEvent()
       use:searchEvents(GameEvent.MoveCards, 1, function(e)
         if e.parent and e.parent.id == use.id then
-          local subcheck = cards
+          local subcheck = table.simpleClone(cards)
           for _, move in ipairs(e.data) do
             if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse then
               for _, info in ipairs(move.moveInfo) do
@@ -1138,13 +1138,13 @@ local js__manjuan_prohibit = fk.CreateProhibitSkill{
   prohibit_use = function(self, player, card)
     if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
       return not player:isKongcheng() or
-        player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number)
+        (player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number))
     end
   end,
   prohibit_response = function(self, player, card)
     if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
       return not player:isKongcheng() or
-        player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number)
+        (player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number))
     end
   end,
 }
@@ -1626,11 +1626,86 @@ Fk:loadTranslationTable{
   ["#hujian-invoke"] = "护剑：你可以获得弃牌堆中的【赤血青锋】",
 }
 
+local fanjiangzhangda = General(extension, "js__fanjiangzhangda", "wu", 5)
+local fushan = fk.CreateTriggerSkill{
+  name = "fushan",
+  mute = true,
+  events = {fk.EventPhaseStart, fk.EventPhaseEnd},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self.name) and player.phase == Player.Play then
+      if event == fk.EventPhaseStart then
+        return not table.every(player.room:getOtherPlayers(player), function(p) return p:isNude() end)
+      else
+        if player:getMark("@fushan-phase") == 0 then return end
+        local card = Fk:cloneCard("slash")
+        local skill = card.skill
+        local n = skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
+        if player:usedCardTimes("slash", Player.HistoryPhase) < n then
+          if table.every(player:getMark("fushan-phase"), function(id) return not player.room:getPlayerById(id).dead end) then
+            return true
+          end
+        end
+        return player:getHandcardNum() < player.maxHp
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    player:broadcastSkillInvoke(self.name)
+    if event == fk.EventPhaseStart then
+      room:notifySkillInvoked(player, self.name, "special")
+      local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
+      if #targets == 0 then return end
+      room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+      local mark = {}
+      for _, p in ipairs(targets) do
+        if player.dead then return end
+        if not p.dead and not p:isNude() then
+          local cards = room:askForCard(p, 1, 1, true, self.name, true, nil, "#fushan-give:"..player.id)
+          if #cards > 0 then
+            room:moveCardTo(Fk:getCardById(cards[1]), Card.PlayerHand, player, fk.ReasonGive, self.name, nil, false, p.id)
+            room:addPlayerMark(player, "@fushan-phase", 1)
+            table.insert(mark, p.id)
+          end
+        end
+      end
+      if #mark > 0 then
+        room:setPlayerMark(player, "fushan-phase", mark)
+      end
+    else
+      local card = Fk:cloneCard("slash")
+      local skill = card.skill
+      local n = skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
+      if player:usedCardTimes("slash", Player.HistoryPhase) < n then
+        if table.every(player:getMark("fushan-phase"), function(id) return not room:getPlayerById(id).dead end) then
+          room:notifySkillInvoked(player, self.name, "negative")
+          room:loseHp(player, 2, self.name)
+          return
+        end
+      end
+      room:notifySkillInvoked(player, self.name, "drawcard")
+      player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
+    end
+  end,
+}
+local fushan_targetmod = fk.CreateTargetModSkill{
+  name = "#fushan_targetmod",
+  residue_func = function(self, player, skill, scope)
+    if skill.trueName == "slash_skill" and player:getMark("@fushan-phase") > 0 and scope == Player.HistoryPhase then
+      return player:getMark("@fushan-phase")
+    end
+  end,
+}
+fushan:addRelatedSkill(fushan_targetmod)
+fanjiangzhangda:addSkill(fushan)
 Fk:loadTranslationTable{
   ["js__fanjiangzhangda"] = "范疆张达",
   ["fushan"] = "负山",
   [":fushan"] = "出牌阶段开始时，所有其他角色依次可以交给你一张牌并令你本阶段使用【杀】的次数上限+1；此阶段结束时，若你使用【杀】的次数未达上限"..
   "且本阶段以此法交给你牌的角色均存活，你失去2点体力，否则你将手牌摸至体力上限。",
+  ["#fushan-give"] = "负山：是否交给 %src 一张牌令其本阶段使用【杀】次数上限+1？",
+  ["@fushan-phase"] = "负山",
 }
 
 return extension
