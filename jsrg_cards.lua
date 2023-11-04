@@ -15,7 +15,7 @@ local peaceSpellSkill = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and data.damageType ~= fk.NormalDamage
+    return target == player and player:hasSkill(self) and data.damageType ~= fk.NormalDamage
   end,
   on_use = function(self, event, target, player, data)
     return true
@@ -120,7 +120,7 @@ local qingFengSkill = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = { fk.TargetSpecified },
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name) and
+    return target == player and player:hasSkill(self) and
       data.card and data.card.trueName == "slash"
   end,
   on_use = function(self, event, target, player, data)
