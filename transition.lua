@@ -6,7 +6,7 @@ require "packages/utility/utility"
 Fk:loadTranslationTable{
   ["transition"] = "江山如故·转",
 }
-
+local U = require "packages/utility/utility" 
 local guojia = General(extension, "js__guojia", "wei", 3)
 local qingzi = fk.CreateTriggerSkill{
   name = "qingzi",
@@ -903,7 +903,7 @@ local guiji = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.tos[1])
-    Util.swapHandCards(room, player, player, to, self.name)
+    U.swapHandCards(room, player, player, to, self.name)
     local mark = to:getMark("@@guiji")
     if mark == 0 then mark = {} end
     table.insertIfNeed(mark, player.id)
@@ -929,7 +929,7 @@ local guiji_delay = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, guiji.name)
     player:broadcastSkillInvoke(guiji.name)
     room:doIndicate(player.id, {target.id})
-    Util.swapHandCards(room, player, player, target, self.name)
+    U.swapHandCards(room, player, player, target, self.name)
     local mark = target:getMark("@@guiji")
     if type(mark) == "table" and table.removeOne(mark, player.id) then
       room:setPlayerMark(target, "@@guiji", #mark > 0 and mark or 0)
