@@ -1,12 +1,12 @@
 local extension = Package("transition")
 extension.extensionName = "jsrg"
 
-require "packages/utility/utility"
+local U = require "packages/utility/utility"
 
 Fk:loadTranslationTable{
   ["transition"] = "江山如故·转",
 }
-local U = require "packages/utility/utility" 
+
 local guojia = General(extension, "js__guojia", "wei", 3)
 local qingzi = fk.CreateTriggerSkill{
   name = "qingzi",
@@ -83,32 +83,32 @@ local dingce = fk.CreateTriggerSkill{
 }
 local zhenfeng = fk.CreateViewAsSkill{
   name = "zhenfeng",
-  prompt = "#zhenfeng-invoke",
+  prompt = "#zhenfeng",
   interaction = function(self)
-    local names, all_names = {}, {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
+    local names = {}
+    for _, card in pairs(Fk.all_card_types) do
       if ((card.type == Card.TypeBasic and Self:getMark("zhenfeng_basic-phase") == 0) or
         (card:isCommonTrick() and Self:getMark("zhenfeng_trick-phase") == 0)) and
-        not card.is_derived and not table.contains(all_names, card.name) then
-        table.insert(all_names, card.name)
-        card.skillName = self.name
-        if Self:canUse(card) and not Self:prohibitUse(card) then
+        not card.is_derived and not table.contains(names, card.name) then
+        local c = Fk:cloneCard(card.name)
+        c.skillName = self.name
+        if Self:canUse(c) and not Self:prohibitUse(c) then
           local p = Self
           repeat
             for _, s in ipairs(p.player_skills) do
-              if not (s.attached_equip or s.name[#s.name] == "&") then
-                if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(card.name).."】") then
-                  table.insertIfNeed(names, card.name)
+              if not (s.attached_equip or s.name:endsWith("&")) then
+                if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(c.name).."】") or
+                  string.find(Fk:translate(":"..s.name), Fk:translate(c.name)[1].."【"..Fk:translate(c.trueName).."】") then
+                  table.insertIfNeed(names, c.name)
                 end
               end
             end
-            p = p.next
+            p = p:getNextAlive()
           until p.id == Self.id
         end
       end
     end
-    return UI.ComboBox {choices = names, all_choices = all_names}
+    return UI.ComboBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -135,6 +135,7 @@ local zhenfeng_targetmod = fk.CreateTargetModSkill{
 }
 local zhenfeng_trigger = fk.CreateTriggerSkill{
   name = "#zhenfeng_trigger",
+  main_skill = zhenfeng,
   mute = true,
   events = {fk.CardEffectFinished},
   can_trigger = function(self, event, target, player, data)
@@ -142,8 +143,9 @@ local zhenfeng_trigger = fk.CreateTriggerSkill{
       local to = player.room:getPlayerById(data.to)
       if to.dead then return end
       for _, s in ipairs(to.player_skills) do
-        if not (s.attached_equip or s.name[#s.name] == "&") then
-          if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(data.card.name).."】") then
+        if not (s.attached_equip or s.name:endsWith("&")) then
+          if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(data.card.name).."】") or
+            string.find(Fk:translate(":"..s.name), Fk:translate(data.card.name)[1].."【"..Fk:translate(data.card.trueName).."】") then
             return true
           end
         end
@@ -182,7 +184,7 @@ Fk:loadTranslationTable{
   ["#qingzi-choose"] = "轻辎：你可以弃置任意名其他角色各一张装备，这些角色直到你下回合开始获得〖神速〗",
   ["#dingce-invoke"] = "定策：你可以弃置你和伤害来源各一张手牌，若颜色相同，视为你使用【洞烛先机】",
   ["#dingce-discard1"] = "定策：弃置你的一张手牌",
-  ["#zhenfeng-invoke"] = "针锋：你可以视为使用一种场上角色技能描述中包含的牌",
+  ["#zhenfeng"] = "针锋：你可以视为使用一种场上角色技能描述中包含的牌",
 }
 
 local zhangfei = General(extension, "js__zhangfei", "shu", 5)
@@ -278,7 +280,7 @@ local xushiz = fk.CreateActiveSkill{
 
     local moveInfos1 = {}
     for i = 1, #effect.tos * 2 do
-      local toGain = room:printCard("shade", Card.Spade, 1)
+      local toGain = room:printCard("shade", Card.Spade, 1)  --FIXME: 印影待修
       table.insert(moveInfos1, {
         ids = {toGain.id},
         to = player.id,
@@ -976,18 +978,18 @@ local jiaohao = fk.CreateTriggerSkill{
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
   can_refresh = function(self, event, target, player, data)
     if event == fk.GameStart then
-      return player:hasSkill(self.name, true)
+      return player:hasSkill(self, true)
     elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self and not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self.name, true) end)
+      return data == self and not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self, true) end)
     else
-      return target == player and player:hasSkill(self.name, true, true) and
-        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self.name, true) end)
+      return target == player and player:hasSkill(self, true, true) and
+        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self, true) end)
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self.name, true) then
+      if player:hasSkill(self, true) then
         for _, p in ipairs(room:getOtherPlayers(player)) do
           room:handleAddLoseSkills(p, "jiaohao&", nil, false, true)
         end
@@ -1054,7 +1056,7 @@ local js__manjuan = fk.CreateTriggerSkill{
   anim_type = "special",
   events = {fk.PreCardUse, fk.PreCardRespond},
   can_trigger = function (self, event, target, player, data)
-    if target == player then
+    if target == player and player:hasSkill(self, true) then
       local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
       if #cards == 0 then return end
       local yes = true
@@ -1090,7 +1092,7 @@ local js__manjuan = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterCardsMove, fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    if player:hasSkill(self.name, true) then
+    if player:hasSkill(self, true) then
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
           if move.toArea == Card.DiscardPile then
@@ -1257,7 +1259,7 @@ local js__niluan = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if target == player then
       if event == fk.Damaged then
-        return player:hasSkill(self.name, true) and data.from and
+        return player:hasSkill(self, true) and data.from and
           (player:getMark(self.name) == 0 or not table.contains(player:getMark(self.name), data.from.id))
       elseif event == fk.EventAcquireSkill then
         return data == self
@@ -1320,7 +1322,7 @@ local huchou = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if target == player then
       if event == fk.TargetConfirmed then
-        return player:hasSkill(self.name, true) and
+        return player:hasSkill(self, true) and
           data.card.is_damage_card and data.from ~= player.id and player:getMark(self.name) ~= data.from
       elseif event == fk.EventAcquireSkill then
         return data == self
