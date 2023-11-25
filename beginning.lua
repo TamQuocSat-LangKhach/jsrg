@@ -1498,14 +1498,16 @@ local js__yizheng = fk.CreateActiveSkill{
 }
 local js__yizheng_trigger = fk.CreateTriggerSkill{
   name = "#js__yizheng_trigger",
-
-  refresh_events = {fk.EventPhaseChanging},
-  can_refresh = function(self, event, target, player, data)
-    return target:getMark("@@js__yizheng") > 0 and data.to == Player.Draw
+  events = {fk.EventPhaseChanging},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    return player == target and target:getMark("@@js__yizheng") > 0 and data.to == Player.Draw
   end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:setPlayerMark(target, "@@js__yizheng", 0)
-    target:skip(Player.Draw)
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "@@js__yizheng", 0)
+    player:skip(Player.Draw)
+    return true
   end,
 }
 js__yizheng:addRelatedSkill(js__yizheng_trigger)
