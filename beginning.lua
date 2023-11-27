@@ -1,6 +1,8 @@
 local extension = Package("beginning")
 extension.extensionName = "jsrg"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["beginning"] = "江山如故·起",
   ["js"] = "江山",
@@ -1176,6 +1178,7 @@ local shoushu = fk.CreateTriggerSkill{
     end
     for _, id in ipairs(Fk:getAllCardIds()) do
       if Fk:getCardById(id, true).name == "js__peace_spell" and room:getCardArea(id) == Card.Void then
+        room:setCardMark(Fk:getCardById(id), MarkEnum.DestructOutEquip, 1)
         room:moveCards({
           ids = {id},
           fromArea = Card.Void,
@@ -1187,35 +1190,6 @@ local shoushu = fk.CreateTriggerSkill{
         })
         break
       end
-    end
-  end,
-
-  refresh_events = {fk.BeforeCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    return true
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local id = 0
-    for i = #data, 1, -1 do
-      local move = data[i]
-      if move.toArea ~= Card.Void then
-        for j = #move.moveInfo, 1, -1 do
-          local info = move.moveInfo[j]
-          if info.fromArea == Card.PlayerEquip and Fk:getCardById(info.cardId, true).name == "js__peace_spell" then
-            id = info.cardId
-            table.removeOne(move.moveInfo, info)
-            break
-          end
-        end
-      end
-    end
-    if id ~= 0 then
-      local room = player.room
-      room:sendLog{
-        type = "#destructDerivedCard",
-        arg = Fk:getCardById(id, true):toLogString(),
-      }
-      room:moveCardTo(Fk:getCardById(id, true), Card.Void, nil, fk.ReasonJustMove, "", "", true)
     end
   end,
 }
@@ -1250,34 +1224,8 @@ local xundao = fk.CreateTriggerSkill{
       end
     end
     if #ids == 0 then return end
-    local result = room:askForGuanxing(player, ids, {}, {1, 1}, self.name, true, {"xundao_discard", "xundao_retrial"})
-    local id
-    if #result.bottom > 0 then
-      id = result.bottom[1]
-    else
-      id = table.random(ids)
-    end
-    local move1 = {
-      ids = {id},
-      toArea = Card.Processing,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-    }
-    local move2 = {
-      ids = {data.card:getEffectiveId()},
-      toArea = Card.DiscardPile,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-    }
-    room:moveCards(move1, move2)
-    data.card = Fk:getCardById(id)
-    room:sendLog{
-      type = "#ChangedJudge",
-      from = player.id,
-      to = {player.id},
-      card = {id},
-      arg = self.name
-    }
+    local cards, choice = U.askforChooseCardsAndChoice(player, ids, {"OK"}, self.name, "#xundao-retrial", nil, 1, 1)
+    room:retrial(Fk:getCardById(cards[1]), player, data, self.name)
   end,
 }
 local xuanhua = fk.CreateTriggerSkill{
@@ -1367,8 +1315,7 @@ Fk:loadTranslationTable{
   ["#shoushu-choose"] = "授术：将【太平要术】置入一名角色的装备区",
   ["#xundao-choose"] = "寻道：你可以令至多两名角色各弃置一张牌，你选择其中一张修改你的判定",
   ["#xundao-discard"] = "寻道：你需弃置一张牌，%src 可以用之修改判定",
-  ["xundao_discard"] = "弃牌",
-  ["xundao_retrial"] = "修改判定",
+  ["#xundao-retrial"] = "寻道：选择用来修改判定的牌",
   ["#xuanhua1-invoke"] = "宣化：你可以进行【闪电】判定，若未受到伤害，你可以令一名角色回复1点体力",
   ["#xuanhua2-invoke"] = "宣化：你可以进行反转的【闪电】判定，若未受到伤害，你可以对一名角色造成1点雷电伤害",
   ["#xuanhua1-choose"] = "宣化：你可以令一名角色回复1点体力",

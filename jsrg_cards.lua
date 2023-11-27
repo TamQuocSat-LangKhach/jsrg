@@ -63,9 +63,7 @@ Fk:loadTranslationTable{
 
 local shadeSkill = fk.CreateActiveSkill{
   name = "shade_skill",
-  can_use = function()
-    return false
-  end,
+  can_use = Util.FalseFunc,
 }
 local shade = fk.CreateBasicCard{
   name = "&shade",
@@ -74,41 +72,6 @@ local shade = fk.CreateBasicCard{
   skill = shadeSkill,
 }
 extension:addCard(shade)
-local shade_destruct = fk.CreateTriggerSkill{
-  name = "#shade_destruct",
-  global = true,
-
-  refresh_events = {fk.AfterCardsMove},
-  can_refresh = function(self, event, target, player, data)
-    if player.phase ~= Player.NotActive then  --指定一个触发者防止技能空转
-      for _, move in ipairs(data) do
-        return move.toArea == Card.DiscardPile
-      end
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local ids = {}
-    for _, move in ipairs(data) do
-      if move.toArea == Card.DiscardPile then
-        for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if Fk:getCardById(id).trueName == "shade" then
-            table.insert(ids, id)
-          end
-        end
-      end
-    end
-    if #ids > 0 then
-      player.room:sendLog{
-        type = "#destructDerivedCards",
-        card = ids,
-      }
-      local cards = table.map(ids, function(id) return Fk:getCardById(id) end)
-      player.room:moveCardTo(cards, Card.Void, nil, fk.ReasonJustMove, "", "", true)
-    end
-  end,
-}
-Fk:addSkill(shade_destruct)
 Fk:loadTranslationTable{
   ["shade"] = "影",
 	[":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏。<br/>当一名角色获得【影】时，均为从游戏外获得♠A的【影】。",
@@ -118,10 +81,9 @@ local qingFengSkill = fk.CreateTriggerSkill{
   name = "#qingfeng_sword_skill",
   attached_equip = "qingfeng_sword",
   frequency = Skill.Compulsory,
-  events = { fk.TargetSpecified },
+  events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      data.card and data.card.trueName == "slash"
+    return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash"
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room

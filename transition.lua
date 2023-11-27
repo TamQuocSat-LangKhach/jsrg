@@ -281,6 +281,7 @@ local xushiz = fk.CreateActiveSkill{
     local moveInfos1 = {}
     for i = 1, #effect.tos * 2 do
       local toGain = room:printCard("shade", Card.Spade, 1)  --FIXME: 印影待修
+      room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
       table.insert(moveInfos1, {
         ids = {toGain.id},
         to = player.id,
@@ -482,7 +483,7 @@ local funi = fk.CreateTriggerSkill{
     elseif event == fk.BeforeCardsMove then
       if player:hasSkill(self) and player:getMark("@@funi-turn") == 0 then
         for _, move in ipairs(data) do
-          if move.toArea == Card.DiscardPile then
+          if move.toArea == Card.Void then
             for _, info in ipairs(move.moveInfo) do
               if Fk:getCardById(info.cardId, true).trueName == "shade" then
                 return true
@@ -504,6 +505,7 @@ local funi = fk.CreateTriggerSkill{
       local ids = {}
       for i = 1, n, 1 do
         local toGain = room:printCard("shade", Card.Spade, 1)
+        room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
         table.insert(ids, toGain.id)
       end
       local fakemove = {
@@ -962,6 +964,7 @@ local jiaohao = fk.CreateTriggerSkill{
     local moveInfos = {}
     for i = 1, num do
       local toGain = room:printCard("shade", Card.Spade, 1)
+      room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
       table.insert(moveInfos, {
         ids = {toGain.id},
         to = player.id,
