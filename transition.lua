@@ -219,7 +219,7 @@ local baohe = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if player:hasSkill(self) then
       if event == fk.DamageCaused then
-        return player:getMark("baohe_adddamage-phase") ~= 0 and table.contains(data.card.skillNames, "baohe")
+        return player:getMark("baohe_adddamage-phase") ~= 0 and data.card and table.contains(data.card.skillNames, "baohe")
       else
         if data.card.name == "jink" and data.toCard and data.toCard.trueName == "slash" and table.contains(data.toCard.skillNames, "baohe") then
           return data.responseToEvent.from == player.id
@@ -241,7 +241,7 @@ local xushiz = fk.CreateActiveSkill{
   name = "xushiz",
   anim_type = "offensive",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
     return #selected < #Fk:currentRoom().alive_players and
@@ -253,7 +253,7 @@ local xushiz = fk.CreateActiveSkill{
   min_card_num = 1,
   min_target_num = 1,
   feasible = function (self, selected, selected_cards)
-    return #selected > 0 and #selected == #selected_cards  
+    return #selected > 0 and #selected == #selected_cards
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1390,7 +1390,7 @@ local huozhong = fk.CreateActiveSkill{
   card_num = 1,
   prompt = "#huozhong-invoke",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and not player:hasDelayedTrick("supply_shortage")
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:hasDelayedTrick("supply_shortage")
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type ~= Card.TypeTrick and Fk:getCardById(to_select).color == Card.Black
@@ -1442,7 +1442,7 @@ local huozhong_active = fk.CreateActiveSkill{
   card_num = 1,
   prompt = "#huozhong&-invoke",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and not player:hasDelayedTrick("supply_shortage")
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:hasDelayedTrick("supply_shortage")
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type ~= Card.TypeTrick and Fk:getCardById(to_select).color == Card.Black
