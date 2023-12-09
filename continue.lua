@@ -223,17 +223,11 @@ local js__biaozhao = fk.CreateTriggerSkill{
     room:setPlayerMark(target2, "@@js__biaozhao2", mark2)
   end,
 
-  refresh_events = {fk.EventPhaseChanging, fk.Death},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    if target == player and table.find(player.room.alive_players, function(p)
+    return target == player and table.find(player.room.alive_players, function(p)
       return (p:getMark("@@js__biaozhao1") ~= 0 and table.contains(p:getMark("@@js__biaozhao1"), player.id)) or
-        (p:getMark("@@js__biaozhao2") ~= 0 and table.contains(p:getMark("@@js__biaozhao2"), player.id)) end) then
-      if event == fk.EventPhaseChanging then
-        return data.from == Player.RoundStart
-      else
-        return true
-      end
-    end
+        (p:getMark("@@js__biaozhao2") ~= 0 and table.contains(p:getMark("@@js__biaozhao2"), player.id)) end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -414,9 +408,9 @@ local js__shishou = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseChanging},
+  refresh_events = {fk.AfterTurnEnd},
   can_refresh = function(self, event, target, player, data)
-    return target == player and data.to == Player.NotActive and player:getMark("@js__cangchu") > 0
+    return target == player and player:getMark("@js__cangchu") > 0
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@js__cangchu", 0)
@@ -1094,13 +1088,11 @@ local nianen = fk.CreateViewAsSkill{
 local nianen_trigger = fk.CreateTriggerSkill {
   name = "#nianen_trigger",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return player:getMark("nianen-turn") > 0 and data.to == Player.NotActive
+    return player:getMark("nianen-turn") > 0
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:handleAddLoseSkills(player, "-mashu", nil, true, false)
   end,
@@ -1509,9 +1501,9 @@ local tuwei = fk.CreateTriggerSkill{
 local tuwei_trigger = fk.CreateTriggerSkill{
   name = "#tuwei_trigger",
   mute = true,
-  events = {fk.EventPhaseChanging},
+  events = {fk.TurnEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and data.to == Player.NotActive and player:getMark("tuwei-turn") ~= 0 and not player:isNude()
+    return target == player and player:getMark("tuwei-turn") ~= 0 and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     return true
