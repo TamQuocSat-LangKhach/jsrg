@@ -1156,40 +1156,28 @@ Fk:loadTranslationTable{
 }
 
 local nanhualaoxian = General(extension, "js__nanhualaoxian", "qun", 3)
+local peace_spell = {{"js__peace_spell", Card.Heart, 3}}
 local shoushu = fk.CreateTriggerSkill{
   name = "shoushu",
   anim_type = "support",
   events = {fk.RoundStart},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and not table.find(player.room.alive_players, function(p)
-      return p:getEquipment(Card.SubtypeArmor) and Fk:getCardById(p:getEquipment(Card.SubtypeArmor), true).name == "js__peace_spell" end)
+    local room = player.room
+    return player:hasSkill(self) and not table.find(room.alive_players, function(p)
+      return p:getEquipment(Card.SubtypeArmor) and Fk:getCardById(p:getEquipment(Card.SubtypeArmor), true).name == "js__peace_spell"
+    end)
+    and room:getCardArea(U.prepareDeriveCards(room, peace_spell, "shoushu_spell")[1]) == Card.Void
+    and table.find(room.alive_players, function(p) return p:hasEmptyEquipSlot(Card.SubtypeArmor) end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(table.filter(room.alive_players, function(p)
-      return p:getEquipment(Card.SubtypeArmor) == nil end), function(p) return p.id end)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#shoushu-choose", self.name, false)
-    if #to > 0 then
-      to = to[1]
-    else
-      to = table.random(targets)
-    end
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      if Fk:getCardById(id, true).name == "js__peace_spell" and room:getCardArea(id) == Card.Void then
-        room:setCardMark(Fk:getCardById(id), MarkEnum.DestructOutEquip, 1)
-        room:moveCards({
-          ids = {id},
-          fromArea = Card.Void,
-          to = to,
-          toArea = Card.PlayerEquip,
-          moveReason = fk.ReasonJustMove,
-          proposer = player.id,
-          skillName = self.name,
-        })
-        break
-      end
-    end
+    local targets = table.filter(room.alive_players, function(p) return p:hasEmptyEquipSlot(Card.SubtypeArmor) end)
+    local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#shoushu-choose", self.name, false)
+    local to = room:getPlayerById(tos[1])
+    local spell = U.prepareDeriveCards(room, peace_spell, "shoushu_spell")[1]
+    room:setCardMark(Fk:getCardById(spell), MarkEnum.DestructOutEquip, 1)
+    U.moveCardIntoEquip(room, to, spell, self.name, true, player)
   end,
 }
 local xundao = fk.CreateTriggerSkill{
