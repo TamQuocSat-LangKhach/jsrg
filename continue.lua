@@ -39,7 +39,7 @@ local duxing = fk.CreateActiveSkill{
 local duxing_filter = fk.CreateFilterSkill{
   name = "#duxing_filter",
   card_filter = function(self, card, player)
-    return player:getMark("duxing-phase") > 0 and not table.contains(player:getCardIds("ej"), card.id)
+    return player:getMark("duxing-phase") > 0 and table.contains(player.player_cards[Player.Hand], card.id)
   end,
   view_as = function(self, card)
     return Fk:cloneCard("slash", card.suit, card.number)

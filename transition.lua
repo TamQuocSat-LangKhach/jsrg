@@ -421,8 +421,7 @@ local ninghan = fk.CreateFilterSkill{
   card_filter = function(self, to_select, player)
     return RoomInstance and table.find(RoomInstance.alive_players, function (p) return p:hasSkill(self) end) and
     to_select.suit == Card.Club and to_select.trueName == "slash" and
-    not table.contains(player.player_cards[Player.Equip], to_select.id) and
-    not table.contains(player.player_cards[Player.Judge], to_select.id)
+    table.contains(player.player_cards[Player.Hand], to_select.id)
   end,
   view_as = function(self, to_select)
     local card = Fk:cloneCard("ice__slash", Card.Club, to_select.number)
