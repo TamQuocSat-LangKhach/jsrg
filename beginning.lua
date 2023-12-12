@@ -44,7 +44,7 @@ local function Discussion(self)
     reason = discussionData.reason,
   }
   local prompt = "#askForDiscussion"
-  local data = { "choose_cards_skill", prompt, true, json.encode(extraData) }
+  local data = { "choose_cards_skill", prompt, true, extraData }
 
   local targets = {}
   for _, to in ipairs(discussionData.tos) do
