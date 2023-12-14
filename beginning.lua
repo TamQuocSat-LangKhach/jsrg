@@ -870,6 +870,11 @@ local function addFangke(player, general, addSkill)
   end
 end
 
+local banned_fangke = {
+  "starsp__xiahoudun",  -- 原因：无敌
+  "shichangshi",   -- 原因：变将与休整
+}
+
 local yingmen = fk.CreateTriggerSkill{
   name = "yingmen",
   events = {fk.GameStart, fk.TurnStart},
@@ -887,6 +892,7 @@ local yingmen = fk.CreateTriggerSkill{
     local exclude_list = table.map(room.players, function(p)
       return p.general
     end)
+    table.insertTable(exclude_list, banned_fangke)
     for _, p in ipairs(room.players) do
       local deputy = p.deputyGeneral
       if deputy and deputy ~= "" then
