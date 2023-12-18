@@ -7,6 +7,25 @@ Fk:loadTranslationTable{
   ["transition"] = "江山如故·转",
 }
 
+local getShade = function (room, n)
+  local ids = {}
+  for _, id in ipairs(room.void) do
+    if n <= 0 then break end
+    if Fk:getCardById(id).name == "shade" then
+      room:setCardMark(Fk:getCardById(id), MarkEnum.DestructIntoDiscard, 1)
+      table.insert(ids, id)
+      n = n - 1
+    end
+  end
+  while n > 0 do
+    local card = room:printCard("shade", Card.Spade, 1)
+    room:setCardMark(card, MarkEnum.DestructIntoDiscard, 1)
+    table.insert(ids, card.id)
+    n = n - 1
+  end
+  return ids
+end
+
 local guojia = General(extension, "js__guojia", "wei", 3)
 local qingzi = fk.CreateTriggerSkill{
   name = "qingzi",
@@ -244,8 +263,7 @@ local xushiz = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
   card_filter = function(self, to_select, selected)
-    return #selected < #Fk:currentRoom().alive_players and
-      not Self:prohibitDiscard(Fk:getCardById(to_select))
+    return #selected < #Fk:currentRoom().alive_players
   end,
   target_filter = function(self, to_select, selected, selected_cards)
     return #selected < #selected_cards and to_select ~= Self.id
@@ -278,23 +296,15 @@ local xushiz = fk.CreateActiveSkill{
       room:moveCards(table.unpack(moveInfos))
     end
 
-    local moveInfos1 = {}
-    for i = 1, #effect.tos * 2 do
-      local toGain = room:printCard("shade", Card.Spade, 1)  --FIXME: 印影待修
-      room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
-      table.insert(moveInfos1, {
-        ids = {toGain.id},
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      })
-    end
-    if #moveInfos1 > 0 then
-      room:moveCards(table.unpack(moveInfos1))
-    end
+    room:moveCards({
+      ids = getShade(room, #effect.tos * 2),
+      to = player.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonPrey,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = true,
+    })
   end,
 }
 zhangfei:addSkill(baohe)
@@ -501,46 +511,21 @@ local funi = fk.CreateTriggerSkill{
       player:broadcastSkillInvoke(self.name)
       room:notifySkillInvoked(player, self.name, "control")
       local n = (#room.alive_players + 1) // 2
-      local ids = {}
-      for i = 1, n, 1 do
-        local toGain = room:printCard("shade", Card.Spade, 1)
-        room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
-        table.insert(ids, toGain.id)
-      end
-      local fakemove = {
-        toArea = Card.PlayerHand,
-        to = player.id,
-        moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.Void} end),
-        moveReason = fk.ReasonJustMove,
-      }
-      room:notifyMoveCards({player}, {fakemove})
-      for _, id in ipairs(ids) do
-        room:setCardMark(Fk:getCardById(id), "funi", 1)
-      end
-      while table.find(ids, function(id) return Fk:getCardById(id):getMark("funi") > 0 end) do
-        if not room:askForUseActiveSkill(player, "funi_active", "#funi-give", true) then
-          for _, id in ipairs(ids) do
-            room:setCardMark(Fk:getCardById(id), "funi", 0)
-          end
-          ids = table.filter(ids, function(id) return room:getCardArea(id) ~= Card.PlayerHand end)
-          fakemove = {
-            from = player.id,
-            toArea = Card.Void,
-            moveInfo = table.map(ids, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-            moveReason = fk.ReasonJustMove,
-          }
-          room:notifyMoveCards({player}, {fakemove})
-          room:moveCards({
-            fromArea = Card.Void,
-            ids = ids,
-            to = player.id,
-            toArea = Card.PlayerHand,
-            moveReason = fk.ReasonJustMove,
-            skillName = self.name,
-            moveVisible = true,
-          })
-        end
-      end
+      local ids = getShade(room, n)
+      player.special_cards["funi"] = table.simpleClone(ids)
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      local move = U.askForDistribution(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", "funi", true)
+      player.special_cards["funi"] = {}
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      U.doDistribution(room, move, player.id, self.name)
     elseif event == fk.BeforeCardsMove then
       room:setPlayerMark(player, "@@funi-turn", 1)
     elseif event == fk.CardUsing then
@@ -551,42 +536,6 @@ local funi = fk.CreateTriggerSkill{
         table.insertIfNeed(data.disresponsiveList, p.id)
       end
     end
-  end,
-}
-local funi_active = fk.CreateActiveSkill{
-  name = "funi_active",
-  mute = true,
-  min_card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    return Fk:getCardById(to_select):getMark("funi") > 0
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:doIndicate(player.id, {target.id})
-    for _, id in ipairs(effect.cards) do
-      room:setCardMark(Fk:getCardById(id), "funi", 0)
-    end
-    local fakemove = {
-      from = player.id,
-      toArea = Card.Void,
-      moveInfo = table.map(effect.cards, function(id) return {cardId = id, fromArea = Card.PlayerHand} end),
-      moveReason = fk.ReasonJustMove,
-    }
-    room:notifyMoveCards({player}, {fakemove})
-    room:moveCards({
-      fromArea = Card.Void,
-      ids = effect.cards,
-      to = target.id,
-      toArea = Card.PlayerHand,
-      moveReason = fk.ReasonJustMove,
-      skillName = self.name,
-      moveVisible = true,
-    })
   end,
 }
 local funi_attackrange = fk.CreateAttackRangeSkill{
@@ -653,7 +602,6 @@ local js__chuanxin_viewas = fk.CreateViewAsSkill{
     return card
   end,
 }
-Fk:addSkill(funi_active)
 Fk:addSkill(js__chuanxin_viewas)
 funi:addRelatedSkill(funi_attackrange)
 funi:addRelatedSkill(funi_targetmod)
@@ -666,8 +614,7 @@ Fk:loadTranslationTable{
   "当一张【影】进入弃牌堆时，你本回合使用牌无距离限制且不能被响应。",
   ["js__chuanxin"] = "穿心",
   [":js__chuanxin"] = "一名角色结束阶段，你可以将一张牌当伤害值+X的【杀】使用（X为目标角色本回合回复过的体力值）。",
-  ["funi_active"] = "伏匿",
-  ["#funi-give"] = "伏匿：令任意名角色获得【影】（点“取消”则自己获得）",
+  ["#funi-give"] = "伏匿：令任意名角色获得【影】",
   ["@@funi-turn"] = "伏匿",
   ["js__chuanxin_viewas"] = "穿心",
   ["#js__chuanxin-invoke"] = "穿心：你可以将一张牌当【杀】使用，伤害值增加目标本回合回复的体力值",
@@ -960,21 +907,15 @@ local jiaohao = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     local num = (#player:getAvailableEquipSlots() - #player:getCardIds("e") + 1) // 2
-    local moveInfos = {}
-    for i = 1, num do
-      local toGain = room:printCard("shade", Card.Spade, 1)
-      room:setCardMark(toGain, MarkEnum.DestructIntoDiscard, 1)
-      table.insert(moveInfos, {
-        ids = {toGain.id},
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      })
-    end
-    room:moveCards(table.unpack(moveInfos))
+    room:moveCards({
+      ids = getShade(room, num),
+      to = player.id,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonPrey,
+      proposer = player.id,
+      skillName = self.name,
+      moveVisible = true,
+    })
   end,
 
   refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
