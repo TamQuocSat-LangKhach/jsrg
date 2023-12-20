@@ -1477,7 +1477,7 @@ local hujian = fk.CreateTriggerSkill{
       if event == fk.GameStart then
         return true
       else
-        return table.find(player.room.discard_pile, function(id) return Fk:getCardById(id).trueName == "qingfeng_sword" end)
+        return table.find(player.room.discard_pile, function(id) return Fk:getCardById(id).trueName == "blood_sword" end)
       end
     end
   end,
@@ -1515,20 +1515,20 @@ local hujian = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      local card = room:printCard("qingfeng_sword", Card.Spade, 6)
+      local card = room:printCard("blood_sword", Card.Spade, 6)
       room:moveCards({
         ids = {card.id},
         fromArea = Card.Void,
         to = player.id,
         toArea = Card.PlayerHand,
-        moveReason = fk.ReasonJustMove,
+        moveReason = fk.ReasonPrey,
         proposer = player.id,
         skillName = self.name,
         moveVisible = true,
       })
     else
       local p = room:getPlayerById(self.cost_data)
-      local card = room:getCardsFromPileByRule("qingfeng_sword", 1, "discardPile")
+      local card = room:getCardsFromPileByRule("blood_sword", 1, "discardPile")
       if #card > 0 then
         room:moveCards({
           ids = card,
