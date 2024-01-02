@@ -1073,8 +1073,10 @@ local nianen = fk.CreateViewAsSkill{
       local room = player.room
       room:setPlayerMark(player, "@@nianen-turn", 1)
       if not player:hasSkill("mashu", true) then
-        room:setPlayerMark(player, "nianen-turn", 1)
-        room:handleAddLoseSkills(player, "mashu", nil, true, false)
+        room:handleAddLoseSkills(player, "mashu")
+        room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
+          room:handleAddLoseSkills(player, "-mashu")
+        end)
       end
     end
   end,
@@ -1085,20 +1087,7 @@ local nianen = fk.CreateViewAsSkill{
     return not player:isNude() and player:getMark("@@nianen-turn") == 0
   end,
 }
-local nianen_trigger = fk.CreateTriggerSkill {
-  name = "#nianen_trigger",
-  mute = true,
-  events = {fk.TurnEnd},
-  can_trigger = function(self, event, target, player, data)
-    return player:getMark("nianen-turn") > 0
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    player.room:handleAddLoseSkills(player, "-mashu", nil, true, false)
-  end,
-}
 guanjue:addRelatedSkill(guanjue_prohibit)
-nianen:addRelatedSkill(nianen_trigger)
 guanyu:addSkill(guanjue)
 guanyu:addSkill(nianen)
 Fk:loadTranslationTable{

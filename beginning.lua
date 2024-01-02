@@ -918,14 +918,7 @@ local function removeFangke(player, general)
   local glist = player:getMark("@&js_fangke")
   if glist == 0 then return end
   table.removeOne(glist, general)
-  room:setPlayerMark(player, "@&js_fangke", glist)
-  --[[
-  player:setMark("js_fangke", glist) -- 这个没必要传输
-  room:setPlayerMark(player, "@js_fangke_num", #glist)
-  for i = 1, 4 do
-    room:setPlayerMark(player, "@js_fangke" .. i, glist[i] or 0)
-  end
-  --]]
+  room:setPlayerMark(player, "@&js_fangke", #glist > 0 and glist or 0)
 
   general = Fk.generals[general]
   for _, s in ipairs(general.skills) do
