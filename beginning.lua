@@ -933,19 +933,33 @@ local pingjian = fk.CreateTriggerSkill{
   name = "js__pingjian",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
-    return target == player and player:hasSkill(self) and
-      player:getMark("js_fangke_skills") ~= 0 and
+    return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") > 0
+      and player:getMark("js_fangke_skills") ~= 0 and
       table.contains(player:getMark("js_fangke_skills"), data.name)
   end,
   on_cost = function() return true end,
   on_use = function(self, _, target, player, data)
     local room = player.room
     local choices = player:getMark("@&js_fangke")
-    local choice = room:askForChoice(player, choices, self.name, "#js_lose_fangke")
+    local owner = table.find(choices, function (name)
+      local general = Fk.generals[name]
+      return table.contains(general:getSkillNameList(), data.name)
+    end) or "?"
+    local choice = choices[1]
+    if #choices > 1 then
+      local result = player.room:askForCustomDialog(player, self.name,
+      "packages/utility/qml/ChooseGeneralsAndChoiceBox.qml", {
+        choices,
+        {"OK"},
+        "#js_lose_fangke:::"..owner,
+      })
+      if result ~= "" then
+        local reply = json.decode(result)
+        choice = reply.cards[1]
+      end
+    end
     removeFangke(player, choice)
-
-    local general = Fk.generals[choice]
-    if table.contains(general.skills, data) or table.contains(general.other_skills, data.name) then
+    if choice == owner and not player.dead then
       player:drawCards(1)
     end
   end,
@@ -957,7 +971,7 @@ Fk:loadTranslationTable{
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
   ["@&js_fangke"] = "访客",
-  ["#js_lose_fangke"] = "评鉴：请选择移除一张访客，若移除的是本次发技能的访客则摸一张牌",
+  ["#js_lose_fangke"] = "评鉴：移除一张访客，若移除 %arg 则摸牌",
   ["js__pingjian"] = "评鉴",
   [":js__pingjian"] = "当“访客”上的无类型标签或者只有锁定技标签的技能满足发动时机时，你可以发动该技能。"..
   "此技能的效果结束后，你须移除一张“访客”，若移除的是含有该技能的“访客”，你摸一张牌。" ..
@@ -1458,7 +1472,7 @@ Fk:loadTranslationTable{
   ["#js__rangjie-move"] = "让节：你可以移动场上一张牌，然后可以获得一张相同花色本回合进入弃牌堆的牌",
   ["#js__rangjie-card"] = "让节：你可以获得一张本回合进入弃牌堆的%arg牌",
   ["@@js__yizheng"] = "义争",
-  ["#js__yizheng-damage"] = "义争：你可以对 % src 造成至多2点伤害",
+  ["#js__yizheng-damage"] = "义争：你可以对 %src 造成至多2点伤害",
 }
 
 local kongrong = General(extension, "js__kongrong", "qun", 3)
