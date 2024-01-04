@@ -850,16 +850,9 @@ end
 ---@param general General
 local function addFangke(player, general, addSkill)
   local room = player.room
-  local glist = player:getMark("@&js_fangke")
-  if glist == 0 then glist = {} end
+  local glist = U.getMark(player, "@[private]&js_fangke")
   table.insertIfNeed(glist, general.name)
-  room:setPlayerMark(player, "@&js_fangke", glist)
-  --[[
-  room:setPlayerMark(player, "@js_fangke_num", #glist)
-  for i = 1, 4 do
-    room:setPlayerMark(player, "@js_fangke" .. i, glist[i] or 0)
-  end
-  --]]
+  room:setPlayerMark(player, "@[private]&js_fangke", glist)
 
   if not addSkill then return end
   for _, s in ipairs(general.skills) do
@@ -884,7 +877,7 @@ local yingmen = fk.CreateTriggerSkill{
       return player:hasSkill(self)
     else
       return target == player and player:hasSkill(self) and
-        (player:getMark("@&js_fangke") == 0 or #player:getMark("@&js_fangke") < 4)
+        (player:getMark("@[private]&js_fangke") == 0 or #player:getMark("@[private]&js_fangke") < 4)
     end
   end,
   on_use = function(self, _, _, player, _)
@@ -900,7 +893,7 @@ local yingmen = fk.CreateTriggerSkill{
       end
     end
 
-    local m = player:getMark("@&js_fangke")
+    local m = player:getMark("@[private]&js_fangke")
     local n = 4 - (m == 0 and 0 or #m)
     local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
     for _, g in ipairs(generals) do
@@ -913,14 +906,14 @@ xushao:addSkill(yingmen)
 
 ---@param player ServerPlayer
 ---@param general string
-local function removeFangke(player, general)
+local function removeFangke(player, general_name)
   local room = player.room
-  local glist = player:getMark("@&js_fangke")
+  local glist = player:getMark("@[private]&js_fangke")
   if glist == 0 then return end
-  table.removeOne(glist, general)
-  room:setPlayerMark(player, "@&js_fangke", #glist > 0 and glist or 0)
+  table.removeOne(glist, general_name)
+  room:setPlayerMark(player, "@[private]&js_fangke", #glist > 0 and glist or 0)
 
-  general = Fk.generals[general]
+  local general = Fk.generals[general_name]
   for _, s in ipairs(general.skills) do
     removeFangkeSkill(player, s.name)
   end
@@ -933,14 +926,14 @@ local pingjian = fk.CreateTriggerSkill{
   name = "js__pingjian",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
-    return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") > 0
+    return target == player and player:hasSkill(self) and #U.getMark(player, "@[private]&js_fangke") > 0
       and player:getMark("js_fangke_skills") ~= 0 and
       table.contains(player:getMark("js_fangke_skills"), data.name)
   end,
   on_cost = function() return true end,
   on_use = function(self, _, target, player, data)
     local room = player.room
-    local choices = player:getMark("@&js_fangke")
+    local choices = player:getMark("@[private]&js_fangke")
     local owner = table.find(choices, function (name)
       local general = Fk.generals[name]
       return table.contains(general:getSkillNameList(), data.name)
@@ -970,7 +963,7 @@ Fk:loadTranslationTable{
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
-  ["@&js_fangke"] = "访客",
+  ["@[private]&js_fangke"] = "访客",
   ["#js_lose_fangke"] = "评鉴：移除一张访客，若移除 %arg 则摸牌",
   ["js__pingjian"] = "评鉴",
   [":js__pingjian"] = "当“访客”上的无类型标签或者只有锁定技标签的技能满足发动时机时，你可以发动该技能。"..
@@ -1035,34 +1028,27 @@ local zhuhuanh = fk.CreateTriggerSkill{
     local cards = {}
     player:showCards(player.player_cards[Player.Hand])
     for _, id in ipairs(player.player_cards[Player.Hand]) do
-      if Fk:getCardById(id).trueName == "slash" then
+      local card = Fk:getCardById(id)
+      if card.trueName == "slash" and not player:prohibitDiscard(card) then
         table.insert(cards, id)
       end
     end
     local n = #cards
-    if n == 0 then return end
     room:throwCard(cards, self.name, player, player)
-    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhuhuanh-choose:::"..n..":"..n, self.name, false)
-    if #to > 0 then
-      to = room:getPlayerById(to[1])
-    else
-      to = room:getPlayerById(table.random(targets))
-    end
-    local choice = room:askForChoice(to, {"zhuhuanh_damage", "zhuhuanh_recover"}, self.name)
-    if choice == "zhuhuanh_damage" then
+    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    if #targets == 0 then return end
+    local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhuhuanh-choose:::"..n, self.name, false)
+    local to = room:getPlayerById(tos[1])
+    local choice = room:askForChoice(to, {"zhuhuanh_damage:::"..n, "zhuhuanh_recover::"..player.id..":"..n}, self.name)
+    if choice:startsWith("zhuhuanh_damage") then
       room:damage{
         from = player,
         to = to,
         damage = 1,
         skillName = self.name,
       }
-      if not to.dead then
-        if #to:getCardIds{Player.Hand, Player.Equip} <= n then
-          to:throwAllCards("he")
-        else
-          room:askForDiscard(to, n, n, true, self.name, false, ".")
-        end
+      if not to:isNude() and n > 0 then
+        room:askForDiscard(to, n, n, true, self.name, false)
       end
     else
       if player:isWounded() then
@@ -1073,7 +1059,9 @@ local zhuhuanh = fk.CreateTriggerSkill{
           skillName = self.name
         })
       end
-      player:drawCards(n, self.name)
+      if not player.dead and n > 0 then
+        player:drawCards(n, self.name)
+      end
     end
   end,
 }
@@ -1090,9 +1078,9 @@ Fk:loadTranslationTable{
   ["#zhaobing-choose"] = "诏兵：选择至多%arg名其他角色，依次选择交给你一张【杀】或失去1点体力",
   ["#zhaobing-card"] = "诏兵：交给 %src 一张【杀】，否则失去1点体力",
   ["#zhuhuanh-invoke"] = "诛宦：你可以展示手牌并弃置所有【杀】，令一名其他角色选择受到伤害并弃牌/你回复体力并摸牌",
-  ["#zhuhuanh-choose"] = "诛宦：令一名其他角色选择受到1点伤害并弃%arg张牌 / 你回复1点体力并摸%arg2张牌",
-  ["zhuhuanh_damage"] = "受到1点伤害，然后弃置等量的牌",
-  ["zhuhuanh_recover"] = "其回复1点体力，然后其摸等量的牌",
+  ["#zhuhuanh-choose"] = "诛宦：令一名其他角色选择：受到1点伤害并弃%arg张牌 / 你回复1点体力并摸%arg张牌",
+  ["zhuhuanh_damage"] = "你受到1点伤害，并弃置%arg牌",
+  ["zhuhuanh_recover"] = "%dest回复1点体力，并摸%arg牌",
 }
 
 local dongbai = General(extension, "js__dongbai", "qun", 3, 3, General.Female)
