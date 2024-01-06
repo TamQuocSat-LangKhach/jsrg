@@ -866,6 +866,7 @@ end
 local banned_fangke = {
   "starsp__xiahoudun",  -- 原因：无敌
   "shichangshi",   -- 原因：变将与休整
+  "godjiaxu", -- 原因：没有可用技能
 }
 
 local yingmen = fk.CreateTriggerSkill{
@@ -876,8 +877,7 @@ local yingmen = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return player:hasSkill(self)
     else
-      return target == player and player:hasSkill(self) and
-        (player:getMark("@&js_fangke") == 0 or #player:getMark("@&js_fangke") < 4)
+      return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") < 4
     end
   end,
   on_use = function(self, _, _, player, _)
@@ -894,7 +894,7 @@ local yingmen = fk.CreateTriggerSkill{
     end
 
     local m = player:getMark("@&js_fangke")
-    local n = 4 - (m == 0 and 0 or #m)
+    local n = 4 - #U.getMark(player, "@&js_fangke")
     local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
     for _, g in ipairs(generals) do
       addFangke(player, g, player:hasSkill("js__pingjian"))
@@ -905,7 +905,7 @@ local yingmen = fk.CreateTriggerSkill{
 xushao:addSkill(yingmen)
 
 ---@param player ServerPlayer
----@param general string
+---@param general_name string
 local function removeFangke(player, general_name)
   local room = player.room
   local glist = player:getMark("@&js_fangke")
