@@ -850,9 +850,9 @@ end
 ---@param general General
 local function addFangke(player, general, addSkill)
   local room = player.room
-  local glist = U.getMark(player, "@[private]&js_fangke")
+  local glist = U.getMark(player, "@&js_fangke")
   table.insertIfNeed(glist, general.name)
-  room:setPlayerMark(player, "@[private]&js_fangke", glist)
+  room:setPlayerMark(player, "@&js_fangke", glist)
 
   if not addSkill then return end
   for _, s in ipairs(general.skills) do
@@ -877,7 +877,7 @@ local yingmen = fk.CreateTriggerSkill{
       return player:hasSkill(self)
     else
       return target == player and player:hasSkill(self) and
-        (player:getMark("@[private]&js_fangke") == 0 or #player:getMark("@[private]&js_fangke") < 4)
+        (player:getMark("@&js_fangke") == 0 or #player:getMark("@&js_fangke") < 4)
     end
   end,
   on_use = function(self, _, _, player, _)
@@ -893,7 +893,7 @@ local yingmen = fk.CreateTriggerSkill{
       end
     end
 
-    local m = player:getMark("@[private]&js_fangke")
+    local m = player:getMark("@&js_fangke")
     local n = 4 - (m == 0 and 0 or #m)
     local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
     for _, g in ipairs(generals) do
@@ -908,10 +908,10 @@ xushao:addSkill(yingmen)
 ---@param general string
 local function removeFangke(player, general_name)
   local room = player.room
-  local glist = player:getMark("@[private]&js_fangke")
+  local glist = player:getMark("@&js_fangke")
   if glist == 0 then return end
   table.removeOne(glist, general_name)
-  room:setPlayerMark(player, "@[private]&js_fangke", #glist > 0 and glist or 0)
+  room:setPlayerMark(player, "@&js_fangke", #glist > 0 and glist or 0)
 
   local general = Fk.generals[general_name]
   for _, s in ipairs(general.skills) do
@@ -926,14 +926,14 @@ local pingjian = fk.CreateTriggerSkill{
   name = "js__pingjian",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
-    return target == player and player:hasSkill(self) and #U.getMark(player, "@[private]&js_fangke") > 0
+    return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") > 0
       and player:getMark("js_fangke_skills") ~= 0 and
       table.contains(player:getMark("js_fangke_skills"), data.name)
   end,
   on_cost = function() return true end,
   on_use = function(self, _, target, player, data)
     local room = player.room
-    local choices = player:getMark("@[private]&js_fangke")
+    local choices = player:getMark("@&js_fangke")
     local owner = table.find(choices, function (name)
       local general = Fk.generals[name]
       return table.contains(general:getSkillNameList(), data.name)
@@ -963,7 +963,7 @@ Fk:loadTranslationTable{
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
-  ["@[private]&js_fangke"] = "访客",
+  ["@&js_fangke"] = "访客",
   ["#js_lose_fangke"] = "评鉴：移除一张访客，若移除 %arg 则摸牌",
   ["js__pingjian"] = "评鉴",
   [":js__pingjian"] = "当“访客”上的无类型标签或者只有锁定技标签的技能满足发动时机时，你可以发动该技能。"..
