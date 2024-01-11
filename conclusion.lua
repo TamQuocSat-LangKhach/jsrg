@@ -254,6 +254,24 @@ local yinlve = fk.CreateTriggerSkill{
       table.contains(availableDMGTypes, data.damageType) and
       player:getMark("yinlveUsed" .. data.damageType .. "-round") == 0
   end,
+  on_cost = function(self, event, target, player, data)
+    local damageTypeTable = {
+      [fk.FireDamage] = "fire_damage",
+      [fk.ThunderDamage] = "thunder_damage",
+    }
+
+    local phase_name_table = {
+      [3] = "phase_draw",
+      [2] = "phase_discard",
+    }
+
+    return player.room:askForSkillInvoke(
+      player,
+      self.name,
+      data,
+      "#yinlve-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. phase_name_table[data.damageType]
+    )
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "yinlveUsed" .. data.damageType .. "-round", 1)
@@ -312,6 +330,7 @@ local yinlve = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["yinlve"] = "隐略",
   [":yinlve"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
+  ["#yinlve-ask"] = "隐略：你可以防止 %dest 受到的 %arg 伤害，回合结束执行仅有 %arg2 的回合",
 }
 
 zhugeliang:addSkill(yinlve)
