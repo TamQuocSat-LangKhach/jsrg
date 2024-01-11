@@ -139,7 +139,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
 Fk:loadTranslationTable{
   ["wentian"] = "问天",
   ["#wentian_trigger"] = "问天",
-  [":wentian"] = "你可以将牌堆顶的牌当【无懈可击】/【火攻】使用，然后若此牌不为黑色/红色，本技能于本轮内失效；\
+  [":wentian"] = "你可以将牌堆顶的牌当【无懈可击】/【火攻】使用，若此牌不为黑色/红色，本技能于本轮内失效；\
   每回合限一次，你的任意阶段开始时，你可以观看牌堆顶五张牌，然后将其中一张牌交给一名其他角色，其余牌以任意顺序置于牌堆顶或牌堆底。",
   ["@@wentian_nullified-round"] = "问天失效",
   ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
