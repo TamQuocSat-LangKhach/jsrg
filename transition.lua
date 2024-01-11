@@ -1205,7 +1205,7 @@ local js__niluan = fk.CreateTriggerSkill{
         return player:hasSkill(self, true) and data.from and
           (player:getMark(self.name) == 0 or not table.contains(player:getMark(self.name), data.from.id))
       elseif event == fk.EventAcquireSkill then
-        return data == self
+        return data == self and player.room:getTag("RoundCount")
       end
     end
   end,
@@ -1268,7 +1268,7 @@ local huchou = fk.CreateTriggerSkill{
         return player:hasSkill(self, true) and
           data.card.is_damage_card and data.from ~= player.id and player:getMark(self.name) ~= data.from
       elseif event == fk.EventAcquireSkill then
-        return data == self
+        return data == self and player.room:getTag("RoundCount")
       end
     end
   end,
