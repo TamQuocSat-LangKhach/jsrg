@@ -18,110 +18,6 @@ local function getTrueSkills(player)
   return skills
 end
 
-
-local function Discussion(self)
-  --local discussionData = table.unpack(self.data)
-  local discussionData = self
-  --local room = self.room
-  local room = self.from.room
-  local logic = room.logic
-  --logic:trigger(fk.StartDiscussion, discussionData.from, discussionData)
-
-  if discussionData.reason ~= "" then
-    room:sendLog{
-      type = "#StartDiscussionReason",
-      from = discussionData.from.id,
-      arg = discussionData.reason,
-    }
-  end
-  discussionData.color = "noresult"
-
-  local extraData = {
-    num = 1,
-    min_num = 1,
-    include_equip = false,
-    pattern = ".",
-    reason = discussionData.reason,
-  }
-  local prompt = "#askForDiscussion"
-  local data = { "choose_cards_skill", prompt, true, extraData }
-
-  local targets = {}
-  for _, to in ipairs(discussionData.tos) do
-    if not (discussionData.results[to.id] and discussionData.results[to.id].toCard) then
-      table.insert(targets, to)
-      to.request_data = json.encode(data)
-    end
-  end
-
-  room:notifyMoveFocus(targets, "AskForDiscussion")
-  room:doBroadcastRequest("AskForUseActiveSkill", targets)
-
-  for _, p in ipairs(targets) do
-    local discussionCard
-    if p.reply_ready then
-      local replyCard = json.decode(p.client_reply).card
-      discussionCard = Fk:getCardById(json.decode(replyCard).subcards[1])
-    else
-      discussionCard = Fk:getCardById(p:getCardIds(Player.Hand)[1])
-    end
-
-    discussionData.results[p.id] = discussionData.results[p.id] or {}
-    discussionData.results[p.id].toCard = discussionCard
-
-    p:showCards({discussionCard})
-  end
-  --logic:trigger(fk.DiscussionCardsDisplayed, nil, discussionData)
-
-  local red, black = 0, 0
-  for toId, result in pairs(discussionData.results) do
-    local to = room:getPlayerById(toId)
-    if result.toCard.color == Card.Red then
-      red = red + 1
-    elseif result.toCard.color == Card.Black then
-      black = black + 1
-    end
-
-    local singleDiscussionData = {
-      from = discussionData.from,
-      to = to,
-      toCard = result.toCard,
-      color = result.toCard:getColorString(),
-      reason = discussionData.reason,
-    }
-
-    --logic:trigger(fk.DiscussionResultConfirmed, nil, singleDiscussionData)
-  end
-
-  local discussionResult = "noresult"
-  if red > black then
-    discussionResult = "red"
-  elseif red < black then
-      discussionResult = "black"
-  end
-  discussionData.color = discussionResult
-
-  room:sendLog{
-    type = "#ShowDiscussionResult",
-    from = discussionData.from.id,
-    arg = discussionResult
-  }
-
-  --if logic:trigger(fk.DiscussionFinished, discussionData.from, discussionData) then
-  if logic:trigger("fk.DiscussionFinished", discussionData.from, discussionData) then
-    logic:breakEvent()
-  end
-  return discussionData  --FIXME
-end
-
-Fk:loadTranslationTable{
-  ["#StartDiscussionReason"] = "%from 由于 %arg 而发起议事",
-  ["#askForDiscussion"] = "请展示一张手牌进行议事",
-  ["AskForDiscussion"] = "议事",
-  ["#ShowDiscussionResult"] = "%from 的议事结果为 %arg",
-  ["noresult"] = "无结果",
-}
-
 local caocao = General(extension, "js__caocao", "qun", 4)
 local zhenglve = fk.CreateTriggerSkill{
   name = "zhenglve",
@@ -412,7 +308,7 @@ local chaozheng = fk.CreateTriggerSkill{
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
     if #targets == 0 then return end
     room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
-    local discussion = Discussion{
+    local discussion = U.Discussion{
       reason = self.name,
       from = player,
       tos = targets,
@@ -2240,7 +2136,7 @@ local shelun = fk.CreateActiveSkill{
       return not p:isKongcheng() and p:getHandcardNum() <= player:getHandcardNum() end)
     room:delay(1500)
     room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
-    local discussion = Discussion{
+    local discussion = U.Discussion{
       reason = self.name,
       from = player,
       tos = targets,

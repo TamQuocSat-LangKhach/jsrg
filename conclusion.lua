@@ -7,10 +7,314 @@ Fk:loadTranslationTable{
   ["conclusion"] = "江山如故·合",
 }
 
---local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
+local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
 Fk:loadTranslationTable{
   ["js__zhugeliang"] = "诸葛亮",
 }
+
+local wentian = fk.CreateViewAsSkill{
+  name = "wentian",
+  pattern = "fire_attack,nullification",
+  interaction = function()
+    local names = {}
+    local availableNames = { "fire_attack", "nullification" }
+    for _, name in ipairs(availableNames) do
+      local card = Fk:cloneCard(name)
+      if 
+        ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
+        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card)))
+      then
+        table.insertIfNeed(names, name)
+      end
+    end
+    if #names == 0 then return end
+    return UI.ComboBox {choices = names}
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 0 or not self.interaction.data then return end
+    local card = Fk:cloneCard(self.interaction.data)
+    card.skillName = self.name
+    return card
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local topCardId = room:getNCards(1)[1]
+
+    use.card:addSubcard(topCardId)
+    local cardColor = Fk:getCardById(topCardId).color
+    if 
+      (use.card.name == "nullification" and cardColor ~= Card.Black) or
+      (use.card.name == "fire_attack" and cardColor ~= Card.Red)
+    then
+      room:setPlayerMark(player, "@@wentian_nullified-round", 1)
+    end
+  end,
+  enabled_at_play = function(self, player)
+    return player:getMark("@@wentian_nullified-round") == 0
+  end,
+  enabled_at_response = function(self, player, response)
+    return player:getMark("@@wentian_nullified-round") == 0 and not response
+  end,
+}
+local wentianGive = fk.CreateActiveSkill{
+  name = "wentian_give",
+  expand_pile = "wentian",
+  card_num = 1,
+  target_num = 1,
+  card_filter = function(self, to_select, selected, targets)
+    local ids = Self:getMark("wentianCards")
+    return #selected == 0 and type(ids) == "table" and table.contains(ids, to_select)
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected == 0 and to_select ~= Self.id
+  end,
+}
+Fk:addSkill(wentianGive)
+local wentianTrigger = fk.CreateTriggerSkill{
+  name = "#wentian_trigger",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    local normalPhases = {
+      Player.Start,
+      Player.Judge,
+      Player.Draw,
+      Player.Play,
+      Player.Discard,
+      Player.Finish,
+    }
+
+    return
+      target == player and
+      player:hasSkill(self) and
+      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      player:getMark("@@wentian_nullified-round") == 0 and
+      table.contains(normalPhases, player.phase)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local phase_name_table = {
+      [2] = "phase_start",
+      [3] = "phase_judge",
+      [4] = "phase_draw",
+      [5] = "phase_play",
+      [6] = "phase_discard",
+      [7] = "phase_finish",
+    }
+
+    return player.room:askForSkillInvoke(player, "wentian", data, "#wentian-ask:::" .. phase_name_table[player.phase])
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local topCardIds = room:getNCards(5)
+
+    local others = room:getOtherPlayers(player)
+    if #others > 0 then
+      player.special_cards["wentian"] = topCardIds
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+      room:setPlayerMark(player, "wentianCards", topCardIds)
+      local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", true, nil, true)
+      room:setPlayerMark(player, "wentianCards", 0)
+      player.special_cards["wentian"] = topCardIds
+      player:doNotify("ChangeSelf", json.encode {
+        id = player.id,
+        handcards = player:getCardIds("h"),
+        special_cards = player.special_cards,
+      })
+
+      local toGive = ret and ret.cards[1] or topCardIds[1]
+      table.removeOne(topCardIds, toGive)
+      room:moveCardTo(toGive, Card.PlayerHand, room:getPlayerById(ret.targets[1]), fk.ReasonGive, "wentian", nil, false, player.id)
+
+      room:askForGuanxing(player, topCardIds, nil, nil, "wentian")
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["wentian"] = "问天",
+  ["#wentian_trigger"] = "问天",
+  [":wentian"] = "你可以将牌堆顶的牌当【无懈可击】/【火攻】使用，然后若此牌不为黑色/红色，本技能于本轮内失效；\
+  每回合限一次，你的任意阶段开始时，你可以观看牌堆顶五张牌，然后将其中一张牌交给一名其他角色，其余牌以任意顺序置于牌堆顶或牌堆底。",
+  ["@@wentian_nullified-round"] = "问天失效",
+  ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
+  ["wentian_give"] = "问天给牌",
+  ["#wentian-give"] = "问天：请选择其中一张牌交给一名其他角色",
+}
+
+wentian:addRelatedSkill(wentianTrigger)
+zhugeliang:addSkill(wentian)
+
+local chushi = fk.CreateActiveSkill{
+  name = "chushi",
+  anim_type = "support",
+  card_num = 0,
+  prompt = "#chushi",
+  target_num = function(self)
+    return #table.filter(Fk:currentRoom().alive_players, function(p) return p.role == "lord" end) > 1 and 1 or 0 
+  end,
+  can_use = function(self, player)
+    return
+      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      (not player:isKongcheng() or
+      table.find(Fk:currentRoom().alive_players, function(p) return p.role == "lord" and not p:isKongcheng() end))
+  end,
+  card_filter = function(self, to_select, selected)
+    return false
+  end,
+  target_filter = function(self, to_select, selected)
+    if #table.filter(Fk:currentRoom().alive_players, function(p) return p.role == "lord" end) < 2 then
+      return false
+    end
+
+    local target = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and target.role == "lord" and not (Self:isKongcheng() and target:isKongcheng())
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local targetId = #effect.tos > 0 and effect.tos[1] or table.find(room.alive_players, function(p) return p.role == "lord" end).id
+    local target = room:getPlayerById(targetId)
+
+    room:delay(1000)
+    local targets = { player }
+    if target ~= player then
+      table.insert(targets, target)
+    end
+
+    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    local discussion = U.Discussion{
+      reason = self.name,
+      from = player,
+      tos = table.filter(targets, function(p) return not p:isKongcheng() end),
+      results = {},
+    }
+    if discussion.color == "red" then
+      local drawTargets = { player.id }
+      if player ~= target then
+        table.insert(drawTargets, target.id)
+        room:sortPlayersByAction(drawTargets)
+      end
+
+      drawTargets = table.map(drawTargets, function(id) return room:getPlayerById(id) end)
+
+      for _, p in ipairs(drawTargets) do
+        p:drawCards(1, self.name)
+      end
+
+      local loopLock = 1
+      repeat
+        for _, p in ipairs(drawTargets) do
+          p:drawCards(1, self.name)
+        end
+
+        loopLock = loopLock + 1
+      until player:getHandcardNum() + (player ~= target and target:getHandcardNum() or 0) >= 7 or loopLock == 20
+    elseif discussion.color == "black" then
+      room:addPlayerMark(player, "@chushiBuff-round")
+    end
+  end,
+}
+local chushiBuff = fk.CreateTriggerSkill{
+  name = "#chushi_buff",
+  anim_type = "offensive",
+  events = {fk.DamageCaused},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:getMark("@chushiBuff-round") > 0 and data.damageType ~= fk.NormalDamage
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + player:getMark("@chushiBuff-round")
+  end,
+}
+Fk:loadTranslationTable{
+  ["chushi"] = "出师",
+  ["#chushi"] = "出师：你可以和主公议事，红色你与其摸牌，黑色你本轮属性伤害增加",
+  ["#chushi_buff"] = "出师",
+  [":chushi"] = "出牌阶段限一次，你可以和主公议事，若结果为：红色，你与其各摸一张牌，然后重复此摸牌流程，直到你与其手牌之和不小于7\
+  （若此主公为你，则改为你重复摸一张牌直到你的手牌数不小于7）；黑色，当你于本轮内造成属性伤害时，此伤害+1。",
+  ["@chushiBuff-round"] = "出师+",
+}
+
+chushi:addRelatedSkill(chushiBuff)
+zhugeliang:addSkill(chushi)
+
+local yinlve = fk.CreateTriggerSkill{
+  name = "yinlve",
+  anim_type = "support",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    local availableDMGTypes = {fk.ThunderDamage, fk.FireDamage}
+    return
+      player:hasSkill(self) and
+      table.contains(availableDMGTypes, data.damageType) and
+      player:getMark("yinlveUsed" .. data.damageType .. "-round") == 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, "yinlveUsed" .. data.damageType .. "-round", 1)
+    
+    local logic = room.logic
+    local turn = logic:getCurrentEvent():findParent(GameEvent.Turn, true)
+    if turn then
+      turn:prependExitFunc(
+        function()
+          room:sendLog{
+            type = "#GainAnExtraTurn",
+            from = player.id
+          }
+        
+          local current = room.current
+          room.current = player
+        
+          player.tag["_extra_turn_count"] = player.tag["_extra_turn_count"] or {}
+          local ex_tag = player.tag["_extra_turn_count"]
+          table.insert(ex_tag, "yinlveTurn" .. data.damageType)
+
+          GameEvent(GameEvent.Turn, player):exec()
+        
+          table.remove(ex_tag)
+        
+          room.current = current
+        end
+      )
+    end
+
+    return true
+  end,
+
+  refresh_events = {fk.EventPhaseChanging},
+  can_refresh = function(self, event, target, player, data)
+    local extraTurnInfo = player.tag["_extra_turn_count"]
+
+    return
+      target == player and
+      type(extraTurnInfo) == "table" and
+      #extraTurnInfo > 0 and
+      type(extraTurnInfo[#extraTurnInfo]) == "string" and
+      extraTurnInfo[#extraTurnInfo]:startsWith("yinlveTurn") and
+      data.to == Player.RoundStart
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local excludePhases = { Player.Start, Player.Judge, Player.Play, Player.Finish }
+    local extraTurnInfo = player.tag["_extra_turn_count"]
+    table.insert(excludePhases, extraTurnInfo[#extraTurnInfo] == "yinlveTurn" .. fk.ThunderDamage and Player.Draw or Player.Discard)
+
+    for _, phase in ipairs(excludePhases) do
+      table.removeOne(player.phases, phase)
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["yinlve"] = "隐略",
+  [":yinlve"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
+}
+
+zhugeliang:addSkill(yinlve)
 
  --local jiangwei = General(extension, "js__jiangwei", "wu", 4)
 Fk:loadTranslationTable{
