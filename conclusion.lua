@@ -340,13 +340,202 @@ Fk:loadTranslationTable{
   ["js__jiangwei"] = "姜维",
 }
 
- --local liuyong = General(extension, "js__liuyong", "shu", 3)
+local liuyong = General(extension, "js__liuyong", "shu", 3)
+local js__danxin = fk.CreateActiveSkill{
+  name = "js__danxin",
+  anim_type = "control",
+  card_num = 1,
+  min_target_num = 1,
+  can_use = function(self, player)
+    return not player:isNude()
+  end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 then
+      local c = Fk:cloneCard("sincere_treat")
+      c.skillName = self.name
+      c:addSubcard(to_select)
+      return Self:canUse(c) and not Self:prohibitUse(c)
+    end
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    if #selected_cards ~= 1 then return false end
+    local c = Fk:cloneCard("sincere_treat")
+    c.skillName = self.name
+    c:addSubcards(selected_cards)
+    return c.skill:targetFilter(to_select, selected, selected_cards, c) and
+    not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), c)
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local c = Fk:cloneCard("sincere_treat")
+    c.skillName = self.name
+    c:addSubcards(effect.cards)
+    local use = {
+      from = player.id,
+      tos = table.map(effect.tos, function (id) return {id} end),
+      card = c,
+      extra_data = {js__danxin_user = player.id},
+    }
+    room:useCard(use)
+    if player.dead then return end
+    for _, pid in ipairs(TargetGroup:getRealTargets(use.tos)) do
+      local p = room:getPlayerById(pid)
+      if not p.dead then
+        room:addPlayerMark(p, "js__danxin_"..player.id.."-turn")
+      end
+    end
+  end,
+}
+local js__danxin_delay = fk.CreateTriggerSkill{
+  name = "#js__danxin_delay",
+  events = {fk.AfterCardsMove},
+  mute = true,
+  can_trigger = function(self, event, target, player, data)
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
+    if e then
+      local use = e.data[1]
+      if table.contains(use.card.skillNames, "js__danxin") then
+        local ids = {}
+        for _, move in ipairs(data) do
+          if move.toArea == Card.PlayerHand and move.to == player.id then
+            for _, info in ipairs(move.moveInfo) do
+              if table.contains(player:getCardIds("h"), info.cardId) then
+                table.insertIfNeed(ids, info.cardId)
+              end
+            end
+          end
+        end
+        if #ids > 0 then
+          self.cost_data = ids
+          return true
+        end
+      end
+    end
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local ids = self.cost_data
+    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
+    if e then
+      local use = e.data[1]
+      local me = room:getPlayerById(use.extra_data.js__danxin_user)
+      me:showCards(ids)
+      if not player.dead and player:isWounded() and table.find(ids, function (id)
+        return Fk:getCardById(id).suit == Card.Heart
+      end) then
+        room:recover { num = 1, skillName = self.name, who = player, recoverBy = me}
+      end
+    end
+  end,
+}
+local js__danxin_distance = fk.CreateDistanceSkill{
+  name = "#js__danxin_distance",
+  correct_func = function(self, from, to)
+    return to:getMark("js__danxin_"..from.id.."-turn")
+  end,
+}
+js__danxin:addRelatedSkill(js__danxin_distance)
+js__danxin:addRelatedSkill(js__danxin_delay)
+liuyong:addSkill(js__danxin)
+local js__fengxiang = fk.CreateTriggerSkill{
+  name = "js__fengxiang",
+  events = {fk.Damaged},
+  frequency = Skill.Compulsory,
+  anim_type = "masochism",
+  can_trigger = function(self, event, target, player, data)
+    return player == target and player:hasSkill(self) and #player.room.alive_players > 1
+    and table.find(player.room.alive_players, function(p) return #p:getCardIds("e") > 0 end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#js__fengxiang-choose", self.name, false)
+    if #tos > 0 then
+      local to = room:getPlayerById(tos[1])
+      local num = 0
+      local cards1 = player:getCardIds("e")
+      local cards2 = to:getCardIds("e")
+      local moveInfos = {}
+      if #cards1 > 0 then
+        table.insert(moveInfos, {
+          from = player.id,
+          ids = cards1,
+          toArea = Card.Processing,
+          moveReason = fk.ReasonExchange,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+      if #cards2 > 0 then
+        table.insert(moveInfos, {
+          from = to.id,
+          ids = cards2,
+          toArea = Card.Processing,
+          moveReason = fk.ReasonExchange,
+          proposer = player.id,
+          skillName = self.name,
+        })
+      end
+      if #moveInfos > 0 then
+        room:moveCards(table.unpack(moveInfos))
+      end
+
+      moveInfos = {}
+
+      if not to.dead then
+        local to_ex_cards1 = table.filter(cards1, function (id)
+          return room:getCardArea(id) == Card.Processing and to:getEquipment(Fk:getCardById(id).sub_type) == nil
+        end)
+        if #to_ex_cards1 > 0 then
+          table.insert(moveInfos, {
+            ids = to_ex_cards1,
+            fromArea = Card.Processing,
+            to = to.id,
+            toArea = Card.PlayerEquip,
+            moveReason = fk.ReasonExchange,
+            proposer = player.id,
+            skillName = self.name,
+          })
+        end
+      end
+      if not player.dead then
+        local to_ex_cards = table.filter(cards2, function (id)
+          return room:getCardArea(id) == Card.Processing and player:getEquipment(Fk:getCardById(id).sub_type) == nil
+        end)
+        num = #cards1 - #to_ex_cards
+        if #to_ex_cards > 0 then
+          table.insert(moveInfos, {
+            ids = to_ex_cards,
+            fromArea = Card.Processing,
+            to = player.id,
+            toArea = Card.PlayerEquip,
+            moveReason = fk.ReasonExchange,
+            proposer = player.id,
+            skillName = self.name,
+          })
+        end
+      end
+      if #moveInfos > 0 then
+        room:moveCards(table.unpack(moveInfos))
+      end
+
+      if not player.dead then
+        if num > 0 then
+          player:drawCards(num, self.name)
+        end
+      end
+    end
+  end,
+}
+liuyong:addSkill(js__fengxiang)
 Fk:loadTranslationTable{
   ["js__liuyong"] = "刘永",
   ["js__danxin"] = "丹心",
-  [":js__danxin"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥️牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
+  [":js__danxin"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
+  ["#js__danxin_delay"] = "丹心",
   ["js__fengxiang"] = "封乡",
   [":js__fengxiang"] = "锁定技，当你受到伤害后，你须与一名其他角色交换装备区内的所有牌，若你装备区内的牌数因此而减少，你摸等同于减少数的牌。",
+  ["#js__fengxiang-choose"] = "封乡：与一名其他角色交换装备区内的所有牌",
 }
 
  --local guoxun = General(extension, "js__guoxun", "shu", 4)
@@ -396,9 +585,139 @@ Fk:loadTranslationTable{
   [":js__kaiju"] = "出牌阶段限一次，你可以令任意名本回合内成为过牌的目标的角色可以将一张黑色牌当做【杀】使用。",
 }
 
---local luxun = General(extension, "js__luxun", "wu", 3)
+local luxun = General(extension, "js__luxun", "wu", 3)
+local js__youjin = fk.CreateTriggerSkill{
+  name = "js__youjin",
+  events = {fk.EventPhaseStart},
+  anim_type = "control",
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and player == target and player.phase == Player.Play and not player:isKongcheng()
+    and table.find(player.room.alive_players, function (p) return player:canPindian(p) end)
+  end,
+  on_cost = function (self, event, target, player, data)
+    local targets = table.filter(player.room.alive_players, function (p) return player:canPindian(p) end)
+    local tos = player.room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#js__youjin-choose", self.name, true)
+    if #tos > 0 then
+      self.cost_data = tos[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local pindian = player:pindian({to}, self.name)
+    local winner = pindian.results[to.id].winner
+    local fromNum = pindian.fromCard.number
+    if fromNum > 0 and not player.dead then
+      fromNum = math.max(fromNum, player:getMark("@js__youjin-turn"))
+      room:setPlayerMark(player, "@js__youjin-turn", fromNum)
+    end
+    local toNum = pindian.results[to.id].toCard.number
+    if toNum > 0 and not to.dead then
+      fromNum = math.max(toNum, to:getMark("@js__youjin-turn"))
+      room:setPlayerMark(to, "@js__youjin-turn", toNum)
+    end
+    if winner and not winner.dead then
+      local loser = (winner == player) and to or player
+      if not loser.dead then
+        room:useVirtualCard("slash", nil, winner, loser, self.name, true)
+      end
+    end
+  end,
+}
+local js__youjin_prohibit = fk.CreateProhibitSkill{
+  name = "#js__youjin_prohibit",
+  prohibit_use = function(self, player, card)
+    local mark = player:getMark("@js__youjin-turn")
+    if mark ~= 0 and card then
+      local cards = card:isVirtual() and card.subcards or {card.id}
+      return table.find(cards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id) and Fk:getCardById(id).number < mark
+      end)
+    end
+  end,
+  prohibit_response = function(self, player, card)
+    local mark = player:getMark("@js__youjin-turn")
+    if mark ~= 0 and card then
+      local cards = card:isVirtual() and card.subcards or {card.id}
+      return table.find(cards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id) and Fk:getCardById(id).number < mark
+      end)
+    end
+  end,
+}
+js__youjin:addRelatedSkill(js__youjin_prohibit)
+luxun:addSkill(js__youjin)
+local js__dailao = fk.CreateActiveSkill{
+  name = "js__dailao",
+  anim_type = "drawcard",
+  can_use = function(self, player)
+    return not player:isKongcheng() and table.every(player:getCardIds("h"), function (id)
+      local card = Fk:getCardById(id)
+      return player:prohibitUse(card) or not player:canUse(card)
+    end)
+  end,
+  target_num = 0,
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    player:showCards(player:getCardIds("h"))
+    player:drawCards(2, self.name)
+    room.logic:breakTurn()
+  end,
+}
+luxun:addSkill(js__dailao)
+local js__zhubei = fk.CreateTriggerSkill{
+  name = "js__zhubei",
+  anim_type = "offensive",
+  events = {fk.DamageCaused},
+  frequency = Skill.Compulsory,
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      return #U.getActualDamageEvents(player.room, 2, function(e) return e.data[1].to == data.to end) > 0
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    data.damage = data.damage + 1
+  end,
+
+  refresh_events = {fk.AfterCardsMove},
+  can_refresh = function (self, event, target, player, data)
+    if player:getMark("js__zhubei_lost-turn") == 0 and player:isKongcheng() then
+      for _, move in ipairs(data) do
+        if move.from == player.id then
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Card.PlayerHand then
+              return true
+            end
+          end
+        end
+      end
+    end
+  end,
+  on_refresh = function (self, event, target, player, data)
+    player.room:setPlayerMark(player, "js__zhubei_lost-turn", 1)
+  end,
+}
+local js__zhubei_targetmod = fk.CreateTargetModSkill{
+  name = "#js__zhubei_targetmod",
+  bypass_distances = function(self, player, skill, card, to)
+    return player:hasSkill("js__zhubei") and to:getMark("js__zhubei_lost-turn") > 0
+  end,
+}
+js__zhubei:addRelatedSkill(js__zhubei_targetmod)
+luxun:addSkill(js__zhubei)
 Fk:loadTranslationTable{
   ["js__luxun"] = "陆逊",
+  ["js__youjin"] = "诱进",
+  [":js__youjin"] = "出牌阶段开始时，你可以与一名角色拼点，双方本回合不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对没赢的角色使用一张【杀】。",
+  ["#js__youjin-choose"] = "诱进：可以拼点，双方不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对对方使用【杀】",
+  ["@js__youjin-turn"] = "诱进",
+  ["js__dailao"] = "待劳",
+  [":js__dailao"] = "出牌阶段，若你没有可以使用的手牌，你可以展示所有手牌并摸两张牌，然后结束回合。",
+  ["js__zhubei"] = "逐北",
+  [":js__zhubei"] = "锁定技，你对本回合受到过伤害/失去过最后手牌的角色造成的伤害+1/使用牌无距离次数限制。",
 }
 
 --local sunjun = General(extension, "js__sunjun", "wu", 4)
