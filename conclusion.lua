@@ -275,7 +275,7 @@ local yinlve = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "yinlveUsed" .. data.damageType .. "-round", 1)
-    
+
     local logic = room.logic
     local turn = logic:getCurrentEvent():findParent(GameEvent.Turn, true)
     if turn then
@@ -285,18 +285,18 @@ local yinlve = fk.CreateTriggerSkill{
             type = "#GainAnExtraTurn",
             from = player.id
           }
-        
+
           local current = room.current
           room.current = player
-        
+
           player.tag["_extra_turn_count"] = player.tag["_extra_turn_count"] or {}
           local ex_tag = player.tag["_extra_turn_count"]
           table.insert(ex_tag, "yinlveTurn" .. data.damageType)
 
           GameEvent(GameEvent.Turn, player):exec()
-        
+
           table.remove(ex_tag)
-        
+
           room.current = current
         end
       )
@@ -341,8 +341,8 @@ Fk:loadTranslationTable{
 }
 
 local liuyong = General(extension, "js__liuyong", "shu", 3)
-local js__danxin = fk.CreateActiveSkill{
-  name = "js__danxin",
+local js__danxinn = fk.CreateActiveSkill{
+  name = "js__danxinn",
   anim_type = "control",
   card_num = 1,
   min_target_num = 1,
@@ -374,27 +374,27 @@ local js__danxin = fk.CreateActiveSkill{
       from = player.id,
       tos = table.map(effect.tos, function (id) return {id} end),
       card = c,
-      extra_data = {js__danxin_user = player.id},
+      extra_data = {js__danxinn_user = player.id},
     }
     room:useCard(use)
     if player.dead then return end
     for _, pid in ipairs(TargetGroup:getRealTargets(use.tos)) do
       local p = room:getPlayerById(pid)
       if not p.dead then
-        room:addPlayerMark(p, "js__danxin_"..player.id.."-turn")
+        room:addPlayerMark(p, "js__danxinn_"..player.id.."-turn")
       end
     end
   end,
 }
-local js__danxin_delay = fk.CreateTriggerSkill{
-  name = "#js__danxin_delay",
+local js__danxinn_delay = fk.CreateTriggerSkill{
+  name = "#js__danxinn_delay",
   events = {fk.AfterCardsMove},
   mute = true,
   can_trigger = function(self, event, target, player, data)
     local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
     if e then
       local use = e.data[1]
-      if table.contains(use.card.skillNames, "js__danxin") then
+      if table.contains(use.card.skillNames, "js__danxinn") then
         local ids = {}
         for _, move in ipairs(data) do
           if move.toArea == Card.PlayerHand and move.to == player.id then
@@ -419,7 +419,7 @@ local js__danxin_delay = fk.CreateTriggerSkill{
     local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
     if e then
       local use = e.data[1]
-      local me = room:getPlayerById(use.extra_data.js__danxin_user)
+      local me = room:getPlayerById(use.extra_data.js__danxinn_user)
       me:showCards(ids)
       if not player.dead and player:isWounded() and table.find(ids, function (id)
         return Fk:getCardById(id).suit == Card.Heart
@@ -429,15 +429,15 @@ local js__danxin_delay = fk.CreateTriggerSkill{
     end
   end,
 }
-local js__danxin_distance = fk.CreateDistanceSkill{
-  name = "#js__danxin_distance",
+local js__danxinn_distance = fk.CreateDistanceSkill{
+  name = "#js__danxinn_distance",
   correct_func = function(self, from, to)
-    return to:getMark("js__danxin_"..from.id.."-turn")
+    return to:getMark("js__danxinn_"..from.id.."-turn")
   end,
 }
-js__danxin:addRelatedSkill(js__danxin_distance)
-js__danxin:addRelatedSkill(js__danxin_delay)
-liuyong:addSkill(js__danxin)
+js__danxinn:addRelatedSkill(js__danxinn_distance)
+js__danxinn:addRelatedSkill(js__danxinn_delay)
+liuyong:addSkill(js__danxinn)
 local js__fengxiang = fk.CreateTriggerSkill{
   name = "js__fengxiang",
   events = {fk.Damaged},
@@ -530,21 +530,21 @@ local js__fengxiang = fk.CreateTriggerSkill{
 liuyong:addSkill(js__fengxiang)
 Fk:loadTranslationTable{
   ["js__liuyong"] = "刘永",
-  ["js__danxin"] = "丹心",
-  [":js__danxin"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
-  ["#js__danxin_delay"] = "丹心",
+  ["js__danxinn"] = "丹心",
+  [":js__danxinn"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
+  ["#js__danxinn_delay"] = "丹心",
   ["js__fengxiang"] = "封乡",
   [":js__fengxiang"] = "锁定技，当你受到伤害后，你须与一名其他角色交换装备区内的所有牌，若你装备区内的牌数因此而减少，你摸等同于减少数的牌。",
   ["#js__fengxiang-choose"] = "封乡：与一名其他角色交换装备区内的所有牌",
 }
 
---local guoxun = General(extension, "js__guoxun", "wei", 4)
-local js__fusha = fk.CreateActiveSkill{
-  name = "js__fusha",
+-- local guoxun = General(extension, "js__guoxiu", "wei", 4)
+local fusha = fk.CreateActiveSkill{
+  name = "fusha",
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
-  prompt = function() return "#js__fusha-prompt" end,
+  prompt = "#fusha-prompt",
   card_filter = Util.FalseFunc,
   frequency = Skill.Limited,
   can_use = function(self, player)
@@ -558,16 +558,16 @@ local js__fusha = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])  
     local num = math.min(player:getAttackRange(), #room.alive_players)
-     room:damage{
-        from = player,
-        to = target,
-        damage = num,
-        skillName = self.name,
-     }
+    room:damage{
+      from = player,
+      to = target,
+      damage = num,
+      skillName = self.name,
+    }
   end
 }
 Fk:loadTranslationTable{
-  ["js__guoxun"] = "郭循",
+  ["js__guoxiu"] = "郭循",
   ["eqian"] = "遏前",
   [":eqian"] = "结束阶段，你可以【蓄谋】任意次;当你使用【杀】或【蓄谋】牌指定其他角色为唯一目标后，"..
   "你可以令此牌不计入次数限制且获得目标一张牌，然后目标可以令你本回合计算与其的距离+2。",
@@ -575,7 +575,7 @@ Fk:loadTranslationTable{
   [":fusha"] = "限定技，出牌阶段，若你的攻击范围内仅有一名角色，你可以对其造成X点伤害(X为你的攻击范围且至多为游戏人数)。",
 }
 
- --local gaoxiang = General(extension, "js__gaoxiang", "shu", 4)
+-- local gaoxiang = General(extension, "js__gaoxiang", "shu", 4)
 Fk:loadTranslationTable{
   ["js__gaoxiang"] = "高翔",
   ["js__chiying"] = "驰应",
@@ -583,8 +583,8 @@ Fk:loadTranslationTable{
 }
 
 local zhaoyun = General(extension, "js__zhaoyun", "shu", 4)
-local js__longlin = fk.CreateTriggerSkill{
-  name = "js__longlin",
+local longlin = fk.CreateTriggerSkill{
+  name = "longlin",
   anim_type = "offensive",
   events ={fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
@@ -593,7 +593,7 @@ local js__longlin = fk.CreateTriggerSkill{
     end
   end,
   on_cost = function(self, event, target, player, data)
-     local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, ".", "#js__longlin-invoke::"..data.from..":"..data.card:toLogString(), true)
+    local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, nil, "#longlin-invoke::"..data.from..":"..data.card:toLogString(), true)
     if #card > 0 then
       self.cost_data = card
       return true
@@ -603,19 +603,18 @@ local js__longlin = fk.CreateTriggerSkill{
     local room = player.room
     local from = room:getPlayerById(data.from)
     room:throwCard(self.cost_data, self.name, player, player)
-   data.nullifiedTargets = table.map(room.players, Util.IdMapper)
-   if not target:isProhibited(player, Fk:cloneCard("duel")) and room:askForSkillInvoke(from, self.name, nil, "#js__longlin-duel::"..player.id) then
-     room:useVirtualCard("duel", nil, target, player, self.name, true)
-   end
+    data.nullifiedTargets = table.map(room.players, Util.IdMapper)
+    if not target:isProhibited(player, Fk:cloneCard("duel")) and room:askForSkillInvoke(from, self.name, nil, "#longlin-duel::"..player.id) then
+      room:useVirtualCard("duel", nil, target, player, self.name, true)
+    end
   end,
     refresh_events = {fk.Damage},
-  can_refresh = function(self, event, target, player, data)
-      return player:hasSkill(self.name, true) and data.card and data.card.trueName == "duel" and data.to ~= player and not data.to.dead and table.contains(data.card.skillNames, self.name)
-  end,
-  on_refresh = function(self, event, target, player, data)
-      local room = player.room
-      room:setPlayerMark(data.to, "@@longlin-phase", 1) 
-  end,
+    can_refresh = function(self, event, target, player, data)
+      return player:hasSkill(self, true) and data.card and data.card.trueName == "duel" and data.to ~= player and not data.to.dead and table.contains(data.card.skillNames, self.name)
+    end,
+    on_refresh = function(self, event, target, player, data)
+      player.room:setPlayerMark(data.to, "@@longlin-phase", 1)
+    end,
 }
 local longlin_prohibit = fk.CreateProhibitSkill{
   name = "#longlin_prohibit",
@@ -628,8 +627,8 @@ local longlin_prohibit = fk.CreateProhibitSkill{
     end
   end,
 }
-local js__zhendan = fk.CreateViewAsSkill{
-  name = "js__zhendan",
+local zhendan = fk.CreateViewAsSkill{
+  name = "zhendan",
   pattern = ".|.|.|.|.|basic",
   prompt = "zhendan_vies",
   interaction = function()
@@ -654,66 +653,66 @@ local js__zhendan = fk.CreateViewAsSkill{
     if not self.interaction.data then return end
     if #cards ~= 1 then
       return nil
-    end  
+    end
     local card = Fk:cloneCard(self.interaction.data)
     card:addSubcards(cards)
     card.skillName = self.name
     return card
   end,
- enabled_at_play = function(self, player)
+  enabled_at_play = function(self, player)
     return player:getMark("@@zhendan-round") == 0
- end,
- enabled_at_response = function(self, player)
-    return player:getMark("@@zhendan-round") == 0 
- end,
+  end,
+  enabled_at_response = function(self, player)
+    return player:getMark("@@zhendan-round") == 0
+  end,
 }
-local js__zhendan__trigger = fk.CreateTriggerSkill{
-  name = "js__zhendan__trigger",
+local zhendan_trigger = fk.CreateTriggerSkill{
+  name = "zhendan_trigger",
   anim_type = "masochism",
-  main_skill = js__zhendan,
+  main_skill = zhendan,
   mute = true,
   events = {fk.Damaged, fk.RoundEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill("js__zhendan") then
+    if player:hasSkill("zhendan") then
       if event == fk.Damaged and target ~=player then return false end
       return player:getMark("@@zhendan-round") == 0      
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-   player:broadcastSkillInvoke("js__zhendan")
-    player.room:notifySkillInvoked(player, "js__zhendan", "masochism")
+    player:broadcastSkillInvoke("zhendan")
+    player.room:notifySkillInvoked(player, "zhendan", "masochism")
     local num = #player.room.logic:getEventsOfScope(GameEvent.Turn, 99, function (e)
       return true
     end, Player.HistoryRound)
-    player:drawCards(math.min(num, 5), js__zhendan.name)
+    player:drawCards(math.min(num, 5), zhendan.name)
     player.room:setPlayerMark(player, "@@zhendan-round", 1)
   end,
 }
-js__longlin:addRelatedSkill(longlin_prohibit)
-js__zhendan:addRelatedSkill(js__zhendan__trigger)
-zhaoyun:addSkill(js__longlin)
-zhaoyun:addSkill(js__zhendan)
+longlin:addRelatedSkill(longlin_prohibit)
+zhendan:addRelatedSkill(zhendan_trigger)
+zhaoyun:addSkill(longlin)
+zhaoyun:addSkill(zhendan)
 Fk:loadTranslationTable{
   ["js__zhaoyun"] = "赵云",
-  ["js__longlin"] = "龙临",
-  [":js__longlin"] = "当其他角色于出牌阶段首次使用【杀】指定目标后，你可以弃置一张牌令此【杀】无效，然后其可以视为对你使用一张【决斗】，你以此法造成伤害后，其本阶段不能再使用手牌。",
-  ["#js__longlin-invoke"] = "龙临:是否弃置一张牌，令%dest 使用的%arg 无效，然后其可以视为对你使用一张【决斗】 ",
-  ["#js__longlin-duel"] = "龙临:是否对%dest 视为使用一张【决斗】",
-  ["js__zhendan"] = "镇胆",
-  ["js__zhendan__trigger"] = "镇胆",
-  [":js__zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出;当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效(X为本轮所有角色执行过的回合数且至多为5)。",
+  ["longlin"] = "龙临",
+  [":longlin"] = "当其他角色于出牌阶段首次使用【杀】指定目标后，你可以弃置一张牌令此【杀】无效，然后其可以视为对你使用一张【决斗】，你以此法造成伤害后，其本阶段不能再使用手牌。",
+  ["#longlin-invoke"] = "龙临:是否弃置一张牌，令%dest 使用的%arg 无效，然后其可以视为对你使用一张【决斗】 ",
+  ["#longlin-duel"] = "龙临:是否对%dest 视为使用一张【决斗】",
+  ["zhendan"] = "镇胆",
+  ["zhendan_trigger"] = "镇胆",
+  [":zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出;当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效(X为本轮所有角色执行过的回合数且至多为5)。",
   ["zhendan_vies"] = "镇胆:你可以将一张非基本牌当做一张基本牌使用或打出",
-  ["@@longlin-phase"] = "龙临 不能使用手牌",
+  ["@@longlin-phase"] = "龙临 禁用手牌",
   ["@@zhendan-round"] = "镇胆 本轮失效",
 }
 
 local caofang = General(extension, "js__caofang", "wei", 3, 4)
-local js__zhaotu = fk.CreateViewAsSkill{
-  name = "js__zhaotu",
+local zhaotu = fk.CreateViewAsSkill{
+  name = "zhaotu",
   anim_type = "control",
   pattern = "indulgence",
-  prompt = "zhaotu_vies",
+  prompt = "#zhaotu",
   card_filter = function(self, to_select, selected)
     if #selected == 1 then return false end
     local card = Fk:getCardById(to_select)
@@ -732,24 +731,25 @@ local js__zhaotu = fk.CreateViewAsSkill{
     return player:usedSkillTimes(self.name, Player.HistoryRound) == 0
   end,
 }
-local js__zhaotu_trigger = fk.CreateTriggerSkill{
-  name = "#js__zhaotu_trigger",
+local zhaotu_trigger = fk.CreateTriggerSkill{
+  name = "#zhaotu_trigger",
   anim_type = "offensive",
   mute = true,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "indulgence" and #AimGroup:getAllTargets(data.tos) == 1 and table.contains(data.card.skillNames, "js__zhaotu")
+    return target == player and player:hasSkill(self) and data.card.trueName == "indulgence" and #AimGroup:getAllTargets(data.tos) == 1 and table.contains(data.card.skillNames, "zhaotu")
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
-   room:setPlayerMark(to, "@@zhaotu", 1)
-   to:gainAnExtraTurn(true)
+    room:setPlayerMark(to, "@@zhaotu", 1)
+    U.gainAnExtraTurn(to, true, "zhaotu")
   end,
+
   refresh_events = {fk.TurnStart},
   can_refresh = function(self, event, target, player, data)
-    return target:getMark("@@zhaotu") ~= 0 
+    return target:getMark("@@zhaotu") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
@@ -767,12 +767,12 @@ local zhaotu_maxcards = fk.CreateMaxCardsSkill {
     end
   end,
 }
-js__zhaotu:addRelatedSkill(zhaotu_maxcards)
-js__zhaotu:addRelatedSkill(js__zhaotu_trigger)
-local js__jingju = fk.CreateViewAsSkill{
-  name = "js__jingju",
+zhaotu:addRelatedSkill(zhaotu_maxcards)
+zhaotu:addRelatedSkill(zhaotu_trigger)
+local jingju = fk.CreateViewAsSkill{
+  name = "jingju",
   pattern = ".|.|.|.|.|basic",
-interaction = function()
+  interaction = function()
     local names = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
       local card = Fk:getCardById(id)
@@ -804,78 +804,48 @@ interaction = function()
   enabled_at_play = function(self, player)
     return table.find(Fk:currentRoom().alive_players, function(p) return p:canMoveCardsInBoardTo(player, "j") end)
   end,
-  enabled_at_response = function(self, player)
+  enabled_at_response = function(self, player, response)
     return not response and
       table.find(Fk:currentRoom().alive_players, function(p) return p:canMoveCardsInBoardTo(player, "j") end)
   end,
 }
 
-local js__weizhui = fk.CreateTriggerSkill{
-  name = "js__weizhui$",
+local weizhui = fk.CreateTriggerSkill{
+  name = "weizhui$",
   events = {fk.EventPhaseStart},
-  anim_type = "offensive",
+  anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not target:isNude() and target.kingdom == "wei" then
-      return true
-    end
+    return player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not target:isNude() and target.kingdom == "wei" and U.canUseCardTo(player.room, target, player, Fk:cloneCard("dismantlement"))
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askForUseActiveSkill(player, "js__weizhui_active", "#js__weizhui-use:"..player.id, true,
-    {js__weizhui_victim = player.id}, true)
-    if success and dat then
-      self.cost_data = dat.cards[1]
+    local card = room:askForCard(target, 1, 1, true, self.name, true, ".|.|spade,club", "#weizhui-use:"..player.id)
+    if #card > 0 then
+      self.cost_data = card
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local subcard = self.cost_data
-    local card = Fk:cloneCard( "dismantlement")
-    card:addSubcard(subcard)
-    card.skillName = self.name
-    room:useCard{
-      from = target.id,
-      tos =  {{player.id}},
-      card = card,
-    }
+    player.room:useVirtualCard("dismantlement", self.cost_data, target, player, self.name, true)
   end,
 }
-local js__weizhui_active = fk.CreateActiveSkill{
-  name = "js__weizhui_active",
-  anim_type = "offensive",
-  card_num = 1,
-  target_num = 0,
-  card_filter = function(self, to_select, selected)
-    if #selected == 0 and Fk:getCardById(to_select).color == Card.Black then
-      local card = Fk:cloneCard( "dismantlement")
-      card:addSubcard(to_select)
-      card.skillName = "js__weizhui"
-      local to = Fk:currentRoom():getPlayerById(self.js__weizhui_victim)
-      return not Self:prohibitUse(card) and not Self:isProhibited(to, card)
-      and card.skill:modTargetFilter(to.id, {}, Self.id, card, false)
-    end
-  end,
-}
-Fk:addSkill(js__weizhui_active)
-caofang:addSkill(js__zhaotu)
-caofang:addSkill(js__jingju)
-caofang:addSkill(js__weizhui)
+caofang:addSkill(zhaotu)
+caofang:addSkill(jingju)
+caofang:addSkill(weizhui)
 Fk:loadTranslationTable{
   ["js__caofang"] = "曹芳",
-  ["js__zhaotu"] = "招图",
-  [":js__zhaotu"] = "每轮限一次，你可以将一张红色非锦囊牌当做【乐不思蜀】使用，此回合结束后，目标执行一个手牌上限-2的回合。",
-  ["zhaotu_vies"] = "招图:你可以将一张红色非锦囊牌当做【乐不思蜀】使用。",
+  ["zhaotu"] = "招图",
+  [":zhaotu"] = "每轮限一次，你可以将一张红色非锦囊牌当做【乐不思蜀】使用，此回合结束后，目标执行一个手牌上限-2的回合。",
+  ["#zhaotu"] = "招图：你可以将一张红色非锦囊牌当做【乐不思蜀】使用",
   ["@@zhaotu"] = "招图",
-  ["@@zhaotu-turn"] = "招图 额外回合",
-  ["js__jingju"] = "惊惧",
-  [":js__jingju"] = "你可以将其他角色判定区里的一张牌移至你的判定区里，视为你使用一张基本牌。",
+  ["@@zhaotu-turn"] = "招图",
+  ["jingju"] = "惊惧",
+  [":jingju"] = "你可以将其他角色判定区里的一张牌移至你的判定区里，视为你使用一张基本牌。",
   ["#jingju-choose"] = "惊惧：请选择你要移动判定区牌的角色",
-  ["js__weizhui"] = "危坠",
-  [":js__weizhui"] = "主公技，其他魏势力角色的结束阶段，其可以将一张黑色牌当做【过河拆桥】对你使用。",
-  ["#js__weizhui-use"] = "危坠：你可以将一张黑色牌当【过河拆桥】对 %src 使用",
-  ["js__weizhui_active"] = "危坠",
-  
+  ["weizhui"] = "危坠",
+  [":weizhui"] = "主公技，其他魏势力角色的结束阶段，其可以将一张黑色牌当做【过河拆桥】对你使用。",
+  ["#weizhui-use"] = "危坠：你可以将一张黑色牌当【过河拆桥】对 %src 使用",
+  ["weizhui_active"] = "危坠",
 }
 
 --local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
