@@ -7,6 +7,25 @@ Fk:loadTranslationTable{
   ["conclusion"] = "江山如故·合",
 }
 
+local getShade = function (room, n)
+  local ids = {}
+  for _, id in ipairs(room.void) do
+    if n <= 0 then break end
+    if Fk:getCardById(id).name == "shade" then
+      room:setCardMark(Fk:getCardById(id), MarkEnum.DestructIntoDiscard, 1)
+      table.insert(ids, id)
+      n = n - 1
+    end
+  end
+  while n > 0 do
+    local card = room:printCard("shade", Card.Spade, 1)
+    room:setCardMark(card, MarkEnum.DestructIntoDiscard, 1)
+    table.insert(ids, card.id)
+    n = n - 1
+  end
+  return ids
+end
+
 local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
 Fk:loadTranslationTable{
   ["js__zhugeliang"] = "诸葛亮",
