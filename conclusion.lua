@@ -899,7 +899,7 @@ local longlin_prohibit = fk.CreateProhibitSkill{
 local zhendan = fk.CreateViewAsSkill{
   name = "zhendan",
   pattern = ".|.|.|.|.|basic",
-  prompt = "zhendan_vies",
+  prompt = "#zhendan_vies",
   interaction = function()
     local names = {}
     for _, id in ipairs(Fk:getAllCardIds()) do
@@ -936,7 +936,7 @@ local zhendan = fk.CreateViewAsSkill{
   end,
 }
 local zhendan_trigger = fk.CreateTriggerSkill{
-  name = "zhendan_trigger",
+  name = "#zhendan_trigger",
   anim_type = "masochism",
   main_skill = zhendan,
   mute = true,
@@ -969,9 +969,9 @@ Fk:loadTranslationTable{
   ["#longlin-invoke"] = "龙临:是否弃置一张牌，令%dest 使用的%arg 无效，然后其可以视为对你使用一张【决斗】 ",
   ["#longlin-duel"] = "龙临:是否对%dest 视为使用一张【决斗】",
   ["zhendan"] = "镇胆",
-  ["zhendan_trigger"] = "镇胆",
+  ["#zhendan_trigger"] = "镇胆",
   [":zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出;当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效(X为本轮所有角色执行过的回合数且至多为5)。",
-  ["zhendan_vies"] = "镇胆:你可以将一张非基本牌当做一张基本牌使用或打出",
+  ["#zhendan_vies"] = "镇胆:你可以将一张非基本牌当做一张基本牌使用或打出",
   ["@@longlin-phase"] = "龙临 禁用手牌",
   ["@@zhendan-round"] = "镇胆 本轮失效",
 }
