@@ -119,7 +119,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
         special_cards = player.special_cards,
       })
       room:setPlayerMark(player, "wentianCards", topCardIds)
-      local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", true, nil, true)
+      local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", false, nil, false)
       room:setPlayerMark(player, "wentianCards", 0)
       player.special_cards["wentian"] = topCardIds
       player:doNotify("ChangeSelf", json.encode {
@@ -130,7 +130,16 @@ local wentianTrigger = fk.CreateTriggerSkill{
 
       local toGive = ret and ret.cards[1] or topCardIds[1]
       table.removeOne(topCardIds, toGive)
-      room:moveCardTo(toGive, Card.PlayerHand, room:getPlayerById(ret.targets[1]), fk.ReasonGive, "wentian", nil, false, player.id)
+      room:moveCardTo(
+        toGive,
+        Card.PlayerHand,
+        ret and room:getPlayerById(ret.targets[1]) or room:getOtherPlayers(player)[1],
+        fk.ReasonGive,
+        "wentian",
+        nil,
+        false,
+        player.id
+      )
 
       room:askForGuanxing(player, topCardIds, nil, nil, "wentian")
     end
@@ -161,8 +170,11 @@ local chushi = fk.CreateActiveSkill{
   can_use = function(self, player)
     return
       player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
-      (not player:isKongcheng() or
-      table.find(Fk:currentRoom().alive_players, function(p) return p.role == "lord" and not p:isKongcheng() end))
+      table.find(Fk:currentRoom().alive_players, function(p) return p.role == "lord" end) and
+      (
+        not player:isKongcheng() or
+        table.find(Fk:currentRoom().alive_players, function(p) return p.role == "lord" and not p:isKongcheng() end)
+      )
   end,
   card_filter = function(self, to_select, selected)
     return false
@@ -335,10 +347,248 @@ Fk:loadTranslationTable{
 
 zhugeliang:addSkill(yinlve)
 
- --local jiangwei = General(extension, "js__jiangwei", "wu", 4)
+local jiangwei = General(extension, "js__jiangwei", "shu", 4)
 Fk:loadTranslationTable{
   ["js__jiangwei"] = "姜维",
 }
+
+local jinfa = fk.CreateActiveSkill{
+  name = "js__jinfa",
+  anim_type = "drawcard",
+  card_num = 1,
+  target_num = 0,
+  prompt = "#js__jinfa",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+  end,
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
+  end,
+  target_filter = function(self, to_select, selected)
+    return false
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() and p.maxHp <= player.maxHp end)
+
+    player:showCards(effect.cards)
+    room:delay(1500)
+
+    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    local discussion = U.Discussion{
+      reason = self.name,
+      from = player,
+      tos = targets,
+      results = {},
+      extra_data = { jinfaCard = effect.cards[1] }
+    }
+  end,
+}
+local jinfaTrigger = fk.CreateTriggerSkill{
+  name = "#js__jinfa_trigger",
+  anim_type = "drawcard",
+  events = {"fk.DiscussionResultConfirmed"},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and data.reason == "js__jinfa" and data.extra_data.jinfaCard
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if data.color == Fk:getCardById(data.extra_data.jinfaCard):getColorString() then
+      local toDraw = table.filter(data.tos, function(p) return p:isAlive() and p:getHandcardNum() < p.maxHp end)
+      if #toDraw > 0 then
+        local result = room:askForChoosePlayers(
+          player, table.map(
+            toDraw,
+            function(p)
+              return p.id
+            end
+          ), 1, 2, "#js__jinfa-ask", "js__jinfa", true
+        )
+
+        if #result == 0 then
+          result = toDraw[1]
+        end
+
+        room:sortPlayersByAction(result)
+        for _, playerId in ipairs(result) do
+          local p = room:getPlayerById(playerId)
+          p:drawCards(p.maxHp - p:getHandcardNum(), "js__jinfa")
+        end
+      end
+    else
+      room:moveCards({
+        ids = getShade(room, 2),
+        to = player.id,
+        toArea = Card.PlayerHand,
+        moveReason = fk.ReasonPrey,
+        proposer = player.id,
+        skillName = "js__jinfa",
+        moveVisible = true,
+      })
+    end
+
+    local hasSameOpinion = false
+    for playerId, result in pairs(data.results) do
+      if playerId ~= player.id and result.opinion == data.results[player.id].opinion then
+        hasSameOpinion = true
+        break
+      end
+    end
+
+    if not hasSameOpinion then
+      local kingdoms = {"wei", "shu", "wu", "qun", "jin", "Cancel"}
+      local choices = table.simpleClone(kingdoms)
+      table.removeOne(choices, player.kingdom)
+      local choice = player.room:askForChoice(player, choices, "js__jinfa", "#js__jinfa-change", false, kingdoms)
+
+      if choice ~= "Cancel" then
+        room:changeKingdom(player, choice, true)
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["js__jinfa"] = "矜伐",
+  ["#js__jinfa_trigger"] = "矜伐",
+  [":js__jinfa"] = "出牌阶段限一次，你可以展示一张手牌，然后与体力上限不大于你的所有角色议事，当此议事结果确定后，若结果与你展示牌的颜色：相同，" ..
+  "你令至多两名参与议事的角色将手牌摸至体力上限；不同，你获得两张【影】。最后若没有其他角色与你意见相同，则你可变更势力。",
+  ["#js__jinfa"] = "矜伐：你可展示一张手牌并议事，结果和展示牌相同则摸牌，不同则获得【影】",
+  ["#js__jinfa-ask"] = "矜伐：你可令其中至多两名角色将手牌摸至体力上限",
+  ["#js__jinfa-change"] = "矜伐：你可以变更势力",
+}
+
+jinfa:addRelatedSkill(jinfaTrigger)
+jiangwei:addSkill(jinfa)
+
+local fumouViewas = fk.CreateViewAsSkill{
+  name = "js__fumou_viewas",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).name == "shade"
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("unexpectation")
+    card:addSubcard(cards[1])
+    card.skillName = "js__fumou"
+    return card
+  end,
+}
+Fk:addSkill(fumouViewas)
+local fumou = fk.CreateTriggerSkill{
+  name = "js__fumou",
+  anim_type = "offensive",
+  events = {"fk.DiscussionFinished"},
+  can_trigger = function(self, event, target, player, data)
+    if not (player:hasSkill(self) and data.results[player.id]) then
+      return false
+    end
+
+    for playerId, result in pairs(data.results) do
+      if player.room:getPlayerById(playerId):isAlive() and result.opinion ~= data.results[player.id].opinion then
+        return true
+      end
+    end
+
+    return false
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    local diffResults = {}
+    local diffPlayerIds = {}
+    for playerId, result in pairs(data.results) do
+      if player.room:getPlayerById(playerId):isAlive() and result.opinion ~= data.results[player.id].opinion then
+        diffResults[playerId] = result
+        table.insert(diffPlayerIds, playerId)
+      end
+    end
+
+    room:doIndicate(player.id, diffPlayerIds)
+
+    for playerId, result in pairs(diffResults) do
+      if result.toCard.color ~= Card.NoColor then
+        local to = room:getPlayerById(playerId)
+        local colorsProhibited = U.getMark(to, "@js__fumouDebuff-turn")
+        table.insert(colorsProhibited, result.toCard:getColorString())
+
+        room:setPlayerMark(to, "@js__fumouDebuff-turn", colorsProhibited)
+      end
+    end
+
+    room:setPlayerMark(player, "js__fumou_targets", diffPlayerIds)
+    local success, dat = player.room:askForUseActiveSkill(player, "js__fumou_viewas", "#js__fumou-use", true)
+    room:setPlayerMark(player, "js__fumou_targets", 0)
+    if success then
+      local card = Fk.skills["js__fumou_viewas"]:viewAs(dat.cards)
+      room:useCard{
+        from = player.id,
+        tos = table.map(dat.targets, function(id) return {id} end),
+        card = card,
+      }
+    end
+  end,
+}
+local fumouProhibit = fk.CreateProhibitSkill{
+  name = "#js__fumou_prohibit",
+  prohibit_use = function(self, player, card)
+    return card and table.contains(U.getMark(player, "@js__fumouDebuff-turn"), card:getColorString())
+  end,
+  prohibit_response = function(self, player, card)
+    return card and table.contains(U.getMark(player, "@js__fumouDebuff-turn"), card:getColorString())
+  end,
+  is_prohibited = function(self, from, to, card)
+    return card and table.contains(card.skillNames, "js__fumou") and not table.contains(U.getMark(from, "js__fumou_targets"), to.id)
+  end,
+}
+Fk:loadTranslationTable{
+  ["js__fumou"] = "复谋",
+  [":js__fumou"] = "魏势力技，当你参与的议事结束后，所有与你意见不同的角色本回合内不能使用或打出其意见牌颜色的牌，然后" ..
+  "你可将一张【影】当【出其不意】对其中一名角色使用。",
+  ["@js__fumouDebuff-turn"] = "复谋",
+  ["js__fumou_viewas"] = "复谋",
+  ["#js__fumou-use"] = "复谋：你可将一张【影】当【出其不意】对其中一名角色使用",
+}
+
+fumou:addRelatedSkill(fumouProhibit)
+fumou:addAttachedKingdom("wei")
+jiangwei:addSkill(fumou)
+
+local xuanfeng = fk.CreateViewAsSkill{
+  name = "js__xuanfeng",
+  anim_type = "offensive",
+  pattern = "stab__slash",
+  prompt = "#js__xuanfeng-viewas",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).name == "shade"
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("stab__slash")
+    card:addSubcard(cards[1])
+    card.skillName = self.name
+    return card
+  end,
+}
+local xuanfengBuff = fk.CreateTargetModSkill{
+  name = "#js__xuanfeng_buff",
+  bypass_times = function(self, player, skill, scope, card, to)
+    return card and card.name == "stab__slash" and table.contains(card.skillNames, "js__xuanfeng")
+  end,
+  bypass_distances = function(self, player, skill, card, to)
+    return card and card.name == "stab__slash" and table.contains(card.skillNames, "js__xuanfeng")
+  end,
+}
+Fk:loadTranslationTable{
+  ["js__xuanfeng"] = "选锋",
+  [":js__xuanfeng"] = "蜀势力技，你可以将一张【影】当无距离次数限制的刺【杀】使用。",
+  ["#js__xuanfeng-viewas"] = "选锋：你可将一张【影】当无距离次数限制的刺【杀】使用",
+}
+
+xuanfeng:addRelatedSkill(xuanfengBuff)
+xuanfeng:addAttachedKingdom("shu")
+jiangwei:addSkill(xuanfeng)
 
 local liuyong = General(extension, "js__liuyong", "shu", 3)
 local js__danxinn = fk.CreateActiveSkill{
