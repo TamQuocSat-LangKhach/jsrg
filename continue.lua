@@ -596,8 +596,10 @@ local wuchang = fk.CreateTriggerSkill{
     if player:hasSkill(self) then
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
-          if move.to == player.id and move.from and move.from ~= player.id and move.toArea == Card.PlayerHand then
-            return player.room:getPlayerById(move.from).kingdom ~= player.kingdom
+          if move.to == player.id and move.from and move.from ~= player.id and move.toArea == Card.PlayerHand and player.room:getPlayerById(move.from).kingdom ~= player.kingdom then
+            if table.find(move.moveInfo, function(info) return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip end) then
+              return true
+            end
           end
         end
       else
@@ -610,7 +612,8 @@ local wuchang = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke(self.name)
     if event == fk.AfterCardsMove then
       for _, move in ipairs(data) do
-        if move.to == player.id and move.from and move.from ~= player.id and move.toArea == Card.PlayerHand then
+        if move.to == player.id and move.from and move.from ~= player.id and move.toArea == Card.PlayerHand
+        and table.find(move.moveInfo, function(info) return info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip end) then
           local p = room:getPlayerById(move.from)
           if p.kingdom ~= player.kingdom then
             room:notifySkillInvoked(player, self.name, "special")
@@ -700,7 +703,7 @@ lvbu:addSkill(chengxu)
 Fk:loadTranslationTable{
   ["js__lvbu"] = "吕布",
   ["wuchang"] = "无常",
-  [":wuchang"] = "当你得到其他角色的牌后，你变更势力至与其相同；当你使用【杀】或【决斗】对势力与你相同的角色造成伤害时，你令此伤害+1，然后你变更势力至群。",
+  [":wuchang"] = "锁定技，当你得到其他角色的牌后，你变更势力至与其相同；当你使用【杀】或【决斗】对势力与你相同的角色造成伤害时，你令此伤害+1，然后你变更势力至群。",
   ["qingjiaol"] = "轻狡",
   [":qingjiaol"] = "群势力技，出牌阶段各限一次，你可以将一张牌当【推心置腹】/【趁火打劫】对一名手牌数大于/小于你的角色使用。",
   ["chengxu"] = "乘虚",
