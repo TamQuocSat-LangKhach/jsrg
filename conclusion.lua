@@ -140,7 +140,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
       room:setPlayerMark(player, "wentianCards", topCardIds)
       local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", false, nil, false)
       room:setPlayerMark(player, "wentianCards", 0)
-      player.special_cards["wentian"] = topCardIds
+      player.special_cards["wentian"] = nil
       player:doNotify("ChangeSelf", json.encode {
         id = player.id,
         handcards = player:getCardIds("h"),
@@ -857,9 +857,34 @@ local longlin = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events ={fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and target ~= player and target.phase == Player.Play then
-      return data.card.trueName == "slash" and player:usedCardTimes("slash",Player.HistoryPhase) <= 1 and data.firstTarget and not player:isNude()
+    if
+      player:hasSkill(self) and
+      target ~= player and
+      target.phase == Player.Play and
+      data.card.trueName == "slash" and
+      data.firstTarget and
+      not player:isNude()
+    then
+      local room = player.room
+      local logic = room.logic
+
+      local mark = player:getMark("longlin_record-turn")
+      if mark == 0 then
+        logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+          local use = e.data[1]
+          if use.card.trueName == "slash" and use.from == target.id then
+            mark = e.id
+            room:setPlayerMark(player, "longlin_record-turn", mark)
+            return true
+          end
+          return false
+        end, Player.HistoryTurn)
+      end
+
+      return mark == logic:getCurrentEvent().id
     end
+
+    return false
   end,
   on_cost = function(self, event, target, player, data)
     local card = player.room:askForDiscard(player, 1, 1, true, self.name, true, nil, "#longlin-invoke::"..data.from..":"..data.card:toLogString(), true)
@@ -916,7 +941,7 @@ local zhendan = fk.CreateViewAsSkill{
   card_filter = function(self, to_select, selected)
     if #selected == 1 then return false end
     local card = Fk:getCardById(to_select)
-    return card.type ~= Card.TypeBasic
+    return card.type ~= Card.TypeBasic and Fk:currentRoom():getCardArea(to_select) == Player.Hand
   end,
   view_as = function(self, cards)
     if not self.interaction.data then return end
@@ -965,12 +990,12 @@ zhaoyun:addSkill(zhendan)
 Fk:loadTranslationTable{
   ["js__zhaoyun"] = "赵云",
   ["longlin"] = "龙临",
-  [":longlin"] = "当其他角色于出牌阶段首次使用【杀】指定目标后，你可以弃置一张牌令此【杀】无效，然后其可以视为对你使用一张【决斗】，你以此法造成伤害后，其本阶段不能再使用手牌。",
+  [":longlin"] = "当其他角色于其出牌阶段内首次使用【杀】指定目标后，你可以弃置一张牌令此【杀】无效，然后其可以视为对你使用一张【决斗】，你以此法造成伤害后，其本阶段不能再使用手牌。",
   ["#longlin-invoke"] = "龙临:是否弃置一张牌，令%dest 使用的%arg 无效，然后其可以视为对你使用一张【决斗】 ",
   ["#longlin-duel"] = "龙临:是否对%dest 视为使用一张【决斗】",
   ["zhendan"] = "镇胆",
   ["#zhendan_trigger"] = "镇胆",
-  [":zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出;当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效(X为本轮所有角色执行过的回合数且至多为5)。",
+  [":zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出；当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效（X为本轮所有角色执行过的回合数且至多为5）。",
   ["#zhendan_vies"] = "镇胆:你可以将一张非基本牌当做一张基本牌使用或打出",
   ["@@longlin-phase"] = "龙临 禁用手牌",
   ["@@zhendan-round"] = "镇胆 本轮失效",
