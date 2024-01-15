@@ -77,5 +77,40 @@ Fk:loadTranslationTable{
 	[":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏。<br/>当一名角色获得【影】时，均为从游戏外获得♠A的【影】。",
 }
 
-
+local demobilizedSkill = fk.CreateActiveSkill{
+  name = "demobilized_skill",
+  prompt = "#demobilized_skill",
+  target_num = 1,
+  mod_target_filter = function(self, to_select, selected, user, card)
+    local player = Fk:currentRoom():getPlayerById(to_select)
+    return #player:getCardIds("e") > 0
+  end,
+  target_filter = function(self, to_select, selected, _, card)
+    if #selected < self:getMaxTargetNum(Self, card) then
+      return self:modTargetFilter(to_select, selected, Self.id, card)
+    end
+  end,
+  on_effect = function(self, room, effect)
+    local from = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.to)
+    if from.dead or to.dead or #to:getCardIds("e") == 0 then return end
+    local cards_id = to:getCardIds("e")
+    local dummy = Fk:cloneCard("slash")
+    dummy:addSubcards(cards_id)
+    room:obtainCard(to, dummy, false, fk.ReasonPrey)
+  end
+}
+local demobilized = fk.CreateTrickCard{
+  name = "&demobilized",
+  suit = Card.Spade,
+  number = 3,
+  skill = demobilizedSkill,
+}
+extension:addCard(demobilized)
+Fk:loadTranslationTable{
+  ["demobilized"] = "解甲归田",
+  [":demobilized"] = "锦囊牌<br /><b>时机</b>：出牌阶段<br /><b>目标</b>：一名装备区内有牌的角色。<br /><b>效果</b>：目标获得其装备区内的所有牌。",
+  ["demobilized_skill"] = "解甲归田",
+  ["#demobilized_skill"] = "选择一名装备区内有牌的角色，目标角色获得其装备区内的所有牌",
+}
 return extension
