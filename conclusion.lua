@@ -1297,10 +1297,160 @@ Fk:loadTranslationTable{
   [":js__zhubei"] = "锁定技，你对本回合受到过伤害/失去过最后手牌的角色造成的伤害+1/使用牌无距离次数限制。",
 }
 
---local sunjun = General(extension, "js__sunjun", "wu", 4)
+local sunjun = General(extension, "js__sunjun", "wu", 4)
 Fk:loadTranslationTable{
   ["js__sunjun"] = "孙峻",
 }
+
+local yaoyan = fk.CreateTriggerSkill{
+  name = "yaoyan",
+  anim_type = "offensive",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    room:setPlayerMark(player, "yaoyan_owner-turn", 1)
+    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), function(p) return p.id end))
+    for _, p in ipairs(room:getAlivePlayers()) do
+      if room:askForSkillInvoke(p, self.name, data, "#yaoyan-ask") then
+        room:setPlayerMark(p, "@@yaoyan-turn", 1)
+      end
+    end
+  end,
+}
+local yaoyanDiscussion = fk.CreateTriggerSkill{
+  name = "#yaoyan_discussion",
+  anim_type = "offensive",
+  events = {fk.TurnEnd},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:getMark("yaoyan_owner-turn") > 0 and
+      table.find(player.room.alive_players, function(p) return p:getMark("@@yaoyan-turn") > 0 and not p:isKongcheng() end)
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    local targets = table.filter(room.alive_players, function(p) return p:getMark("@@yaoyan-turn") > 0 and not p:isKongcheng() end)
+    local discussion = U.Discussion{
+      reason = self.name,
+      from = player,
+      tos = targets,
+      results = {},
+    }
+
+    if discussion.color == "red" then
+      local others = table.filter(room.alive_players, function(p)
+        return not table.contains(targets, p) and not p:isKongcheng()
+      end)
+
+      if #others > 0 then
+        local tos = room:askForChoosePlayers(player, table.map(others, function(p) return p.id end), 1, 999, "#yaoyan-prey", "yaoyan", false, false)
+        for _, playerId in ipairs(tos) do
+          local p = room:getPlayerById(playerId)
+          if not p:isKongcheng() then
+            local card = room:askForCardChosen(player, p, "h", "yaoyan")
+            room:obtainCard(player.id, card, true, fk.ReasonPrey)
+          end
+        end
+      end
+    elseif discussion.color == "black" then
+      targets = table.filter(targets, function(p) return p:isAlive() end)
+      local tos = room:askForChoosePlayers(player, table.map(targets, function(p) return p.id end), 1, 1, "#yaoyan-damage", "yaoyan", true, false)
+      if #tos > 0 then
+        room:damage{
+          from = player,
+          to = room:getPlayerById(tos[1]),
+          damage = 2,
+          damageType = fk.NormalDamage,
+          skillName = self.name,
+        }
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["yaoyan"] = "邀宴",
+  ["#yaoyan_discussion"] = "邀宴",
+  [":yaoyan"] = "准备阶段开始时，你可以令所有角色依次选择是否于本回合结束时参与议事，若此议事结果为：红色，你获得至少一名未参与议事的角色各一张手牌" ..
+  "；黑色，你对一名参与议事的角色造成2点伤害。",
+  ["@@yaoyan-turn"] = "邀宴",
+  ["#yaoyan-ask"] = "邀宴；你是否于本回合结束后参与议事？",
+  ["#yaoyan-prey"] = "邀宴；你可以选择其中至少一名角色，获得他们的各一张手牌",
+  ["#yaoyan-damage"] = "邀宴：你可以对其中一名角色造成2点伤害",
+}
+
+yaoyan:addRelatedSkill(yaoyanDiscussion)
+sunjun:addSkill(yaoyan)
+
+local bazheng = fk.CreateTriggerSkill{
+  name = "bazheng",
+  anim_type = "control",
+  frequency = Skill.Compulsory,
+  events = {"fk.DiscussionCardsDisplayed"},
+  can_trigger = function(self, event, target, player, data)
+    if not (player:hasSkill(self) and data.results[player.id]) then
+      return false
+    end
+
+    return #U.getActualDamageEvents(player.room, 1, function(event)
+      local damageData = event.data[1]
+      return damageData.from == player and damageData.to ~= player and damageData.to:isAlive() and data.results[damageData.to.id]
+    end, Player.PhaseTurn) > 0
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+
+    local targets = {}
+    U.getActualDamageEvents(player.room, 999, function(event)
+      local damageData = event.data[1]
+      local victimId = damageData.to.id
+      if damageData.from == player and damageData.to ~= player and damageData.to:isAlive() and data.results[victimId] then
+        data.results[victimId].opinion = data.results[player.id].opinion
+        table.insert(targets, victimId)
+      end
+    end, Player.PhaseTurn)
+    room:doIndicate(player.id, targets)
+
+    local names = table.map(targets, function(playerId)
+      local p = room:getPlayerById(playerId)
+      local nameStr = p.general
+      if p.deputyGeneral then
+        nameStr = nameStr .. p.deputyGeneral
+      end
+
+      return Fk:translate(nameStr)
+    end)
+
+    local colorStr = {
+      [1] = "black",
+      [2] = "red",
+      [3] = "nocolor"
+    }
+    room:doBroadcastNotify(
+      "ShowToast",
+      "<b>" .. table.concat(names, '、') .. "</b>" .. Fk:translate('#changeOpinion') .. Fk:translate(colorStr[data.results[player.id].opinion])
+    )
+
+    room:sendLog{
+      type = "#LogChangeOpinion",
+      to = targets,
+      arg = colorStr[data.results[player.id].opinion],
+    }
+  end,
+}
+Fk:loadTranslationTable{
+  ["bazheng"] = "霸政",
+  [":bazheng"] = "锁定技，当你参与的议事展示意见后，参与议事角色中本回合受到过你造成伤害的角色意见改为与你相同。",
+  ["#changeOpinion"] = " 的意见被视为 ",
+  ["#LogChangeOpinion"] = "%to 的意见被视为 %arg",
+}
+
+sunjun:addSkill(bazheng)
 
 --local weiwenzhugezhi = General(extension, "weiwenzhugezhi", "wu", 4)
 Fk:loadTranslationTable{
