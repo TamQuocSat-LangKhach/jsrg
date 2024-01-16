@@ -1145,7 +1145,7 @@ local simayi = General(extension, "js__simayi", "wei", 4)
 local yingshi = fk.CreateTriggerSkill{
   name = "js__yingshi",
   anim_type = "control",
-  events = {fk.BeforeTurnOver},
+  events = {fk.TurnedOver},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) 
   end,
@@ -1308,10 +1308,10 @@ simayi:addSkill(tuigu)
 Fk:loadTranslationTable{
   ["js__simayi"] = "司马懿",
   ["js__yingshi"] = "鹰视",
-  [":js__yingshi"] = "当你翻面时，你可以观看牌堆顶的三张牌(若场上已死亡角色＞2则改为五张)，"..
+  [":js__yingshi"] = "当你翻面后，你可以观看牌堆顶的三张牌（若场上阵亡角色数大于2则改为五张），" ..
   "然后将其中任意牌以任意顺序放置牌堆顶，其余牌以任意顺序放置牌堆底。",
   ["tuigu"] = "蜕骨",
-  [":tuigu"] = "回合开始时，你可以翻面令你本回合手牌上限+X，然后摸X张牌并视为使用一张【解甲归田】(目标角色不能使用这些装备牌直到其回合结束，X为场上角色数的一半，向下取整) ; 每轮结束时，若你本轮未行动过，你执行一个额外的回合 ; 当你失去装备区里的牌后，你回复一点体力。",
+  [":tuigu"] = "回合开始时，你可以翻面令你本回合手牌上限+X，然后摸X张牌并视为使用一张【解甲归田】（目标角色不能使用这些装备牌直到其回合结束，X为场上角色数的一半，向下取整）；每轮结束时，若你本轮未行动过，你执行一个额外的回合；当你失去装备区里的牌后，你回复一点体力。",
   ["#tuigu-invoke"] = "蜕骨：是否发动“蜕骨”，将武将牌翻面并令本回合手牌上限+%arg ，然后摸等量张牌？ ",
   ["#tuigu-jiejia"] = "蜕骨：请选择你要使用【解甲归田】的目标",
   ["@$tuigu"] = "蜕骨 禁止使用",
