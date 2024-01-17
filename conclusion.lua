@@ -489,8 +489,12 @@ local fumouViewas = fk.CreateViewAsSkill{
     if #cards ~= 1 then return end
     local card = Fk:cloneCard("unexpectation")
     card:addSubcard(cards[1])
-    card.skillName = "js__fumou"
+    card.skillName = "js__fumou_tag"
     return card
+  end,
+  before_use = function(self, player, use)
+    table.remove(use.card.skillNames, "js__fumou_tag")
+    use.card.skillName = "js__fumou"
   end,
 }
 Fk:addSkill(fumouViewas)
@@ -558,7 +562,7 @@ local fumouProhibit = fk.CreateProhibitSkill{
     return card and table.contains(U.getMark(player, "@js__fumouDebuff-turn"), card:getColorString())
   end,
   is_prohibited = function(self, from, to, card)
-    return card and table.contains(card.skillNames, "js__fumou") and not table.contains(U.getMark(from, "js__fumou_targets"), to.id)
+    return card and table.contains(card.skillNames, "js__fumou_tag") and not table.contains(U.getMark(from, "js__fumou_targets"), to.id)
   end,
 }
 Fk:loadTranslationTable{

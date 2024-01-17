@@ -316,7 +316,7 @@ local chaozheng = fk.CreateTriggerSkill{
     }
     if discussion.color == "red" then
       for _, p in ipairs(targets) do
-        if p:isWounded() and not p.dead and discussion.results[p.id].toCard.color == Card.Red then
+        if p:isWounded() and not p.dead and discussion.results[p.id].opinion == Card.Red then
           room:recover({
             who = p,
             num = 1,
@@ -327,13 +327,13 @@ local chaozheng = fk.CreateTriggerSkill{
       end
     elseif discussion.color == "black" then
       for _, p in ipairs(targets) do
-        if not p.dead and discussion.results[p.id].toCard.color == Card.Red then
+        if not p.dead and discussion.results[p.id].opinion == Card.Red then
           room:loseHp(p, 1, self.name)
         end
       end
     end
     if not player.dead and table.every(targets, function(p)
-      return discussion.results[p.id].toCard.color == discussion.results[targets[1].id].toCard.color end) then
+      return discussion.results[p.id].opinion == discussion.results[targets[1].id].opinion end) then
       player:drawCards(#targets, self.name)
     end
   end,
@@ -2164,12 +2164,12 @@ local fayi = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and data.results[player.id] then
       return table.find(data.tos, function(p)
-        return not p.dead and data.results[p.id] and data.results[player.id].toCard.color ~= data.results[p.id].toCard.color end)
+        return not p.dead and data.results[p.id] and data.results[player.id].opinion ~= data.results[p.id].opinion end)
     end
   end,
   on_cost = function(self, event, target, player, data)
     local targets = table.filter(data.tos, function(p)
-      return not p.dead and data.results[p.id] and data.results[player.id].toCard.color ~= data.results[p.id].toCard.color
+      return not p.dead and data.results[p.id] and data.results[player.id].opinion ~= data.results[p.id].opinion
     end)
     local to = player.room:askForChoosePlayers(player, table.map(targets, function(p)
       return p.id end), 1, 1, "#fayi-choose", self.name, true)
