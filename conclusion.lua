@@ -872,17 +872,17 @@ local longlin = fk.CreateTriggerSkill{
       local room = player.room
       local logic = room.logic
 
-      local mark = player:getMark("longlin_record-turn")
+      local mark = player:getMark("longlin_record-phase")
       if mark == 0 then
         logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
           local use = e.data[1]
           if use.card.trueName == "slash" and use.from == target.id then
             mark = e.id
-            room:setPlayerMark(player, "longlin_record-turn", mark)
+            room:setPlayerMark(player, "longlin_record-phase", mark)
             return true
           end
           return false
-        end, Player.HistoryTurn)
+        end, Player.HistoryPhase)
       end
 
       return mark == logic:getCurrentEvent().id
