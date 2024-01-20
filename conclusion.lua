@@ -1151,14 +1151,14 @@ local yingshi = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.TurnedOver},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) 
+    return target == player and player:hasSkill(self)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = #table.filter(room.players, function(p) return p.dead end)
     local num = 3
     if n > 2 then num = 5 end
-    room:askForGuanxing(player, room:getNCards(num))
+    room:askForGuanxing(player, room:getNCards(num, "bottom"))
   end,
 }
 local tuigu = fk.CreateTriggerSkill{
@@ -1188,7 +1188,7 @@ local tuigu = fk.CreateTriggerSkill{
          to = room:getPlayerById(to[1])
        else
          to = room:getPlayerById(table.random(targets))
-       end 
+       end
         local use = {
           from = player.id,
           tos = {{to.id}},
@@ -1312,7 +1312,7 @@ simayi:addSkill(tuigu)
 Fk:loadTranslationTable{
   ["js__simayi"] = "司马懿",
   ["js__yingshi"] = "鹰视",
-  [":js__yingshi"] = "当你翻面后，你可以观看牌堆顶的三张牌（若场上阵亡角色数大于2则改为五张），" ..
+  [":js__yingshi"] = "当你翻面后，你可以观看牌堆底的三张牌（若场上阵亡角色数大于2则改为五张），" ..
   "然后将其中任意牌以任意顺序放置牌堆顶，其余牌以任意顺序放置牌堆底。",
   ["tuigu"] = "蜕骨",
   [":tuigu"] = "回合开始时，你可以翻面令你本回合手牌上限+X，然后摸X张牌并视为使用一张【解甲归田】（目标角色不能使用这些装备牌直到其回合结束，X为场上角色数的一半，向下取整）；每轮结束时，若你本轮未行动过，你执行一个额外的回合；当你失去装备区里的牌后，你回复一点体力。",
