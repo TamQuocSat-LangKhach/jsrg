@@ -1320,13 +1320,145 @@ Fk:loadTranslationTable{
   ["#tuigu-jiejia"] = "蜕骨：请选择你要使用【解甲归田】的目标",
   ["@$tuigu"] = "蜕骨 禁止使用",
 }
---local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
+local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
+
+local js__pianchong = fk.CreateTriggerSkill{
+  name = "js__pianchong",
+  anim_type = "drawcard",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and target.phase == Player.Finish then
+      local room = player.room
+      local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+      if turn_event == nil then return false end
+      local end_id = turn_event.id
+      return #U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+        for _, move in ipairs(e.data) do
+          if move.from == player.id then
+            for _, info in ipairs(move.moveInfo) do
+              if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
+                return true
+              end
+            end
+          end
+        end
+        return false
+      end, end_id) > 0
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local judge = {
+      who = player,
+      reason = self.name,
+      pattern = ".|.|^nosuit",
+    }
+    room:judge(judge)
+    if judge.card.color == Card.NoColor then return false end
+    local color = 3 - judge.card.color
+    local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
+    if turn_event == nil then return false end
+    local end_id = turn_event.id
+    local x = 0
+    U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId).color == color then
+              x = x + 1
+            end
+          end
+        end
+      end
+      return false
+    end, end_id)
+    if x > 0 then
+      room:drawCards(player, x, self.name)
+    end
+  end,
+}
+
+local js__zunwei = fk.CreateActiveSkill{
+  name = "js__zunwei",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  interaction = function()
+    local choices, all_choices = {}, {}
+    for i = 1, 3 do
+      local choice = "js__zunwei"..tostring(i)
+      table.insert(all_choices, choice)
+      if Self:getMark(choice) == 0 then
+        table.insert(choices, choice)
+      end
+    end
+    return UI.ComboBox {choices = choices, all_choices = all_choices}
+  end,
+  can_use = function(self, player)
+    if player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 then
+      for i = 1, 3, 1 do
+        if player:getMark(self.name .. tostring(i)) == 0 then
+          return true
+        end
+      end
+    end
+    return false
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return self.interaction.data and #selected == 0 and to_select ~= Self.id
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local target = room:getPlayerById(effect.tos[1])
+    local choice = self.interaction.data
+    if choice == "js__zunwei1" then
+      local x = math.min(target:getHandcardNum() - player:getHandcardNum(), 5)
+      if x > 0 then
+        room:drawCards(player, x, self.name)
+      end
+    elseif choice == "js__zunwei2" then
+      while not (player.dead or target.dead) and
+      #player.player_cards[Player.Equip] <= #target.player_cards[Player.Equip] and
+      target:canMoveCardsInBoardTo(player, "e") do
+        room:askForMoveCardInBoard(player, target, player, self.name, "e", target)
+      end
+    elseif choice == "js__zunwei3" and player:isWounded() then
+      local x = target.hp - player.hp
+      if x > 0 then
+      room:recover{
+        who = player,
+        num = math.min(player:getLostHp(), x),
+        recoverBy = player,
+        skillName = self.name}
+      end
+    end
+    room:setPlayerMark(player, choice, 1)
+  end,
+}
+guozhao:addSkill(js__pianchong)
+guozhao:addSkill(js__zunwei)
+
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
-  ["js__pianchon"] = "偏宠",
-  [":js__pianchon"] = "每名角色的结束阶段，若你于此回合内失去过牌，你可以进行一次判定，若判定结果为:黑色/红色，你摸此回合进入弃牌的红色/黑色牌数量的牌",
+  ["js__pianchong"] = "偏宠",
+  [":js__pianchong"] = "每名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
+  "你摸X张牌（X为于此回合内进入弃牌堆的与判定结果颜色不同的牌数）。",
   ["js__zunwei"] = "尊位",
-  [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项: 1，将手牌补至与其手牌数量相同(至多摸五张)。2，将其装备牌移至你的装备区内，直到你装备区内的牌不少于其。3，将体力值回复至与其相同。",
+  [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项："..
+  "1，将手牌补至与其手牌数量相同（至多摸五张）。"..
+  "2，将其装备牌移至你的装备区内，直到你装备区内的牌不少于其。"..
+  "3，将体力值回复至与其相同。",
+  ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
+  ["js__zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
+  ["js__zunwei2"] = "移动其装备至你的装备区直到比你少",
+  ["js__zunwei3"] = "回复体力至与其相同",
+
+  ["$js__pianchong1"] = "承君恩露于椒房，得君恩宠于万世。",
+  ["$js__pianchong2"] = "后宫有佳丽三千，然陛下独宠我一人。",
+  ["$js__zunwei1"] = "妾蒲柳之姿，幸蒙君恩方化从龙之凤。",
+  ["$js__zunwei2"] = "尊位椒房、垂立九五，君之恩也、妾之幸也。",
+  ["~js__guozhao"] = "曹元仲，你为何害我？",
 }
 
 --local wenqin = General(extension, "js__wenqin", "wei", 4)
