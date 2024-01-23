@@ -1381,6 +1381,7 @@ local js__pianchong = fk.CreateTriggerSkill{
 local js__zunwei = fk.CreateActiveSkill{
   name = "js__zunwei",
   anim_type = "control",
+  prompt = "#js__zunwei-active",
   card_num = 0,
   target_num = 1,
   interaction = function()
@@ -1443,7 +1444,7 @@ Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["js__pianchong"] = "偏宠",
   [":js__pianchong"] = "每名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
-  "你摸X张牌（X为于此回合内进入弃牌堆的与判定结果颜色不同的牌数）。",
+  "你摸X张牌（X为弃牌堆里于此回合内进入的与判定结果颜色不同的牌数）。",
   ["js__zunwei"] = "尊位",
   [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项："..
   "1，将手牌补至与其手牌数量相同（至多摸五张）。"..
