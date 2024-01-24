@@ -1163,40 +1163,61 @@ local yingshi = fk.CreateTriggerSkill{
 }
 local tuigu = fk.CreateTriggerSkill{
   name = "tuigu",
-  anim_type = "drawcard", 
-  events = {fk.TurnStart},
+  anim_type = "drawcard",
+  events = {fk.TurnStart, fk.AfterCardsMove, fk.RoundEnd},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) 
+    return target == player and player:hasSkill(self)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local draw = #room.alive_players // 2
-    return player.room:askForSkillInvoke(player, self.name, nil, "#tuigu-invoke:::"..draw)
+    return room:askForSkillInvoke(player, self.name, nil, "#tuigu-invoke:::"..tostring(draw))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:turnOver()
+    if player.dead then return false end
     local n = #room.alive_players // 2
-    if not player.dead then
-      room:addPlayerMark(room.current, MarkEnum.AddMaxCardsInTurn, n)
-      player:drawCards(n, self.name)
-      local targets = table.map(table.filter(room.alive_players, function(p)
-      return U.canUseCardTo(room, player, p, Fk:cloneCard("demobilized")) end), Util.IdMapper)
-     if #targets > 0 and not player.dead then
-       local to = room:askForChoosePlayers(player, targets, 1, 1, "#tuigu-jiejia", self.name, false)
-       if #to > 0 then
-         to = room:getPlayerById(to[1])
-       else
-         to = room:getPlayerById(table.random(targets))
-       end
-        local use = {
-          from = player.id,
-          tos = {{to.id}},
-          card = Fk:cloneCard("demobilized"),
-        }
-       use.card.skillName = self.name
-       room:useCard(use)
-     end
+    room:addPlayerMark(player, MarkEnum.AddMaxCardsInTurn, n)
+    room:drawCards(player, n, self.name)
+    if player.dead then return false end
+    U.askForUseVirtualCard(room, player, "demobilized", nil, self.name, "#tuigu-jiejia", false)
+  end,
+
+  refresh_events = {fk.AfterCardsMove, fk.AfterTurnEnd},
+  can_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      return true
+    elseif event == fk.AfterTurnEnd then
+      return player == target
+    end
+  end,
+  on_refresh = function(self, event, target, player, data)
+    if event == fk.AfterCardsMove then
+      local room = player.room
+      local cards = {}
+      for _, move in ipairs(data) do
+        if move.to == player.id and move.toArea == Card.PlayerHand and move.skillName == "demobilized" then
+          for _, info in ipairs(move.moveInfo) do
+            local id = info.cardId
+            if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
+              table.insertIfNeed(cards, id)
+            end
+          end
+        end
+      end
+      if #cards == 0 then return false end
+      local cardEffectData = room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
+      if cardEffectData then
+        local cardEffectEvent = cardEffectData.data[1]
+        if table.contains(cardEffectEvent.card.skillNames, "tuigu") then
+          for _, id in ipairs(cards) do
+            room:setCardMark(Fk:getCardById(id), "@@tuigu-inhand", 1)
+          end
+        end
+      end
+    elseif event == fk.AfterTurnEnd then
+      U.clearHandMark(player, "@@tuigu-inhand")
     end
   end,
 }
@@ -1207,32 +1228,31 @@ local tuigu_recoverAndTurn = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.AfterCardsMove, fk.RoundEnd},
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill("tuigu") then return end
-    local room = player.room
-    if event == fk.RoundEnd then
-      local num = #room.logic:getEventsOfScope(GameEvent.Turn, 9, function (e)
-        return e.data[1] == player
-      end, Player.HistoryRound)      
-      return num < 1
-    else 
+    if not player:hasSkill(tuigu) then return false end
+    if event == fk.AfterCardsMove then
+      if not player:isWounded() then return false end
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
              if info.fromArea == Card.PlayerEquip then
-               return player:isWounded()
+               return true
              end
           end
         end
       end
+    elseif event == fk.RoundEnd then
+      return #player.room.logic:getEventsOfScope(GameEvent.Turn, 1, function (e)
+        return e.data[1] == player
+      end, Player.HistoryRound) == 0
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke("tuigu")
-    player.room:notifySkillInvoked(player, "tuigu", "control")
+    room:notifySkillInvoked(player, "tuigu", "control")
     if event == fk.RoundEnd then
-      U.gainAnExtraTurn(player, true, "tuigu")  
+      U.gainAnExtraTurn(player, true, "tuigu")
     else
       room:recover({
         who = player,
@@ -1240,72 +1260,17 @@ local tuigu_recoverAndTurn = fk.CreateTriggerSkill{
         recoverBy = player,
         skillName = tuigu.name
       })
-    end 
-  end,
-}
-local tuigu_delay = fk.CreateTriggerSkill{
-  name = "#tuigu_delay",
-  events = {fk.AfterCardsMove},
-  mute = true,
-  priority = 10,
-  can_trigger = function(self, event, target, player, data)
-    local e = player.room.logic:getCurrentEvent():findParent(GameEvent.CardEffect)
-    if e then
-      local use = e.data[1]
-      if table.contains(use.card.skillNames, "tuigu") then
-        local ids = {}    
-        for _, move in ipairs(data) do
-          if move.toArea == Card.PlayerHand and move.to then   
-            self.tuigu_to = move.to
-            for _, info in ipairs(move.moveInfo) do          
-              if table.contains(player.room:getPlayerById(move.to):getCardIds("h"), info.cardId) then
-                table.insertIfNeed(ids, info.cardId)
-              end
-            end
-          end
-        end
-        if #ids > 0 then
-          self.cost_data = ids
-          return true
-        end
-      end
     end
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local ids = self.cost_data
-    local to = room:getPlayerById(self.tuigu_to)
-    local mark = U.getMark(to, "@$tuigu")
-    for _, id in ipairs(ids) do
-        if table.contains(to:getCardIds("h"), id) then
-          table.insertIfNeed(mark, id)
-        end
-    end
-    room:setPlayerMark(to, "@$tuigu", mark)
-  end,
-  refresh_events = {fk.TurnEnd},
-  can_refresh = function(self, event, target, player, data)
-    return target:getMark("@$tuigu") ~= 0
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(target, "@$tuigu", 0)   
   end,
 }
 local tuigu_prohibit = fk.CreateProhibitSkill{
   name = "#tuigu_prohibit",
   prohibit_use = function(self, player, card)
-    if player:getMark("@$tuigu") ~= 0 then 
-      local subcards = card:isVirtual() and   card.subcards or {card.id}
-      return #subcards > 0 and table.every(subcards, function(id)
-        return table.contains(player:getMark("@$tuigu"), id)
-      end)
-    end
-  end,  
+    local cardList = card:isVirtual() and card.subcards or {card.id}
+    return table.find(cardList, function (id) return Fk:getCardById(id):getMark("@@tuigu-inhand") > 0 end)
+  end,
 }
 tuigu:addRelatedSkill(tuigu_recoverAndTurn)
-tuigu:addRelatedSkill(tuigu_delay)
 tuigu:addRelatedSkill(tuigu_prohibit)
 simayi:addSkill(yingshi)
 simayi:addSkill(tuigu)
@@ -1318,10 +1283,10 @@ Fk:loadTranslationTable{
   [":tuigu"] = "回合开始时，你可以翻面令你本回合手牌上限+X，然后摸X张牌并视为使用一张【解甲归田】（目标角色不能使用这些装备牌直到其回合结束，X为场上角色数的一半，向下取整）；每轮结束时，若你本轮未行动过，你执行一个额外的回合；当你失去装备区里的牌后，你回复一点体力。",
   ["#tuigu-invoke"] = "蜕骨：是否发动“蜕骨”，将武将牌翻面并令本回合手牌上限+%arg ，然后摸等量张牌？ ",
   ["#tuigu-jiejia"] = "蜕骨：请选择你要使用【解甲归田】的目标",
-  ["@$tuigu"] = "蜕骨 禁止使用",
+  ["@@tuigu-inhand"] = "蜕骨",
 }
-local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
 
+local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
 local js__pianchong = fk.CreateTriggerSkill{
   name = "js__pianchong",
   anim_type = "drawcard",
@@ -1378,7 +1343,6 @@ local js__pianchong = fk.CreateTriggerSkill{
     end
   end,
 }
-
 local js__zunwei = fk.CreateActiveSkill{
   name = "js__zunwei",
   anim_type = "control",
@@ -1444,14 +1408,15 @@ guozhao:addSkill(js__zunwei)
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["js__pianchong"] = "偏宠",
-  [":js__pianchong"] = "每名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
+  [":js__pianchong"] = "一名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
   "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
   --FIXME: 若存在无色的判定结果，此描述须修正
   ["js__zunwei"] = "尊位",
   [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项："..
   "1，将手牌补至与其手牌数相同（至多摸五张）。"..
-  "2，将其装备牌移至你的装备区内，直到你装备区内的牌数不小于其装备区内的牌数。"..
+  "2，将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数。"..
   "3，将体力值回复至与其相同。",
+
   ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
   ["js__zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
   ["js__zunwei2"] = "移动其装备至你的装备区直到比你少",

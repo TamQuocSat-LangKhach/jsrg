@@ -91,13 +91,12 @@ local demobilizedSkill = fk.CreateActiveSkill{
     end
   end,
   on_effect = function(self, room, effect)
-    local from = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.to)
-    if from.dead or to.dead or #to:getCardIds("e") == 0 then return end
-    local cards_id = to:getCardIds("e")
-    local dummy = Fk:cloneCard("slash")
-    dummy:addSubcards(cards_id)
-    room:obtainCard(to, dummy, false, fk.ReasonPrey)
+    if to.dead then return end
+    local equips = to:getCardIds("e")
+    if #equips > 0 then
+      room:moveCardTo(equips, Card.PlayerHand, to, fk.ReasonPrey, "demobilized", nil, true, to.id)
+    end
   end
 }
 local demobilized = fk.CreateTrickCard{
