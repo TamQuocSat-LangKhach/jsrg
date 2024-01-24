@@ -29,6 +29,8 @@ end
 local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
 Fk:loadTranslationTable{
   ["js__zhugeliang"] = "诸葛亮",
+  ["#js__zhugeliang"] = "炎汉忠魂",
+  ["illustrator:js__zhugeliang"] = "鬼画府",
 }
 
 local wentian = fk.CreateViewAsSkill{
@@ -369,6 +371,8 @@ zhugeliang:addSkill(yinlue)
 local jiangwei = General(extension, "js__jiangwei", "shu", 4)
 Fk:loadTranslationTable{
   ["js__jiangwei"] = "姜维",
+  ["#js__jiangwei"] = "赤血化龙",
+  ["illustrator:js__jiangwei"] = "鬼画府",
 }
 
 local jinfa = fk.CreateActiveSkill{
@@ -722,7 +726,7 @@ local js__fengxiang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tos = player.room:askForChoosePlayers(player, table.map(player.room.alive_players, Util.IdMapper), 1, 1, "#js__fengxiang-choose", self.name, false)
+    local tos = player.room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#js__fengxiang-choose", self.name, false)
     if #tos > 0 then
       local to = room:getPlayerById(tos[1])
       local num = 0
@@ -803,6 +807,8 @@ local js__fengxiang = fk.CreateTriggerSkill{
 liuyong:addSkill(js__fengxiang)
 Fk:loadTranslationTable{
   ["js__liuyong"] = "刘永",
+  ["#js__liuyong"] = "甘陵王",
+  ["illustrator:js__liuyong"] = "君桓文化",
   ["js__danxinn"] = "丹心",
   [":js__danxinn"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
   ["#js__danxinn_delay"] = "丹心",
@@ -993,6 +999,8 @@ zhaoyun:addSkill(longlin)
 zhaoyun:addSkill(zhendan)
 Fk:loadTranslationTable{
   ["js__zhaoyun"] = "赵云",
+  ["#js__zhaoyun"] = "北伐之柱",
+  ["illustrator:js__zhaoyun"] = "鬼画府",
   ["longlin"] = "龙临",
   [":longlin"] = "当其他角色于其出牌阶段内首次使用【杀】指定目标后，你可以弃置一张牌令此【杀】无效，然后其可以视为对你使用一张【决斗】，你以此法造成伤害后，其本阶段不能再使用手牌。",
   ["#longlin-invoke"] = "龙临:是否弃置一张牌，令%dest 使用的%arg 无效，然后其可以视为对你使用一张【决斗】 ",
@@ -1132,6 +1140,8 @@ caofang:addSkill(jingju)
 caofang:addSkill(weizhui)
 Fk:loadTranslationTable{
   ["js__caofang"] = "曹芳",
+  ["#js__caofang"] = "引狼入廟",
+  ["illustrator:js__caofang"] = "鬼画府",
   ["zhaotu"] = "招图",
   [":zhaotu"] = "每轮限一次，你可以将一张红色非锦囊牌当做【乐不思蜀】使用，此回合结束后，目标执行一个手牌上限-2的回合。",
   ["#zhaotu"] = "招图：你可以将一张红色非锦囊牌当做【乐不思蜀】使用",
@@ -1276,6 +1286,8 @@ simayi:addSkill(yingshi)
 simayi:addSkill(tuigu)
 Fk:loadTranslationTable{
   ["js__simayi"] = "司马懿",
+  ["#js__simayi"] = "危崖隐羽",
+  ["illustrator:js__simayi"] = "鬼画府",
   ["js__yingshi"] = "鹰视",
   [":js__yingshi"] = "当你翻面后，你可以观看牌堆底的三张牌（若场上阵亡角色数大于2则改为五张），" ..
   "然后将其中任意牌以任意顺序放置牌堆顶，其余牌以任意顺序放置牌堆底。",
@@ -1407,6 +1419,8 @@ guozhao:addSkill(js__zunwei)
 
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
+  ["#js__guozhao"] = "碧海青天",
+  ["illustrator:js__guozhao"] = "杨杨和夏季",
   ["js__pianchong"] = "偏宠",
   [":js__pianchong"] = "一名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
   "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
@@ -1565,6 +1579,8 @@ js__zhubei:addRelatedSkill(js__zhubei_targetmod)
 luxun:addSkill(js__zhubei)
 Fk:loadTranslationTable{
   ["js__luxun"] = "陆逊",
+  ["#js__luxun"] = "却敌安疆",
+  ["illustrator:js__luxun"] = "鬼画府",
   ["js__youjin"] = "诱进",
   [":js__youjin"] = "出牌阶段开始时，你可以与一名角色拼点，双方本回合不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对没赢的角色使用一张【杀】。",
   ["#js__youjin-choose"] = "诱进：可以拼点，双方不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对对方使用【杀】",
@@ -1578,6 +1594,8 @@ Fk:loadTranslationTable{
 local sunjun = General(extension, "js__sunjun", "wu", 4)
 Fk:loadTranslationTable{
   ["js__sunjun"] = "孙峻",
+  ["#js__sunjun"] = "朋党执虎",
+  ["illustrator:js__sunjun"] = "鬼画府",
 }
 
 local yaoyan = fk.CreateTriggerSkill{
@@ -1748,7 +1766,9 @@ Fk:loadTranslationTable{
 
 --local sunlubansunluyu = General(extension, "js__sunlubansunluyu", "wu", 3, 3, General.Female)
 Fk:loadTranslationTable{
-  ["js__sunlubansunluyu"] = "孙鲁班&孙鲁育",
+  ["js__sunlubansunluyu"] = "孙鲁班孙鲁育",
+  ["#js__sunlubansunluyu"] = "恶紫夺朱",
+  ["illustrator:xxx_general"] = "鬼画府",
   ["daimou"] = "殆谋",
   [":daimou"] = "每回合各限一次，当一名角色使用【杀】指定其他角色/你为目标时，你可以用牌堆顶的牌【蓄谋】/你须弃置你区域里的一张【蓄谋】牌。"..
   "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。",

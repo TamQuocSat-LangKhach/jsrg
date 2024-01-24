@@ -162,6 +162,8 @@ sunce:addSkill(bashi)
 sunce:addRelatedSkill("ex__zhiheng")
 Fk:loadTranslationTable{
   ["js__sunce"] = "孙策",
+  ["#js__sunce"] = "问鼎的霸王",
+  ["illustrator:js__sunce"] = "君桓文化",
   ["duxing"] = "独行",
   [":duxing"] = "出牌阶段限一次，你可以视为使用一张以任意名角色为目标的【决斗】，直到此【决斗】结算完毕，所有目标的手牌均视为【杀】。",
   ["zhihengs"] = "猘横",
@@ -322,6 +324,8 @@ js__yechou:addRelatedSkill(js__yechou_trigger)
 xugong:addSkill(js__yechou)
 Fk:loadTranslationTable{
   ["js__xugong"] = "许贡",
+  ["#js__xugong"] = "独计击流",
+  ["illustrator:js__xugong"] = "君桓文化",
   ["js__biaozhao"] = "表召",
   [":js__biaozhao"] = "准备阶段，你可以选择两名其他角色，直到你下回合开始时或你死亡后，你选择的第一名角色对第二名角色使用牌无距离次数限制，"..
   "第二名角色对你使用牌造成伤害+1。",
@@ -427,6 +431,8 @@ chunyuqiong:addSkill(js__cangchu)
 chunyuqiong:addSkill(js__shishou)
 Fk:loadTranslationTable{
   ["js__chunyuqiong"] = "淳于琼",
+  ["#js__chunyuqiong"] = "乌巢酒仙",
+  ["illustrator:js__chunyuqiong"] = "君桓文化",
   ["js__cangchu"] = "仓储",
   [":js__cangchu"] = "每名角色的结束阶段，你可以令至多X名角色各摸一张牌；若X大于存活角色数，则改为各摸两张牌（X为你此回合得到过的牌数）。",
   ["js__shishou"] = "失守",
@@ -569,6 +575,8 @@ xuyou:addSkill(qingxix)
 xuyou:addSkill(jinmie)
 Fk:loadTranslationTable{
   ["js__xuyou"] = "许攸",
+  ["#js__xuyou"] = "毕方骄翼",
+  ["illustrator:js__xuyou"] = "鬼画府",
   ["lipan"] = "离叛",
   [":lipan"] = "结束阶段结束时，你可以变更势力，然后摸X张牌并执行一个额外的出牌阶段（X为势力与你相同的其他角色数）。此阶段结束时，"..
   "所有势力与你相同的其他角色可以将一张牌当【决斗】对你使用。",
@@ -702,6 +710,8 @@ lvbu:addSkill(qingjiaol)
 lvbu:addSkill(chengxu)
 Fk:loadTranslationTable{
   ["js__lvbu"] = "吕布",
+  ["#js__lvbu"] = "虎视中原",
+  ["illustrator:js__lvbu"] = "鬼画府",
   ["wuchang"] = "无常",
   [":wuchang"] = "锁定技，当你得到其他角色的牌后，你变更势力至与其相同；当你使用【杀】或【决斗】对势力与你相同的角色造成伤害时，你令此伤害+1，然后你变更势力至群。",
   ["qingjiaol"] = "轻狡",
@@ -856,6 +866,8 @@ zhanghe:addSkill(qiongtu)
 zhanghe:addSkill(js__xianzhu)
 Fk:loadTranslationTable{
   ["js__zhanghe"] = "张郃",
+  ["#js__zhanghe"] = "微子去殷",
+  ["illustrator:js__zhanghe"] = "君桓文化",
   ["qiongtu"] = "穷途",
   [":qiongtu"] = "群势力技，每回合限一次，你可以将一张非基本牌置于武将牌上视为使用一张【无懈可击】，若该【无懈可击】生效，你摸一张牌，否则你变更势力至魏"..
   "并获得武将牌上的所有牌。",
@@ -998,6 +1010,8 @@ zoushi:addSkill(zhangdeng)
 
 Fk:loadTranslationTable{
   ["js__zoushi"] = "邹氏",
+  ["#js__zoushi"] = "淯水香魂",
+  ["illustrator:js__zoushi"] = "君桓文化",
   ["guyin"] = "孤吟",
   [":guyin"] = "准备阶段，你可以翻面，然后令所有其他男性角色各选择其是否翻面，然后你和所有翻面的角色轮流各摸一张牌直到以此法摸牌数达到X张"..
   "（X为本局游戏男性角色数）。",
@@ -1095,6 +1109,8 @@ guanyu:addSkill(guanjue)
 guanyu:addSkill(nianen)
 Fk:loadTranslationTable{
   ["js__guanyu"] = "关羽",
+  ["#js__guanyu"] = "羊左之义",
+  ["illustrator:js__guanyu"] = "鬼画府",
   ["guanjue"] = "冠绝",
   [":guanjue"] = "锁定技，当你使用或打出一张牌时，所有其他角色不能使用或打出此花色的牌直到回合结束。",
   ["nianen"] = "念恩",
@@ -1207,6 +1223,8 @@ chendeng:addSkill(lunshi)
 chendeng:addSkill(guitu)
 Fk:loadTranslationTable{
   ["js__chendeng"] = "陈登",
+  ["#js__chendeng"] = "惊涛弄潮",
+  ["illustrator:js__chendeng"] = "鬼画府",
   ["lunshi"] = "论势",
   [":lunshi"] = "出牌阶段限一次，你可以令一名角色摸等同于其攻击范围内角色数的牌（至多摸至五张），然后令该角色弃置等同于攻击范围内含有其的角色数的牌。",
   ["guitu"] = "诡图",
@@ -1411,6 +1429,9 @@ zhenfu:addSkill(jixiang)
 zhenfu:addSkill(chengxian)
 Fk:loadTranslationTable{
   ["js__zhenji"] = "甄宓",
+  ["#js__zhenji"] = "一顾倾国",
+  ["illustrator:js__zhenji"] = "君桓文化",
+  ["cv:js__zhenji"] = "离瞳鸭",
   ["jixiang"] = "济乡",
   ["#jixiang_delay"] = "济乡",
   [":jixiang"] = "回合内对每种牌名限一次，当一名其他角色需要使用或打出一张基本牌，你可以弃置一张牌令其视为使用或打出之，然后你摸一张牌并令〖称贤〗"..
@@ -1527,6 +1548,8 @@ zhangliao:addSkill(zhengbing)
 zhangliao:addSkill(tuwei)
 Fk:loadTranslationTable{
   ["js__zhangliao"] = "张辽",
+  ["#js__zhangliao"] = "利刃风骑",
+  ["illustrator:js__zhangliao"] = "君桓文化",
   ["zhengbing"] = "整兵",
   [":zhengbing"] = "群势力技，出牌阶段限三次，你可以重铸一张牌，若此牌为：<br>【杀】，你此回合手牌上限+2；<br>【闪】，你摸一张牌；<br>"..
   "【桃】，你变更势力至魏。",
