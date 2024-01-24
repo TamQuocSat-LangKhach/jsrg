@@ -274,8 +274,8 @@ Fk:loadTranslationTable{
 chushi:addRelatedSkill(chushiBuff)
 zhugeliang:addSkill(chushi)
 
-local yinlve = fk.CreateTriggerSkill{
-  name = "yinlve",
+local yinlue = fk.CreateTriggerSkill{
+  name = "yinlue",
   anim_type = "support",
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
@@ -283,7 +283,7 @@ local yinlve = fk.CreateTriggerSkill{
     return
       player:hasSkill(self) and
       table.contains(availableDMGTypes, data.damageType) and
-      player:getMark("yinlveUsed" .. data.damageType .. "-round") == 0
+      player:getMark("yinlueUsed" .. data.damageType .. "-round") == 0
   end,
   on_cost = function(self, event, target, player, data)
     local damageTypeTable = {
@@ -300,12 +300,12 @@ local yinlve = fk.CreateTriggerSkill{
       player,
       self.name,
       data,
-      "#yinlve-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. phase_name_table[data.damageType]
+      "#yinlue-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. phase_name_table[data.damageType]
     )
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, "yinlveUsed" .. data.damageType .. "-round", 1)
+    room:setPlayerMark(player, "yinlueUsed" .. data.damageType .. "-round", 1)
 
     local logic = room.logic
     local turn = logic:getCurrentEvent():findParent(GameEvent.Turn, true)
@@ -322,7 +322,7 @@ local yinlve = fk.CreateTriggerSkill{
 
           player.tag["_extra_turn_count"] = player.tag["_extra_turn_count"] or {}
           local ex_tag = player.tag["_extra_turn_count"]
-          table.insert(ex_tag, "yinlveTurn" .. data.damageType)
+          table.insert(ex_tag, "yinlueTurn" .. data.damageType)
 
           GameEvent(GameEvent.Turn, player):exec()
 
@@ -345,13 +345,13 @@ local yinlve = fk.CreateTriggerSkill{
       type(extraTurnInfo) == "table" and
       #extraTurnInfo > 0 and
       type(extraTurnInfo[#extraTurnInfo]) == "string" and
-      extraTurnInfo[#extraTurnInfo]:startsWith("yinlveTurn") and
+      extraTurnInfo[#extraTurnInfo]:startsWith("yinlueTurn") and
       data.to == Player.RoundStart
   end,
   on_refresh = function(self, event, target, player, data)
     local excludePhases = { Player.Start, Player.Judge, Player.Play, Player.Finish }
     local extraTurnInfo = player.tag["_extra_turn_count"]
-    table.insert(excludePhases, extraTurnInfo[#extraTurnInfo] == "yinlveTurn" .. fk.ThunderDamage and Player.Draw or Player.Discard)
+    table.insert(excludePhases, extraTurnInfo[#extraTurnInfo] == "yinlueTurn" .. fk.ThunderDamage and Player.Draw or Player.Discard)
 
     for _, phase in ipairs(excludePhases) do
       table.removeOne(player.phases, phase)
@@ -359,12 +359,12 @@ local yinlve = fk.CreateTriggerSkill{
   end,
 }
 Fk:loadTranslationTable{
-  ["yinlve"] = "隐略",
-  [":yinlve"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
-  ["#yinlve-ask"] = "隐略：你可以防止 %dest 受到的 %arg 伤害，回合结束执行仅有 %arg2 的回合",
+  ["yinlue"] = "隐略",
+  [":yinlue"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
+  ["#yinlue-ask"] = "隐略：你可以防止 %dest 受到的 %arg 伤害，回合结束执行仅有 %arg2 的回合",
 }
 
-zhugeliang:addSkill(yinlve)
+zhugeliang:addSkill(yinlue)
 
 local jiangwei = General(extension, "js__jiangwei", "shu", 4)
 Fk:loadTranslationTable{
@@ -1354,24 +1354,25 @@ local js__pianchong = fk.CreateTriggerSkill{
       pattern = ".|.|^nosuit",
     }
     room:judge(judge)
-    if judge.card.color == Card.NoColor then return false end
-    local color = 3 - judge.card.color
+    local color = judge.card.color
+    if color == Card.NoColor then return false end
     local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
     if turn_event == nil then return false end
     local end_id = turn_event.id
-    local x = 0
+    local cards = {}
     U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
             if room:getCardArea(info.cardId) == Card.DiscardPile and Fk:getCardById(info.cardId).color == color then
-              x = x + 1
+              table.insertIfNeed(cards, info.cardId)
             end
           end
         end
       end
       return false
     end, end_id)
+    local x = #cards
     if x > 0 then
       room:drawCards(player, x, self.name)
     end
@@ -1444,11 +1445,12 @@ Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["js__pianchong"] = "偏宠",
   [":js__pianchong"] = "每名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
-  "你摸X张牌（X为弃牌堆里于此回合内进入的与判定结果颜色不同的牌数）。",
+  "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
+  --FIXME: 若存在无色的判定结果，此描述须修正
   ["js__zunwei"] = "尊位",
   [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项："..
-  "1，将手牌补至与其手牌数量相同（至多摸五张）。"..
-  "2，将其装备牌移至你的装备区内，直到你装备区内的牌不少于其。"..
+  "1，将手牌补至与其手牌数相同（至多摸五张）。"..
+  "2，将其装备牌移至你的装备区内，直到你装备区内的牌数不小于其装备区内的牌数。"..
   "3，将体力值回复至与其相同。",
   ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
   ["js__zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
