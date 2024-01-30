@@ -897,20 +897,23 @@ local zhaobing = fk.CreateTriggerSkill{
     local room = player.room
     local n = #player.player_cards[Player.Hand]
     player:throwAllCards("h")
-    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), function(p)
-      return p.id end), 1, n, "#zhaobing-choose:::"..n, self.name, true)
+    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n, "#zhaobing-choose:::"..n, self.name, true)
     if #targets > 0 then
+      room:sortPlayersByAction(targets)
       for _, id in ipairs(targets) do
+        if player.dead then break end
         local p = room:getPlayerById(id)
-        if p:isKongcheng() then
-          room:loseHp(p, 1, self.name)
-        else
-          local card = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#zhaobing-card:"..player.id)
-          if #card > 0 then
-            p:showCards(card)
-            room:obtainCard(player, card[1], true, fk.ReasonGive)
-          else
+        if not p.dead then
+          if p:isKongcheng() then
             room:loseHp(p, 1, self.name)
+          else
+            local card = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#zhaobing-card:"..player.id)
+            if #card > 0 then
+              p:showCards(card)
+              room:obtainCard(player, card[1], true, fk.ReasonGive)
+            else
+              room:loseHp(p, 1, self.name)
+            end
           end
         end
       end
