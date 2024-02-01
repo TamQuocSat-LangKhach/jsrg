@@ -1174,7 +1174,7 @@ local yingshi = fk.CreateTriggerSkill{
 local tuigu = fk.CreateTriggerSkill{
   name = "tuigu",
   anim_type = "drawcard",
-  events = {fk.TurnStart, fk.AfterCardsMove, fk.RoundEnd},
+  events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self)
   end,
