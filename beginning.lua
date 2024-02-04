@@ -1485,43 +1485,7 @@ local fengzi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player.room:throwCard(self.cost_data, self.name, player, player)
-    data.extra_data = data.extra_data or {}
-    data.extra_data.fengzi = data.extra_data.fengzi or true
-  end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.fengzi
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    data.extra_data.fengzi = false
-    if data.card.name == "amazing_grace" then
-      room.logic:trigger(fk.CardUseFinished, player, data)
-      table.forEach(room.players, function(p) room:closeAG(p) end)  --手动五谷
-      if data.extra_data and data.extra_data.AGFilled then
-        local toDiscard = table.filter(data.extra_data.AGFilled, function(id) return room:getCardArea(id) == Card.Processing end)
-        if #toDiscard > 0 then
-          room:moveCards({
-            ids = toDiscard,
-            toArea = Card.DiscardPile,
-            moveReason = fk.ReasonPutIntoDiscardPile,
-          })
-        end
-      end
-      data.extra_data.AGFilled = nil
-
-      local toDisplay = room:getNCards(#TargetGroup:getRealTargets(data.tos))
-      room:moveCards({
-        ids = toDisplay,
-        toArea = Card.Processing,
-        moveReason = fk.ReasonPut,
-      })
-      table.forEach(room.players, function(p) room:fillAG(p, toDisplay) end)
-      data.extra_data = data.extra_data or {}
-      data.extra_data.AGFilled = toDisplay
-    end
-    player.room:doCardUseEffect(data)
+    data.additionalEffect = 1
   end,
 }
 local jizhan = fk.CreateTriggerSkill{
@@ -2038,10 +2002,13 @@ local jishan = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:doIndicate(player.id, {target.id})
     room:loseHp(player, 1, self.name)
     room:addPlayerMark(target, self.name, 1)
     if not player.dead then
       player:drawCards(1, self.name)
+    end
+    if not target.dead then
       target:drawCards(1, self.name)
     end
     return true
@@ -2052,7 +2019,7 @@ local jishan_trigger = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    return target == player and player:hasSkill(jishan) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -2087,24 +2054,14 @@ local zhenqiao = fk.CreateTriggerSkill{
     return target == player and player:hasSkill(self) and data.card.trueName == "slash" and player:getEquipment(Card.SubtypeWeapon) == nil
   end,
   on_use = function(self, event, target, player, data)
-    data.extra_data = data.extra_data or {}
-    data.extra_data.zhenqiao = data.extra_data.zhenqiao or true
-  end,
-
-  refresh_events = {fk.CardUseFinished},
-  can_refresh = function(self, event, target, player, data)
-    return data.extra_data and data.extra_data.zhenqiao
-  end,
-  on_refresh = function(self, event, target, player, data)
-    player.room:doCardUseEffect(data)
-    data.extra_data.zhenqiao = false
+    data.additionalEffect = (data.additionalEffect or 0) + 1
   end,
 }
 local zhenqiao_attackrange = fk.CreateAttackRangeSkill{
   name = "#zhenqiao_attackrange",
   frequency = Skill.Compulsory,
   correct_func = function (self, from, to)
-    if from:hasSkill("zhenqiao") then
+    if from:hasSkill(zhenqiao) then
       return 1
     end
     return 0
