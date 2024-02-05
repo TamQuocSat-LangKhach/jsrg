@@ -1059,6 +1059,7 @@ local guanjue_prohibit = fk.CreateProhibitSkill{
 local nianen = fk.CreateViewAsSkill{
   name = "nianen",
   pattern = ".|.|.|.|.|basic",
+  mute = true,
   interaction = function()
     local names = {}
     local mark = Self:getMark("@$nianen")
@@ -1086,8 +1087,10 @@ local nianen = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
+    local room = player.room
+    room:notifySkillInvoked(player, self.name)
     if use.card.name ~= "slash" or use.card.color ~= Card.Red then
-      local room = player.room
+      player:broadcastSkillInvoke(self.name, math.random(3, 4))
       room:setPlayerMark(player, "@@nianen-turn", 1)
       if not player:hasSkill("mashu", true) then
         room:handleAddLoseSkills(player, "mashu")
@@ -1095,6 +1098,8 @@ local nianen = fk.CreateViewAsSkill{
           room:handleAddLoseSkills(player, "-mashu")
         end)
       end
+    else
+      player:broadcastSkillInvoke(self.name, math.random(1, 2))
     end
   end,
   enabled_at_play = function(self, player)
@@ -1110,6 +1115,7 @@ guanyu:addSkill(nianen)
 Fk:loadTranslationTable{
   ["js__guanyu"] = "关羽",
   ["#js__guanyu"] = "羊左之义",
+  ["cv:js__guanyu"] = "雨叁大魔王",
   ["illustrator:js__guanyu"] = "鬼画府",
   ["guanjue"] = "冠绝",
   [":guanjue"] = "锁定技，当你使用或打出一张牌时，所有其他角色不能使用或打出此花色的牌直到回合结束。",
@@ -1117,6 +1123,14 @@ Fk:loadTranslationTable{
   [":nianen"] = "你可以将你的一张牌当任意基本牌使用或打出；若转化后的牌不为红色普【杀】，〖念恩〗失效且你获得〖马术〗直到回合结束。",
   ["@guanjue-turn"] = "冠绝",
   ["@@nianen-turn"] = "念恩失效",
+
+  ["$guanjue1"] = "河北诸将，以某观之，如土鸡瓦狗！",
+  ["$guanjue2"] = "小儿舞刀，不值一哂。",
+  ["$nianen1"] = "丞相厚恩，今斩将以报。",
+  ["$nianen2"] = "丈夫信义为先，恩信岂可负之？",
+  ["$nianen3"] = "桃园之谊，殷殷在怀，不敢或忘。",
+  ["$nianen4"] = "解印封金离许都，惟思恩义走长途。",
+  ["~js__guanyu"] = "皇叔厚恩，来世再报了…",
 }
 
 local chendeng = General(extension, "js__chendeng", "qun", 3)
