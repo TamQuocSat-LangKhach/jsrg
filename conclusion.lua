@@ -1771,7 +1771,7 @@ Fk:loadTranslationTable{
 Fk:loadTranslationTable{
   ["js__sunlubansunluyu"] = "孙鲁班孙鲁育",
   ["#js__sunlubansunluyu"] = "恶紫夺朱",
-  ["illustrator:xxx_general"] = "鬼画府",
+  ["illustrator:js__sunlubansunluyu"] = "鬼画府",
   ["daimou"] = "殆谋",
   [":daimou"] = "每回合各限一次，当一名角色使用【杀】指定其他角色/你为目标时，你可以用牌堆顶的牌【蓄谋】/你须弃置你区域里的一张【蓄谋】牌。"..
   "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。",

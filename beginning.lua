@@ -174,6 +174,8 @@ caocao:addRelatedSkill("feiying")
 Fk:loadTranslationTable{
   ["js__caocao"] = "曹操",
   ["#js__caocao"] = "汉征西将军",
+  ["illustrator:js__caocao"] = "凡果",
+
   ["zhenglve"] = "政略",
   [":zhenglve"] = "主公的回合结束时，你可以摸一张牌，然后令一名没有“猎”的角色获得“猎”，若主公本回合未造成过伤害，"..
   "你可以再令一名没有“猎”的角色获得“猎”标记。<br>你对有“猎”的角色使用牌无距离和次数限制。<br>"..
@@ -277,6 +279,8 @@ Fk:loadTranslationTable{
   ["js__sunjian"] = "孙坚",
   ["#js__sunjian"] = "拨定烈志",
   ["cv:js__sunjian"] = "樰默",
+  ["illustrator:js__sunjian"] = "凡果",
+
   ["pingtao"] = "平讨",
   [":pingtao"] = "出牌阶段限一次，你可以令一名其他角色选择一项：1.交给你一张牌，然后你此阶段使用【杀】次数上限+1；"..
   "2.令你视为对其使用一张无距离和次数限制的【杀】。",
@@ -449,6 +453,8 @@ liuhong:addRelatedSkill("m_bahu")
 Fk:loadTranslationTable{
   ["js__liuhong"] = "刘宏",
   ["#js__liuhong"] = "轧庭焚礼",
+  ["illustrator:js__liuhong"] = "君桓文化",
+
   ["chaozheng"] = "朝争",
   [":chaozheng"] = "准备阶段，你可以令所有其他角色议事，结果为：红色，意见为红色的角色各回复1点体力；黑色，意见为红色的角色各失去1点体力。"..
   "若所有角色意见相同，则议事结束后，你摸X张牌（X为此次议事的角色数）。",
@@ -541,6 +547,8 @@ huangfusong:addSkill(juxia)
 Fk:loadTranslationTable{
   ["js__huangfusong"] = "皇甫嵩",
   ["#js__huangfusong"] = "安危定倾",
+  ["illustrator:js__huangfusong"] = "君桓文化",
+
   ["guanhuo"] = "观火",
   [":guanhuo"] = "出牌阶段，你可以视为使用一张【火攻】。当你以此法使用的未造成伤害的【火攻】结算后，若此次为你于此阶段内第一次发动本技能，"..
   "则你令你此阶段内你使用【火攻】造成的伤害+1，否则你失去〖观火〗。",
@@ -676,6 +684,8 @@ qiaoxuan:addSkill(jizhaoq)
 Fk:loadTranslationTable{
   ["qiaoxuan"] = "桥玄",
   ["#qiaoxuan"] = "泛爱博容",
+  ["illustrator:qiaoxuan"] = "君桓文化",
+
   ["js__juezhi"] = "绝质",
   [":js__juezhi"] = "当你失去一张装备区里的装备牌后，你可以废除对应的装备栏；你回合内每阶段限一次，当你使用牌对目标角色造成伤害时，"..
   "其装备区里每有一张与你已废除装备栏对应的装备牌，此伤害便+1。",
@@ -694,7 +704,7 @@ local addFangkeSkill = function(player, skillName)
   local skill = Fk.skills[skillName]
   if (not skill) or skill.lordSkill or skill.switchSkillName
     or skill.frequency > 3 -- 锁定技=3 后面的都是特殊标签
-    or player:hasSkill(skill.name) then
+    or player:hasSkill(skill, true) then
     return
   end
 
@@ -768,7 +778,9 @@ end
 local banned_fangke = {
   "starsp__xiahoudun",  -- 原因：无敌
   "shichangshi",   -- 原因：变将与休整
-  "godjiaxu", -- 原因：没有可用技能
+  "godjiaxu", "zhangfei","js__huangzhong", "liyixiejing", "olz__wangyun", "yanyan", "duanjiong", "wolongfengchu", "wuanguo",
+  "os__wangling", -- 原因：没有可用技能
+  "js__pangtong", "os__xia__liubei", -- 原因：发动技能逻辑缺陷
 }
 
 local yingmen = fk.CreateTriggerSkill{
@@ -864,6 +876,8 @@ Fk:loadTranslationTable{
   ["js__xushao"] = "许劭",
   ["#js__xushao"] = "识人读心",
   ["cv:js__xushao"] = "樰默",
+  ["illustrator:js__xushao"] = "凡果",
+
   ["yingmen"] = "盈门",
   [":yingmen"] = "锁定技，游戏开始时，你在剩余武将牌堆中随机获得四张武将牌置于你的武将牌上，称为“访客”；回合开始前，若你的“访客”数少于四张，"..
   "则你从剩余武将牌堆中将“访客”补至四张。",
@@ -978,6 +992,8 @@ hejin:addSkill("ty__yanhuo")
 Fk:loadTranslationTable{
   ["js__hejin"] = "何进",
   ["#js__hejin"] = "独意误国谋",
+  ["illustrator:js__hejin"] = "凡果_棉鞋",
+
   ["zhaobing"] = "诏兵",
   [":zhaobing"] = "结束阶段，你可以弃置全部手牌，然后令至多等量的其他角色各选择一项：1.展示并交给你一张【杀】；2.失去1点体力。",
   ["zhuhuanh"] = "诛宦",
@@ -1057,6 +1073,8 @@ dongbai:addSkill(js__lianzhu)
 Fk:loadTranslationTable{
   ["js__dongbai"] = "董白",
   ["#js__dongbai"] = "魔姬",
+  ["illustrator:js__dongbai"] = "SoniaTang",
+
   ["shichong"] = "恃宠",
   [":shichong"] = "转换技，当你使用牌指定其他角色为唯一目标后，阳：你可以获得目标角色一张手牌；阴：目标角色可以交给你一张手牌。",
   ["js__lianzhu"] = "连诛",
@@ -1203,6 +1221,8 @@ nanhualaoxian:addSkill(xuanhua)
 Fk:loadTranslationTable{
   ["js__nanhualaoxian"] = "南华老仙",
   ["#js__nanhualaoxian"] = "冯虚御风",
+  ["illustrator:js__nanhualaoxian"] = "君桓文化",
+
   ["shoushu"] = "授术",
   [":shoushu"] = "锁定技，每轮开始时，若场上没有【太平要术】，你将之置入一名角色的装备区；当【太平要术】离开装备区时，销毁之。",
   ["xundao"] = "寻道",
@@ -1362,6 +1382,7 @@ yangbiao:addSkill(js__yizheng)
 Fk:loadTranslationTable{
   ["js__yangbiao"] = "杨彪",
   ["#js__yangbiao"] = "德彰海内",
+  ["illustrator:js__yangbiao"] = "木美人",
   ["js__zhaohan"] = "昭汉",
   [":js__zhaohan"] = "锁定技，准备阶段，若牌堆未洗过牌，你回复1点体力，否则你失去1点体力。",
   ["js__rangjie"] = "让节",
@@ -1456,6 +1477,7 @@ kongrong:addSkill(zhengyi)
 Fk:loadTranslationTable{
   ["js__kongrong"] = "孔融",
   ["#js__kongrong"] = "北海太守",
+  ["illustrator:js__kongrong"] = "凝聚永恒",
   ["js__lirang"] = "礼让",
   [":js__lirang"] = "每轮限一次，其他角色摸牌阶段开始时，你可以交给其两张牌，然后此回合的弃牌阶段结束时，你获得其于此阶段所有弃置的牌。",
   ["zhengyi"] = "争义",
@@ -1569,6 +1591,7 @@ wangrong:addSkill(fusong)
 Fk:loadTranslationTable{
   ["js__wangrongh"] = "王荣",
   ["#js__wangrongh"] = "灵怀皇后",
+  ["illustrator:js__wangrongh"] = "君桓文化",
   ["fengzi"] = "丰姿",
   [":fengzi"] = "出牌阶段限一次，当你使用基本牌或普通锦囊牌时，你可以弃置一张类型相同的手牌令此牌额外结算一次。",
   ["jizhan"] = "吉占",
@@ -1668,6 +1691,7 @@ duanwei:addSkill(langmie)
 Fk:loadTranslationTable{
   ["js__duanwei"] = "段煨",
   ["#js__duanwei"] = "凉国之英",
+  ["illustrator:js__duanwei"] = "匠人绘",
   ["langmie"] = "狼灭",
   [":langmie"] = "其他角色的结束阶段，你可以选择一项：<br>1.若其本回合使用过至少两张相同类型的牌，你可以弃置一张牌，摸两张牌；<br>"..
   "2.若其本回合造成过至少2点伤害，你可以弃置一张牌，对其造成1点伤害。",
@@ -1864,6 +1888,7 @@ zhujun:addSkill(jvxiang)
 Fk:loadTranslationTable{
   ["js__zhujun"] = "朱儁",
   ["#js__zhujun"] = "征无遗虑",
+  ["illustrator:js__zhujun"] = "沉睡千年",
   ["fendi"] = "分敌",
   [":fendi"] = "每回合限一次，当你使用【杀】指定唯一目标后，你可以展示其至少一张手牌，然后令其只能使用或打出此次展示的牌直到此【杀】结算完毕。"..
   "若如此做，当此【杀】对其造成伤害后，你获得其手牌区或弃牌堆里的这些牌。",
@@ -1972,6 +1997,7 @@ liuyan:addSkill(tongjue)
 Fk:loadTranslationTable{
   ["js__liuyan"] = "刘焉",
   ["#js__liuyan"] = "裂土之宗",
+  ["illustrator:js__liuyan"] = "心中一凛",
   ["js__limu"] = "立牧",
   [":js__limu"] = "出牌阶段，你可以将一张<font color='red'>♦</font>牌当【乐不思蜀】对你使用，然后你回复1点体力；"..
   "若你的判定区里有牌，则你对攻击范围内的其他角色使用牌无次数和距离限制。",
@@ -2075,6 +2101,8 @@ Fk:loadTranslationTable{
   ["js__liubei"] = "刘备",
   ["#js__liubei"] = "负戎荷戈",
   ["cv:js__liubei"] = "玖心粽子",
+  ["illustrator:js__liubei"] = "君桓文化",
+
   ["jishan"] = "积善",
   [":jishan"] = "每回合各限一次，1.当一名角色受到伤害时，你可以失去1点体力防止此伤害，然后你与其各摸一张牌；"..
   "2.当你造成伤害后，你可以令一名体力值最小且你对其发动过〖积善〗的角色回复1点体力。",
@@ -2171,6 +2199,7 @@ wangyun:addSkill(fayi)
 Fk:loadTranslationTable{
   ["js__wangyun"] = "王允",
   ["#js__wangyun"] = "居功自矜",
+  ["illustrator:js__wangyun"] = "凡果",
   ["shelun"] = "赦论",
   [":shelun"] = "出牌阶段限一次，你可以选择一名攻击范围内的其他角色，然后你令除其外所有手牌数不大于你的角色议事，结果为：红色，你弃置其一张牌；"..
   "黑色，你对其造成1点伤害。",

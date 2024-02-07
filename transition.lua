@@ -973,7 +973,7 @@ local jiaohao_active = fk.CreateActiveSkill{
       local target = Fk:currentRoom():getPlayerById(to_select)
       local card = Fk:getCardById(selected_cards[1])
       return to_select ~= Self.id and Fk:currentRoom():getPlayerById(to_select):hasSkill("jiaohao") and
-        #target:getAvailableEquipSlots(card.sub_type) > 0
+        target:hasEmptyEquipSlot(card.sub_type)
     end
   end,
   on_use = function(self, room, effect)
@@ -1114,36 +1114,29 @@ local yangming = fk.CreateActiveSkill{
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and Self:canPindian(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    while not (player.dead or target.dead or player:isKongcheng() or target:isKongcheng()) do
+    while not (player.dead or target.dead) and player:canPindian(target) do
       local pindian = player:pindian({target}, self.name)
       if pindian.results[target.id].winner ~= target then
-        if player.dead or target.dead or player:isKongcheng() or target:isKongcheng() then
-          break
+        if not player.dead and not target.dead and player:canPindian(target)
+        and room:askForSkillInvoke(player, self.name, nil, "#yangming-invoke::"..target.id) then
+          player:broadcastSkillInvoke(self.name)
+          room:notifySkillInvoked(player, self.name)
+          room:doIndicate(player.id, {target.id})
         else
-          if room:askForSkillInvoke(player, self.name, nil, "#yangming-invoke::"..target.id) then
-            player:broadcastSkillInvoke(self.name)
-            room:notifySkillInvoked(player, self.name)
-            room:doIndicate(player.id, {target.id})
-          else
-            break
-          end
+          break
         end
       else
         if not target.dead then
           local n = #room.logic:getEventsOfScope(GameEvent.Pindian, 999, function (e)
             local dat = e.data[1]
-            if dat.results[target.id] and dat.results[target.id].winner ~= target then
-              return true
-            end
+            return dat.results[target.id] and dat.results[target.id].winner ~= target
           end, Player.HistoryPhase)
           if n > 0 then
             target:drawCards(n, self.name)
