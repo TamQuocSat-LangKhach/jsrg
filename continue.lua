@@ -99,7 +99,7 @@ local zhasi = fk.CreateTriggerSkill{
   can_refresh = function(self, event, target, player, data)
     if target == player and player:getMark("@@zhasi") > 0 then
       if event == fk.TargetSpecified then
-        return data.firstTarget and table.find(TargetGroup:getRealTargets(data.tos), function(id) return id ~= player.id end)
+        return data.firstTarget and table.find(AimGroup:getAllTargets(data.tos), function(id) return id ~= player.id end)
       else
         return true
       end

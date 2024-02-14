@@ -1339,6 +1339,7 @@ local huozhong = fk.CreateActiveSkill{
   prompt = "#huozhong-invoke",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:hasDelayedTrick("supply_shortage")
+    and not table.contains(player.sealedSlots, Player.JudgeSlot)
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type ~= Card.TypeTrick and Fk:getCardById(to_select).color == Card.Black
@@ -1348,7 +1349,7 @@ local huozhong = fk.CreateActiveSkill{
     local card = Fk:cloneCard("supply_shortage")
     card:addSubcards(effect.cards)
     player:addVirtualEquip(card)
-    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonJustMove, self.name)
+    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonPut, self.name)
     if not player.dead then
       player:drawCards(2, self.name)
     end
@@ -1391,6 +1392,7 @@ local huozhong_active = fk.CreateActiveSkill{
   prompt = "#huozhong&-invoke",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:hasDelayedTrick("supply_shortage")
+    and not table.contains(player.sealedSlots, Player.JudgeSlot)
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type ~= Card.TypeTrick and Fk:getCardById(to_select).color == Card.Black
@@ -1400,7 +1402,7 @@ local huozhong_active = fk.CreateActiveSkill{
     local card = Fk:cloneCard("supply_shortage")
     card:addSubcards(effect.cards)
     player:addVirtualEquip(card)
-    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonJustMove, "huozhong")
+    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonPut "huozhong")
     local target
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if p:hasSkill("huozhong", true) then
