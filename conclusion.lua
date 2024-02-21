@@ -1498,19 +1498,19 @@ local js__youjin_prohibit = fk.CreateProhibitSkill{
   name = "#js__youjin_prohibit",
   prohibit_use = function(self, player, card)
     local mark = player:getMark("@js__youjin-turn")
-    if mark ~= 0 and card then
+    if mark ~= 0 and card and card.number > 0 and card.number < mark then
       local cards = card:isVirtual() and card.subcards or {card.id}
-      return table.find(cards, function(id)
-        return table.contains(player.player_cards[Player.Hand], id) and Fk:getCardById(id).number < mark
+      return #cards > 0 and table.every(cards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id)
       end)
     end
   end,
   prohibit_response = function(self, player, card)
     local mark = player:getMark("@js__youjin-turn")
-    if mark ~= 0 and card then
+    if mark ~= 0 and card and card.number > 0 and card.number < mark then
       local cards = card:isVirtual() and card.subcards or {card.id}
-      return table.find(cards, function(id)
-        return table.contains(player.player_cards[Player.Hand], id) and Fk:getCardById(id).number < mark
+      return #cards > 0 and table.every(cards, function(id)
+        return table.contains(player.player_cards[Player.Hand], id)
       end)
     end
   end,

@@ -844,7 +844,7 @@ local pingjian = fk.CreateTriggerSkill{
       and player:getMark("js_fangke_skills") ~= 0 and
       table.contains(player:getMark("js_fangke_skills"), data.name)
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, _, target, player, data)
     local room = player.room
     local choices = player:getMark("@&js_fangke")
@@ -868,6 +868,16 @@ local pingjian = fk.CreateTriggerSkill{
     removeFangke(player, choice)
     if choice == owner and not player.dead then
       player:drawCards(1)
+    end
+  end,
+
+  refresh_events = {fk.EventLoseSkill},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and data == self and player:getMark("@&js_fangke") ~= 0
+  end,
+  on_refresh = function (self, event, target, player, data)
+    for _, g in ipairs(player:getMark("@&js_fangke")) do
+      removeFangke(player, g)
     end
   end,
 }
@@ -924,7 +934,7 @@ local zhaobing = fk.CreateTriggerSkill{
             local card = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#zhaobing-card:"..player.id)
             if #card > 0 then
               p:showCards(card)
-              room:obtainCard(player, card[1], true, fk.ReasonGive)
+              room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, p.id)
             else
               room:loseHp(p, 1, self.name)
             end
@@ -1014,16 +1024,15 @@ local shichong = fk.CreateTriggerSkill{
   switch_skill_name = "shichong",
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      data.tos and #TargetGroup:getRealTargets(data.tos) == 1 and TargetGroup:getRealTargets(data.tos)[1] ~= player.id and
-      not player.room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1]):isKongcheng()
+    return target == player and player:hasSkill(self) and data.tos and #AimGroup:getAllTargets(data.tos) == 1 and AimGroup:getAllTargets(data.tos)[1] ~= player.id and
+      not player.room:getPlayerById(AimGroup:getAllTargets(data.tos)[1]):isKongcheng()
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if player:getSwitchSkillState(self.name, false) == fk.SwitchYang then
-      return room:askForSkillInvoke(player, self.name, nil, "#shichong-invoke::"..TargetGroup:getRealTargets(data.tos)[1])
+      return room:askForSkillInvoke(player, self.name, nil, "#shichong-invoke::"..AimGroup:getAllTargets(data.tos)[1])
     else
-      local to = room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+      local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
       local card = room:askForCard(to, 1, 1, false, self.name, true, ".", "#shichong-card:"..player.id)
       if #card > 0 then
         self.cost_data = card[1]
@@ -1034,7 +1043,7 @@ local shichong = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if player:getSwitchSkillState(self.name, true) == fk.SwitchYang then
-      local to = room:getPlayerById(TargetGroup:getRealTargets(data.tos)[1])
+      local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
       local card = room:askForCardChosen(player, to, "h", self.name)
       room:obtainCard(player, card, false, fk.ReasonPrey)
     else
