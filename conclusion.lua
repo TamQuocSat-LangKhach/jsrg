@@ -1730,22 +1730,18 @@ local bazheng = fk.CreateTriggerSkill{
       [2] = "red",
       [3] = "nocolor"
     }
-    room:doBroadcastNotify(
-      "ShowToast",
-      "<b>" .. table.concat(names, '、') .. "</b>" .. Fk:translate('#changeOpinion') .. Fk:translate(colorStr[data.results[player.id].opinion])
-    )
 
     room:sendLog{
       type = "#LogChangeOpinion",
       to = targets,
       arg = colorStr[data.results[player.id].opinion],
+      toast = true,
     }
   end,
 }
 Fk:loadTranslationTable{
   ["bazheng"] = "霸政",
   [":bazheng"] = "锁定技，当你参与的议事展示意见后，参与议事角色中本回合受到过你造成伤害的角色意见改为与你相同。",
-  ["#changeOpinion"] = " 的意见被视为 ",
   ["#LogChangeOpinion"] = "%to 的意见被视为 %arg",
 }
 
