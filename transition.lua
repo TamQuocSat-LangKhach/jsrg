@@ -1012,7 +1012,8 @@ local js__manjuan = fk.CreateViewAsSkill{
   pattern = ".",
   expand_pile = function() return U.getMark(Self, "js__manjuan-turn") end,
   card_filter = function(self, to_select, selected)
-    if #selected == 0 and table.contains(U.getMark(Self, "js__manjuan-turn"), to_select) then
+    if #selected == 0 and table.contains(U.getMark(Self, "js__manjuan-turn"), to_select)
+    and not table.contains(U.getMark(Self, "js__manjuan_used-turn"), Fk:getCardById(to_select).number) then
       local card = Fk:getCardById(to_select)
       if Fk.currentResponsePattern == nil then
         return Self:canUse(card) and not Self:prohibitUse(card)
@@ -1046,35 +1047,57 @@ local js__manjuan_trigger = fk.CreateTriggerSkill{
       if event == fk.AfterCardsMove then
         for _, move in ipairs(data) do
           if move.toArea == Card.DiscardPile then
-            return true
+            for _, info in ipairs(move.moveInfo) do
+              if player.room:getCardArea(info.cardId) == Card.DiscardPile then
+                return true
+              end
+            end
           end
           for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.DiscardPile then
+            if info.fromArea == Card.DiscardPile and player.room:getCardArea(info.cardId) ~= Card.DiscardPile  then
               return true
             end
           end
         end
       else
-        return data == self and player == target
+        return data == self and player == target and player.room:getTag("RoundCount")
       end
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    local ids = {}
-    local mark = U.getMark(player, "js__manjuan_used-turn")
-    room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-      for _, move in ipairs(e.data) do
+    if event == fk.AfterCardsMove then
+      local ids = U.getMark(player, "js__manjuan-turn")
+      for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
-            if room:getCardArea(info.cardId) == Card.DiscardPile and not table.contains(mark, Fk:getCardById(info.cardId).number) then
+            if room:getCardArea(info.cardId) == Card.DiscardPile then
               table.insertIfNeed(ids, info.cardId)
             end
           end
         end
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.DiscardPile and room:getCardArea(info.cardId) ~= Card.DiscardPile then
+            table.removeOne(ids, info.cardId)
+          end
+        end
       end
-    end, Player.HistoryTurn)
-    room:setPlayerMark(player, "js__manjuan-turn", ids)
+      room:setPlayerMark(player, "js__manjuan-turn", ids)
+    else
+      local ids = {}
+      room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+        for _, move in ipairs(e.data) do
+          if move.toArea == Card.DiscardPile then
+            for _, info in ipairs(move.moveInfo) do
+              if room:getCardArea(info.cardId) == Card.DiscardPile then
+                table.insertIfNeed(ids, info.cardId)
+              end
+            end
+          end
+        end
+      end, Player.HistoryTurn)
+      room:setPlayerMark(player, "js__manjuan-turn", ids)
+    end
   end,
 }
 local yangming = fk.CreateActiveSkill{
