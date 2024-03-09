@@ -1007,46 +1007,40 @@ Fk:loadTranslationTable{
 }
 
 local pangtong = General(extension, "js__pangtong", "qun", 3)
-local js__manjuan = fk.CreateTriggerSkill{
+local js__manjuan = fk.CreateViewAsSkill{
   name = "js__manjuan",
-  anim_type = "special",
-  events = {fk.PreCardUse, fk.PreCardRespond},
-  can_trigger = function (self, event, target, player, data)
-    if target == player and player:hasSkill(self, true) then
-      local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
-      if #cards == 0 then return end
-      local yes = true
-      local use = player.room.logic:getCurrentEvent()
-      use:searchEvents(GameEvent.MoveCards, 1, function(e)
-        if e.parent and e.parent.id == use.id then
-          local subcheck = table.simpleClone(cards)
-          for _, move in ipairs(e.data) do
-            if move.moveReason == fk.ReasonUse or move.moveReason == fk.ReasonResonpse then
-              for _, info in ipairs(move.moveInfo) do
-                if table.removeOne(subcheck, info.cardId) and info.fromArea ~= Card.DiscardPile then
-                  yes = false
-                end
-              end
-            end
-          end
-        end
-      end)
-      return yes
+  pattern = ".",
+  expand_pile = function() return U.getMark(Self, "js__manjuan-turn") end,
+  card_filter = function(self, to_select, selected)
+    if #selected == 0 and table.contains(U.getMark(Self, "js__manjuan-turn"), to_select) then
+      local card = Fk:getCardById(to_select)
+      if Fk.currentResponsePattern == nil then
+        return Self:canUse(card) and not Self:prohibitUse(card)
+      else
+        return Exppattern:Parse(Fk.currentResponsePattern):match(card)
+      end
     end
   end,
-  on_cost = Util.TrueFunc,
-  on_use = function (self, event, target, player, data)
-    local room = player.room
-    local cards = data.card:isVirtual() and data.card.subcards or {data.card.id}
-    local mark = player:getMark("js__manjuan-turn")
-    if mark == 0 then mark = {} end
-    for _, id in ipairs(cards) do
-      table.insertIfNeed(mark, Fk:getCardById(id, true).number)
-    end
-    room:setPlayerMark(player, "js__manjuan-turn", mark)
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    return Fk:getCardById(cards[1])
   end,
+  before_use = function (self, player, use)
+    local mark = U.getMark(player, "js__manjuan_used-turn")
+    table.insert(mark, use.card.number)
+    player.room:setPlayerMark(player, "js__manjuan_used-turn", mark)
+  end,
+  enabled_at_play = function(self, player)
+    return player:isKongcheng()
+  end,
+  enabled_at_response = function(self, player, response)
+    return player:isKongcheng()
+  end,
+}
+local js__manjuan_trigger = fk.CreateTriggerSkill{
+  name = "#js__manjuan_trigger",
 
-  refresh_events = {fk.AfterCardsMove, fk.TurnStart},
+  refresh_events = {fk.AfterCardsMove, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
     if player:hasSkill(self, true) then
       if event == fk.AfterCardsMove then
@@ -1061,49 +1055,26 @@ local js__manjuan = fk.CreateTriggerSkill{
           end
         end
       else
-        return true
+        return data == self and player == target
       end
     end
   end,
   on_refresh = function(self, event, target, player, data)
-    if event == fk.AfterCardsMove then
-      local room = player.room
-      local ids = {}
-      room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-        for _, move in ipairs(e.data) do
-          if move.toArea == Card.DiscardPile then
-            for _, info in ipairs(move.moveInfo) do
-              if room:getCardArea(info.cardId) == Card.DiscardPile then
-                table.insertIfNeed(ids, info.cardId)
-              end
+    local room = player.room
+    local ids = {}
+    local mark = U.getMark(player, "js__manjuan_used-turn")
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if room:getCardArea(info.cardId) == Card.DiscardPile and not table.contains(mark, Fk:getCardById(info.cardId).number) then
+              table.insertIfNeed(ids, info.cardId)
             end
           end
         end
-      end, Player.HistoryTurn)
-      player.special_cards["js__manjuan&"] = table.simpleClone(ids)
-    else
-      player.special_cards["js__manjuan&"] = {}
-    end
-    player:doNotify("ChangeSelf", json.encode {
-      id = player.id,
-      handcards = player:getCardIds("h"),
-      special_cards = player.special_cards,
-    })
-  end,
-}
-local js__manjuan_prohibit = fk.CreateProhibitSkill{
-  name = "#js__manjuan_prohibit",
-  prohibit_use = function(self, player, card)
-    if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
-      return not player:isKongcheng() or
-        (player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number))
-    end
-  end,
-  prohibit_response = function(self, player, card)
-    if #player:getPile("js__manjuan&") > 0 and table.contains(player:getPile("js__manjuan&"), card:getEffectiveId()) then
-      return not player:isKongcheng() or
-        (player:getMark("js__manjuan-turn") ~= 0 and table.contains(player:getMark("js__manjuan-turn"), card.number))
-    end
+      end
+    end, Player.HistoryTurn)
+    room:setPlayerMark(player, "js__manjuan-turn", ids)
   end,
 }
 local yangming = fk.CreateActiveSkill{
@@ -1155,14 +1126,14 @@ local yangming = fk.CreateActiveSkill{
     end
   end,
 }
-js__manjuan:addRelatedSkill(js__manjuan_prohibit)
+js__manjuan:addRelatedSkill(js__manjuan_trigger)
 pangtong:addSkill(js__manjuan)
 pangtong:addSkill(yangming)
 Fk:loadTranslationTable{
   ["js__pangtong"] = "庞统",
   ["#js__pangtong"] = "荊楚之高俊",
   ["js__manjuan"] = "漫卷",
-  [":js__manjuan"] = "若你没有手牌，你可以如手牌般使用或打出本回合进入弃牌堆的牌（每种点数每回合限一次）。",
+  [":js__manjuan"] = "若你没有手牌，你可以如手牌般使用或打出本回合进入弃牌堆的牌（每种点数每回合限一次）（无法转化）。",
   ["yangming"] = "养名",
   [":yangming"] = "出牌阶段限一次，你可以与一名角色拼点：若其没赢，你可以与其重复此流程；若其赢，其摸等同于其本阶段拼点没赢次数的牌，你回复1点体力。",
   ["js__manjuan&"] = "漫卷",
