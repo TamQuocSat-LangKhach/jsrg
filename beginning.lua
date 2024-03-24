@@ -1343,13 +1343,12 @@ local js__yizheng = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:currentRoom():getPlayerById(to_select):getHandcardNum() > Self:getHandcardNum()
+    local to = Fk:currentRoom():getPlayerById(to_select)
+    return #selected == 0 and to:getHandcardNum() > Self:getHandcardNum() and Self:canPindian(to)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1360,6 +1359,7 @@ local js__yizheng = fk.CreateActiveSkill{
     else
       local choice = room:askForChoice(target, {"0", "1", "2"}, self.name, "#js__yizheng-damage:"..player.id)
       if choice ~= "0" then
+        room:doIndicate(target.id, {player.id})
         room:damage{
           from = target,
           to = player,

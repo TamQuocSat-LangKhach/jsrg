@@ -16,9 +16,7 @@ local duxing = fk.CreateActiveSkill{
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     local card = Fk:cloneCard("duel")
     card.skillName = self.name
@@ -29,10 +27,12 @@ local duxing = fk.CreateActiveSkill{
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
     for _, p in ipairs(targets) do
       room:setPlayerMark(p, "duxing-phase", 1)
+      p:filterHandcards()
     end
     room:useVirtualCard("duel", nil, player, targets, self.name)
     for _, p in ipairs(targets) do
       room:setPlayerMark(p, "duxing-phase", 0)
+      p:filterHandcards()
     end
   end,
 }
@@ -149,6 +149,7 @@ local bashi = fk.CreateTriggerSkill{
           })
           data.result = cardResponded
           data.result.skillName = self.name
+          return true
         end
       end
     end
