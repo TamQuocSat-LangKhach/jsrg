@@ -1168,7 +1168,21 @@ local yingshi = fk.CreateTriggerSkill{
     local n = #table.filter(room.players, function(p) return p.dead end)
     local num = 3
     if n > 2 then num = 5 end
-    room:askForGuanxing(player, room:getNCards(num, "bottom"))
+    local cards = table.reverse(room:getNCards(num, "bottom"))
+    local ret = U.askForArrangeCards(player, self.name, {{}, cards, "Top", "Bottom"}, "", true, 0, {num, num}, {0, 0})
+    local top, bottom = ret[1], ret[2]
+    for i = #top, 1, -1 do
+      table.insert(room.draw_pile, 1, top[i])
+    end
+    for i = 1, #bottom, 1 do
+      table.insert(room.draw_pile, bottom[i])
+    end
+    room:sendLog{
+      type = "#GuanxingResult",
+      from = player.id,
+      arg = #top,
+      arg2 = #bottom,
+    }
   end,
 }
 local tuigu = fk.CreateTriggerSkill{
@@ -1424,11 +1438,10 @@ Fk:loadTranslationTable{
   ["js__pianchong"] = "偏宠",
   [":js__pianchong"] = "一名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
   "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
-  --FIXME: 若存在无色的判定结果，此描述须修正
   ["js__zunwei"] = "尊位",
-  [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选择，然后移除该选项："..
-  "1，将手牌补至与其手牌数相同（至多摸五张）。"..
-  "2，将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数。"..
+  [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选项，然后移除该选项："..
+  "1，将手牌补至与其手牌数相同（至多摸五张）；"..
+  "2，将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数；"..
   "3，将体力值回复至与其相同。",
 
   ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
@@ -1575,7 +1588,7 @@ local js__zhubei = fk.CreateTriggerSkill{
 local js__zhubei_targetmod = fk.CreateTargetModSkill{
   name = "#js__zhubei_targetmod",
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill("js__zhubei") and to:getMark("js__zhubei_lost-turn") > 0
+    return player:hasSkill("js__zhubei") and to and to:getMark("js__zhubei_lost-turn") > 0
   end,
 }
 js__zhubei:addRelatedSkill(js__zhubei_targetmod)

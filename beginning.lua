@@ -78,10 +78,10 @@ local zhenglve_trigger = fk.CreateTriggerSkill{
 local zhenglve_targetmod = fk.CreateTargetModSkill{
   name = "#zhenglve_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill("zhenglve") and scope == Player.HistoryPhase and to:getMark("@@caocao_lie") > 0
+    return player:hasSkill("zhenglve") and scope == Player.HistoryPhase and to and to:getMark("@@caocao_lie") > 0
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill("zhenglve") and to:getMark("@@caocao_lie") > 0
+    return player:hasSkill("zhenglve") and to and to:getMark("@@caocao_lie") > 0
   end,
 }
 local huilie = fk.CreateTriggerSkill{
