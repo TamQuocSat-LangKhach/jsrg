@@ -814,6 +814,22 @@ local yingmen = fk.CreateTriggerSkill{
       addFangke(player, g, player:hasSkill("js__pingjian"))
     end
   end,
+
+  refresh_events = {fk.SkillEffect},
+  can_refresh = function (self, event, target, player, data)
+    return target == player and player:getMark("js_fangke_skills") ~= 0 and
+      table.contains(player:getMark("js_fangke_skills"), data.name)
+  end,
+  on_refresh = function (self, event, target, player, data)
+    local room = player.room
+    for _, s in ipairs(data.related_skills) do
+      if s:isInstanceOf(StatusSkill) then
+        room.status_skills[s.class] = room.status_skills[s.class] or {}
+        table.insertIfNeed(room.status_skills[s.class], s)
+        room:doBroadcastNotify("AddSkill", json.encode{player.id, s.name})
+      end
+    end
+  end,
 }
 
 xushao:addSkill(yingmen)
