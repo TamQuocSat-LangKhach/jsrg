@@ -1396,7 +1396,7 @@ local huozhong_active = fk.CreateActiveSkill{
     local card = Fk:cloneCard("supply_shortage")
     card:addSubcards(effect.cards)
     player:addVirtualEquip(card)
-    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonPut "huozhong")
+    room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonPut, "huozhong")
     local target
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if p:hasSkill("huozhong", true) then
