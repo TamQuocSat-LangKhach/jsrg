@@ -520,20 +520,7 @@ local funi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "control")
       local n = (#room.alive_players + 1) // 2
       local ids = getShade(room, n)
-      player.special_cards["funi"] = table.simpleClone(ids)
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      local move = U.askForDistribution(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", "funi", true)
-      player.special_cards["funi"] = {}
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
-      U.doDistribution(room, move, player.id, self.name)
+      U.askForDistribution(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", ids)
     elseif event == fk.BeforeCardsMove then
       room:setPlayerMark(player, "@@funi-turn", 1)
     elseif event == fk.CardUsing then
