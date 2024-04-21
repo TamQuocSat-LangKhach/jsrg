@@ -66,7 +66,7 @@ local wentian = fk.CreateViewAsSkill{
 
     use.card:addSubcard(topCardId)
     local cardColor = Fk:getCardById(topCardId).color
-    if 
+    if
       (use.card.name == "nullification" and cardColor ~= Card.Black) or
       (use.card.name == "fire_attack" and cardColor ~= Card.Red)
     then
@@ -82,7 +82,7 @@ local wentian = fk.CreateViewAsSkill{
 }
 local wentianGive = fk.CreateActiveSkill{
   name = "wentian_give",
-  expand_pile = "wentian",
+  expand_pile = function () return U.getMark(Self, "wentianCards") end,
   card_num = 1,
   target_num = 1,
   card_filter = function(self, to_select, selected, targets)
@@ -90,7 +90,7 @@ local wentianGive = fk.CreateActiveSkill{
     return #selected == 0 and type(ids) == "table" and table.contains(ids, to_select)
   end,
   target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id
+    return #selected == 0 and to_select ~= Self.id and #selected_cards == 1
   end,
 }
 Fk:addSkill(wentianGive)
@@ -133,21 +133,9 @@ local wentianTrigger = fk.CreateTriggerSkill{
 
     local others = room:getOtherPlayers(player)
     if #others > 0 then
-      player.special_cards["wentian"] = topCardIds
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
       room:setPlayerMark(player, "wentianCards", topCardIds)
       local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", false, nil, false)
       room:setPlayerMark(player, "wentianCards", 0)
-      player.special_cards["wentian"] = nil
-      player:doNotify("ChangeSelf", json.encode {
-        id = player.id,
-        handcards = player:getCardIds("h"),
-        special_cards = player.special_cards,
-      })
 
       local toGive = ret and ret.cards[1] or topCardIds[1]
       table.removeOne(topCardIds, toGive)
