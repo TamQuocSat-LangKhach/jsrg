@@ -492,15 +492,16 @@ local zhangren = General(extension, "js__zhangren", "qun", 4)
 local funi = fk.CreateTriggerSkill{
   name = "funi",
   mute = true,
-  events = {fk.RoundStart, fk.BeforeCardsMove, fk.CardUsing},
+  events = {fk.RoundStart, fk.AfterCardsMove, fk.CardUsing},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     if event == fk.RoundStart then
       return player:hasSkill(self)
-    elseif event == fk.BeforeCardsMove then
+    elseif event == fk.AfterCardsMove then
       if player:hasSkill(self) and player:getMark("@@funi-turn") == 0 then
         for _, move in ipairs(data) do
-          if move.toArea == Card.Void then
+          if move.toArea == Card.Void and move.moveReason ~= fk.ReasonExchange then
+            --FIXME:由于目前交换卡牌实现方式为经过Card.Void，故暂且需要排除此种情况
             for _, info in ipairs(move.moveInfo) do
               if Fk:getCardById(info.cardId, true).trueName == "shade" then
                 return true
@@ -521,7 +522,7 @@ local funi = fk.CreateTriggerSkill{
       local n = (#room.alive_players + 1) // 2
       local ids = getShade(room, n)
       U.askForDistribution(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", ids)
-    elseif event == fk.BeforeCardsMove then
+    elseif event == fk.AfterCardsMove then
       room:setPlayerMark(player, "@@funi-turn", 1)
     elseif event == fk.CardUsing then
       player:broadcastSkillInvoke(self.name)
@@ -536,7 +537,7 @@ local funi = fk.CreateTriggerSkill{
 local funi_attackrange = fk.CreateAttackRangeSkill{
   name = "#funi_attackrange",
   correct_func = function (self, from, to)
-    if from:hasSkill("funi") then
+    if from:hasSkill(funi) then
       return -1000
     end
     return 0
