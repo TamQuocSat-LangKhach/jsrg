@@ -59,6 +59,7 @@ Fk:loadTranslationTable{
   ["js__peace_spell"] = "太平要术",
   [":js__peace_spell"] = "装备牌·防具<br/><b>防具技能</b>：锁定技，防止你受到的属性伤害；你的手牌上限+X（X为存活势力数-1）；"..
   "当你失去装备区里的【太平要术】后，你摸两张牌，然后若你的体力值大于1，则你失去1点体力。",
+  ["#js__peace_spell_skill"] = "太平要术",
 }
 
 local shadeSkill = fk.CreateActiveSkill{
