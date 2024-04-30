@@ -1532,7 +1532,7 @@ local fengzi = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     player.room:throwCard(self.cost_data, self.name, player, player)
-    data.additionalEffect = 1
+    data.additionalEffect = (data.additionalEffect or 0) + 1
   end,
 }
 local jizhan = fk.CreateTriggerSkill{
@@ -1550,11 +1550,12 @@ local jizhan = fk.CreateTriggerSkill{
       toArea = Card.Processing,
       moveReason = fk.ReasonJustMove,
       skillName = self.name,
+      proposer = player.id,
     }
     while true do
-      room:delay(1000)
-      local choice = room:askForChoice(player, {"jizhan_more", "jizhan_less"}, self.name, "#jizhan-choice")
+      room:delay(500)
       local num1 = Fk:getCardById(get[#get]).number
+      local choice = room:askForChoice(player, {"jizhan_more", "jizhan_less"}, self.name, "#jizhan-choice:::"..tostring(num1))
       local id = room:getNCards(1)[1]
       local num2 = Fk:getCardById(id).number
       room:moveCards{
@@ -1562,20 +1563,19 @@ local jizhan = fk.CreateTriggerSkill{
         toArea = Card.Processing,
         moveReason = fk.ReasonJustMove,
         skillName = self.name,
+        proposer = player.id,
       }
       table.insert(get, id)
       if (choice == "jizhan_more" and num1 >= num2) or (choice == "jizhan_less" and num1 <= num2) then
         room:setCardEmotion(id, "judgebad")
-        room:delay(1000)
+        room:delay(600)
         break
       else
         room:setCardEmotion(id, "judgegood")
-        room:delay(1000)
+        room:delay(600)
       end
     end
-    local dummy = Fk:cloneCard("dilu")
-    dummy:addSubcards(get)
-    room:obtainCard(player.id, dummy, true, fk.ReasonJustMove)
+    room:obtainCard(player.id, get, true, fk.ReasonJustMove, player.id, self.name)
     return true
   end,
 }
@@ -1618,13 +1618,13 @@ Fk:loadTranslationTable{
   ["#js__wangrongh"] = "灵怀皇后",
   ["illustrator:js__wangrongh"] = "君桓文化",
   ["fengzi"] = "丰姿",
-  [":fengzi"] = "出牌阶段限一次，当你使用基本牌或普通锦囊牌时，你可以弃置一张类型相同的手牌令此牌额外结算一次。",
+  [":fengzi"] = "每阶段限一次，当你于出牌阶段内使用基本牌或普通锦囊牌时，你可以弃置一张类型相同的手牌令此牌额外结算一次。",
   ["jizhan"] = "吉占",
   [":jizhan"] = "摸牌阶段，你可以改为展示牌堆顶的一张牌，猜测牌堆顶下一张牌点数大于或小于此牌，然后展示之，若猜对则继续猜测。最后你获得所有展示的牌。",
   ["fusong"] = "赋颂",
   [":fusong"] = "当你死亡时，你可以令一名体力上限大于你的角色选择获得〖丰姿〗或〖吉占〗。",
   ["#fengzi-invoke"] = "丰姿：你可以弃置一张%arg，令%arg2额外结算一次",
-  ["#jizhan-choice"] = "吉占：猜测下一张牌的点数",
+  ["#jizhan-choice"] = "吉占：猜测下一张牌的点数与上一张（%arg点）比大小",
   ["jizhan_more"] = "下一张牌点数较大",
   ["jizhan_less"] = "下一张牌点数较小",
   ["#fusong-choose"] = "赋颂：你可以令一名角色获得〖丰姿〗或〖吉占〗",

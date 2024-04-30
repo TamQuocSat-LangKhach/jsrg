@@ -346,35 +346,34 @@ local js__cangchu = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) and target.phase == Player.Finish and player:getMark("@js__cangchu") == 0 then
-      local events = player.room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      local n = 0
+      local max_num = #player.room.alive_players
+      local events = player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         for _, move in ipairs(e.data) do
-          return move.to == player.id and move.toArea == Card.PlayerHand
+          if move.to == player.id and move.toArea == Card.PlayerHand then
+            n = n + #move.moveInfo
+          end
         end
+        return n > max_num
       end, Player.HistoryTurn)
-      return #events > 0
-    end
-  end,
-  on_trigger = function(self, event, target, player, data)
-    local room = player.room
-    local n = 0
-    local events = room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-      for _, move in ipairs(e.data) do
-        if move.to == player.id and move.toArea == Card.PlayerHand then
-          n = n + #move.moveInfo
-        end
+      if n > 0 then
+        self.cost_data = n
+        return true
       end
-    end, Player.HistoryTurn)
-    self:doCost(event, target, player, n)
+    end
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
+    local x = self.cost_data
     local targets = table.map(room.alive_players, function(p) return p.id end)
-    local prompt = "#js__cangchu1-choose:::"..math.min(#room.alive_players, data)
-    if data > #room.alive_players then
-      prompt = "#js__cangchu2-choose:::"..math.min(#room.alive_players, data)
+    local prompt = "#js__cangchu1-choose:::"..x
+    if x > #targets then
+      x = #targets
+      prompt = "#js__cangchu2-choose:::"..x
     end
-    local tos = room:askForChoosePlayers(player, targets, 1, data, prompt, self.name, true)
+    local tos = room:askForChoosePlayers(player, targets, 1, x, prompt, self.name, true)
     if #tos > 0 then
+      room:sortPlayersByAction(tos)
       self.cost_data = {tos, tonumber(prompt[13])}
       return true
     end
