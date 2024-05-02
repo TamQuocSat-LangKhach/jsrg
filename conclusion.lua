@@ -314,7 +314,7 @@ local yinlue = fk.CreateTriggerSkill{
           local ex_tag = player.tag["_extra_turn_count"]
           table.insert(ex_tag, "yinlueTurn" .. data.damageType)
 
-          GameEvent(GameEvent.Turn, player):exec()
+          GameEvent.Turn:create(player):exec()
 
           table.remove(ex_tag)
 
