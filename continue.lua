@@ -769,9 +769,7 @@ local qiongtu_trigger = fk.CreateTriggerSkill{
       if data.qiongtu then
         room:changeKingdom(player, "wei", true)
         if #player:getPile("qiongtu") > 0 then
-          local dummy = Fk:cloneCard("dilu")
-          dummy:addSubcards(player:getPile("qiongtu"))
-          room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+          room:obtainCard(player, player:getPile("qiongtu"), true, fk.ReasonJustMove)
         end
       else
         player:drawCards(1, "qiongtu")

@@ -396,9 +396,7 @@ local shacheng = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(room:getNCards(2))
-      player:addToPile(self.name, dummy, true, self.name)
+      player:addToPile(self.name, room:getNCards(2), true, self.name)
     else
       room:moveCardTo(self.cost_data.cards, Card.DiscardPile, player, fk.ReasonJustMove, self.name, self.name, true, player.id)
       local to = room:getPlayerById(self.cost_data.targets[1])
@@ -450,23 +448,14 @@ local ninghan_trigger = fk.CreateTriggerSkill{
   anim_type = "masochism",
   events = {fk.Damaged},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill("ninghan") and not target.dead and data.damageType == fk.IceDamage and data.card then
-      local room = player.room
-      local subcards = data.card:isVirtual() and data.card.subcards or {data.card.id}
-      return #subcards > 0 and table.find(subcards, function(id)
-        return room:getCardArea(id) == Card.Processing or room:getCardArea(id) == Card.DiscardPile end)
-    end
+    return player:hasSkill(ninghan) and not target.dead and data.damageType == fk.IceDamage and data.card and
+    player.room:getCardArea(data.card) == Card.Processing
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, "ninghan", data, "#ninghan-invoke:::"..data.card:toLogString())
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    local dummy = Fk:cloneCard("dilu")
-    local subcards = data.card:isVirtual() and data.card.subcards or {data.card.id}
-    dummy:addSubcards(table.filter(subcards, function(id)
-      return room:getCardArea(id) == Card.Processing or room:getCardArea(id) == Card.DiscardPile end))
-    player:addToPile("shacheng", dummy, true, "ninghan")
+    player:addToPile("shacheng", data.card, true, "ninghan")
   end,
 }
 Fk:addSkill(shacheng_active)

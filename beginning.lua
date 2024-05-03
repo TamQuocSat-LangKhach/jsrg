@@ -1346,9 +1346,7 @@ local js__rangjie = fk.CreateTriggerSkill{
     if room:askForSkillInvoke(player, self.name, nil, "#js__rangjie-card:::"..suit) then
       local result = room:askForGuanxing(player, ids, nil, {1, 1}, self.name, true, {"DiscardPile", "$Hand"})
       if #result.bottom > 0 then
-        local dummy = Fk:cloneCard("dilu")
-        dummy:addSubcards(result.bottom)
-        room:obtainCard(player, dummy, false, fk.ReasonPrey)
+        room:obtainCard(player, result.bottom, false, fk.ReasonPrey)
       end
     end
   end,
@@ -1448,10 +1446,8 @@ local js__lirang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dummy = Fk:cloneCard("dilu")
     if event == fk.EventPhaseStart then
-      dummy:addSubcards(self.cost_data)
-      room:obtainCard(target, dummy, false, fk.ReasonGive)
+      room:obtainCard(target, self.cost_data, false, fk.ReasonGive)
       room:setPlayerMark(player, "js__lirang-round", target.id)
     else
       local ids = {}
@@ -1467,8 +1463,7 @@ local js__lirang = fk.CreateTriggerSkill{
       end, Player.HistoryPhase)
       ids = table.filter(ids, function(id) return room:getCardArea(id) == Card.DiscardPile end)
       if #ids == 0 then return end
-      dummy:addSubcards(ids)
-      room:obtainCard(player, dummy, true, fk.ReasonJustMove)
+      room:obtainCard(player, ids, true, fk.ReasonJustMove)
     end
   end,
 }
@@ -1827,9 +1822,7 @@ local fendi_delay = fk.CreateTriggerSkill{
       return room:getCardArea(id) == Card.DiscardPile or table.contains(handcards, id)
     end)
     if #cards > 0 then
-      local dummy = Fk:cloneCard("dilu")
-      dummy:addSubcards(cards)
-      room:moveCardTo(dummy, Player.Hand, player, fk.ReasonPrey, fendi.name, nil, false, player.id)
+      room:moveCardTo(cards, Player.Hand, player, fk.ReasonPrey, fendi.name, nil, true, player.id)
     end
   end,
 }
