@@ -620,4 +620,235 @@ Fk:loadTranslationTable{
 
 luzhi:addSkill(daoren)
 
+--local caojiewangfu = General(extension, "js__caojiewangfu", "qun", 3)
+Fk:loadTranslationTable{
+  ["js__caojiewangfu"] = "曹节王甫",
+  ["#js__caojiewangfu"] = "祸乱海内",
+  ["illustrator:js__caojiewangfu"] = "鬼画府",
+  ["js__zonghai"] = "纵害",
+  [":js__zonghai"] = "每轮限一次，当其他角色进入濒死状态时，你可以令其选择至多两名角色，仅被选择的角色能在此次濒死结算中使用牌;"..
+  "其脱离濒死状态或死亡后，你对其选择的角色各造成一点伤害。",
+  ["js__jueli"] = "绝礼",
+  [":js__jueli"] = "当你每回合首次受到伤害后，，你可以摸三张牌，然后本回合所有角色受到的伤害+1。",  
+}
+local zhangjiao = General(extension, "js__zhangjiao", "qun", 4)
+local js__xiangru = fk.CreateTriggerSkill{
+  name = "js__xiangru",
+  anim_type = "defensive",
+  events = {fk.DamageInflicted},
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(self) and data.from and (target==player or (target ~= player and #player:getCardIds("he") >1 and data.from ~= player and target:isWounded())) then
+      return data.damage >= target.hp + target.shield
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if target ~= player then
+      local cards = room:askForCard(player, 2, 2, true, self.name, true, ".", "#xiangru-give:"..target.id..":"..data.from.id, false)
+      if #cards > 1 then
+        self.cost_data = cards
+        return true
+      end
+    else 
+      for _, p in ipairs(room:getOtherPlayers(player)) do
+        if #p:getCardIds("he") >1 and p:isWounded() then
+          local cards =room:askForCard(p, 2, 2, true, self.name, true, ".", "#xiangru-give:"..target.id..":"..data.from.id, false)
+         if #cards > 1 then
+           self.cost_data = cards
+           return true       
+         end
+        end
+      end
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:obtainCard(data.from.id, self.cost_data, false, fk.ReasonGive)
+    return true
+  end,
+}
+local js__wudao = fk.CreateTriggerSkill{
+  name ="js__wudao",
+  frequency = Skill.Wake,
+  events = {fk.EventDying},
+  can_trigger = function(self, event, target, player, data)
+    return player:hasSkill(self) and
+      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+  end,
+    can_wake = function(self, event, target, player, data)
+    return player:isKongcheng()
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:changeMaxHp(player, 1)
+    if player:isWounded() and not player.dead then
+      room:recover({
+        who = player,
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      })
+    end
+    if player.dead then return false end
+    room:handleAddLoseSkills(player, "js__jinglei", nil, true, false)
+  end,
+}
+local jinglei_active = fk.CreateActiveSkill{
+  name = "jinglei_active",
+  card_num = 0,
+  card_filter = Util.FalseFunc,
+  min_target_num = 1,
+  target_filter = function(self, to_select, selected)
+      local n = Fk:currentRoom():getPlayerById(to_select):getHandcardNum()
+      for _, p in ipairs(selected) do
+        n = n + Fk:currentRoom():getPlayerById(p):getHandcardNum()
+      end
+     return n < Self:getMark("js__jinglei")
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    room:setPlayerMark(player, "jinglei", 0)
+  end,
+}
+Fk:addSkill(jinglei_active)
+local js__jinglei = fk.CreateTriggerSkill{
+  name = "js__jinglei",
+  anim_type = "control",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(self) and
+      player.phase == Player.Start
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local min_num = 999
+    for _, p in ipairs(room.alive_players) do
+      min_num = math.min(min_num, p:getHandcardNum())
+    end
+    local to = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function(p) 
+       return p:getHandcardNum() ~= min_num end), Util.IdMapper), 1, 1, "#jinglei-choose", self.name, true)
+    if #to > 0 then
+      self.cost_data = to[1]
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = room:getPlayerById(self.cost_data)
+    local n = to:getHandcardNum()
+    room:setPlayerMark(player, self.name, n)
+    local success, dat = room:askForUseActiveSkill(player, "jinglei_active", "#jinglei-use::"..to.id..":"..n, false)
+    if success then
+      local tos = table.simpleClone(dat.targets)
+      room:sortPlayersByAction(tos)
+      for _, id in ipairs(tos) do
+        local p = room:getPlayerById(id)
+        if not p.dead then
+          room:damage{
+            from = p,
+            to = to,
+            damage = 1,
+            damageType = fk.ThunderDamage,
+            skillName = self.name
+          }
+        end
+      end
+    end
+  end,
+}
+zhangjiao:addSkill(js__xiangru)
+zhangjiao:addRelatedSkill(js__jinglei)
+zhangjiao:addSkill(js__wudao)
+Fk:loadTranslationTable{
+  ["js__zhangjiao"] = "张角",
+  ["#js__zhangjiao"] = "飞蛾扑火",
+  ["illustrator:js__zhangjiao"] = "鬼画府",
+  ["js__xiangru"] = "相濡",
+  [":js__xiangru"] = "一名已受伤的其他角色/你受到致命伤害时，你/其他已受伤的角色可以交给伤害来源两张牌"..
+  "防止此伤害。",
+  ["#xiangru-give"] = "相濡:是否交给 %dest 两张牌，防止 %src 受到的伤害?",
+  ["js__wudao"] = "悟道",
+  [":js__wudao"] = "觉醒技，当一名角色进入濒死状态时，若你没有手牌，你增加一点体力上限并回复一点体力，获得“惊雷”。",
+  ["jinglei"] = "惊雷",
+  ["#jinglei-choose"] = "惊雷:选择一名角色，然后令任意名手牌数之和小于其的角色各对其造成一点雷电伤害?",
+  ["#jinglei-use"] = "惊雷:选择任意名手牌数之和不大于%arg的角色各对%dest 造成一点雷电伤害。",
+  ["jinglei_active"] = "惊雷",
+  ["js__jinglei"] = "惊雷",
+  [":js__jinglei"] = "准备阶段，你可以选择一名手牌数不为最少的角色，然后你令任意名手牌数之和小于其的角色各对其造成1点雷电伤害。",  
+}
+
+--local dongzhuo = General(extension, "js__dongzhuo", "qun", 4)
+Fk:loadTranslationTable{
+  ["js__dongzhuo"] = "董卓",
+  ["#js__dongzhuo"] = "华夏震栗",
+  ["illustrator:js__dongzhuo"] = "鬼画府",
+  ["js__guanshi"] = "观势",
+  [":js__guanshi"] = "出牌阶段限一次，你可以将【杀】当做【火攻】对任意名角色使用，"..
+  "当此牌未对其中一名角色造成伤害时，此牌对剩余角色视为【决斗】结算。",
+  ["js__cangxiong"] = "藏凶",
+  [":js__cangxiong"] = "每当你的一张牌被弃置或被其他角色获得后，你可以用此牌蓄谋，然后若此时是你的出牌阶段，你摸一张牌。",
+  ["js__jiebing"] = "劫柄",
+  [":js__jiebing"] = "觉醒技，准备阶段，若你区域内的蓄谋牌大于主公的体力值，你增加两点体力上限并回复两点体力，然后获得“暴威”。", 
+  ["js__baowei"] = "暴威",
+  [":js__baowei"] = "锁定技，结束阶段，你对一名本回合使用或打出过牌的其他角色造成2点伤害，若满足条件的角色大于两名，则改为你失去两点体力。",   
+}
+
+--local zhanghuan = General(extension, "js__zhanghuan", "qun", 4)
+Fk:loadTranslationTable{
+  ["js__zhanghuan"] = "张奂",
+  ["#js__zhanghuan"] = "正身洁己",
+  ["illustrator:js__zhanghuan"] = "峰雨同程",
+  ["js__zhushou"] = "诛首",
+  [":js__zhushou"] = "你失去过牌的回合结束时，你可以选择弃牌中本回合置入的点数唯一最大的牌，"..
+  "然后你对本回合一名失去过牌的角色造成一点伤害。",
+  ["js__yangge"] = "扬戈",
+  [":js__yangge"] = "每轮限一次，体力值最低的其他角色可以于其出牌阶段对你发动“密诏”。"  
+}
+
+--local yangqiu = General(extension, "js__yangqiu", "qun", 4)
+Fk:loadTranslationTable{
+  ["js__yangqiu"] = "阳球",
+  ["#js__yangqiu"] = "身滔水火",
+  ["illustrator:js__yangqiu"] = "鬼画府",
+  ["js__chujian"] = "锄奸",
+  [":js__chujian"] = "出牌阶段限一次，你可以观看一名其他角色的手牌并向其以外的角色展示其中一张，然后其重复弃置一张手牌(至多五次)，"..
+  "直至其弃置了你展示的牌。然后若其手牌数大于你，你失去一点体力。", 
+}
+
+--local liubiao = General(extension, "js__liubiao", "qun", 4)
+Fk:loadTranslationTable{
+  ["js__liubiao"] = "刘表",
+  ["#js__liubiao"] = "单骑入荆",
+  ["illustrator:js__liubiao"] = "鬼画府",
+  ["js__yansha"] = "宴杀",
+  [":js__yansha"] = "出牌阶段限一次，你可以视为使用一张以任意名角色为目标的【五谷丰登】;"..
+  "结算后所有非目标角色依次可以将一张装备牌当做无距离限制的【杀】对其中一名目标使用。",
+  ["js__qingping"] = "清平",
+  [":js__qingping"] = "结束阶段，若你攻击范围内的角色手牌数均大于0且不大于你，你摸等同于这些角色的牌数。",  
+}
+
+--local chengfan = General(extension, "js__chengfan", "qun", 3)
+Fk:loadTranslationTable{
+  ["js__chengfan"] = "陈蕃",
+  ["#js__chengfan"] = "不畏强禦",
+  ["illustrator:js__chengfan"] = "峰雨同程",
+  ["js__gangfen"] = "刚忿",
+  [":js__gangfen"] = "手牌数大于你的角色使用【杀】指定目标后，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
+  "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
+  ["js__dangren"] = "当仁",
+  [":js__dangren"] = "转换技，阳:当你需要对你使用【桃】时，你可以视为使用之。;阴:当你需要对其他角色使用【桃】时，你须视为使用之。",  
+}
+
+--local zhangju = General(extension, "js__zhangju", "qun", 4)
+Fk:loadTranslationTable{
+  ["js__zhangju"] = "张举",
+  ["#js__zhangju"] = "草头天子",
+  ["illustrator:js__zhanghuan"] = "峰雨同程",
+  ["js__qiluan"] = "起乱",
+  [":js__qiluan"] = "每回合限两次，当你需要使用【杀】或【闪】时，你可以弃置任意张牌并令至多等量名其他角色选择是否替你使用之。"..
+  "当有角色响应时，你摸等同于弃置的牌数。",
+  ["js__xiangjia"] = "相假",
+  [":js__xiangjia"] = "出牌阶段限一次，若你装备区有武器牌，你可以视为使用一张【借刀杀人】。结算后目标可以视为对你使用一张【借刀杀人】。",  
+}
+
 return extension
