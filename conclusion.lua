@@ -1654,7 +1654,7 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
           local p = room:getPlayerById(playerId)
           if not p:isKongcheng() then
             local card = room:askForCardChosen(player, p, "h", "yaoyan")
-            room:obtainCard(player.id, card, true, fk.ReasonPrey)
+            room:obtainCard(player.id, card, false, fk.ReasonPrey)
           end
         end
       end

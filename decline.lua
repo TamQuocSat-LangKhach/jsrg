@@ -320,7 +320,7 @@ local zhuniTargetmod = fk.CreateTargetModSkill{
 }
 Fk:loadTranslationTable{
   ["zhuni"] = "诛逆",
-  [":zhuni"] = "出牌阶段限一次，你可以令所有角色同时选择一名除你外的角色，你本回合对此次被指定次数最多的角色使用牌无距离次数限制。",
+  [":zhuni"] = "出牌阶段限一次，你可以令所有角色同时选择一名除你外的角色，你本回合对此次被指定次数唯一最多的角色使用牌无距离次数限制。",
   ["#zhuni"] = "诛逆：你可令所有角色同时选择角色，你对唯一指定次数最多的角色使用牌无距离次数限制",
   ["#zhuni-choose"] = "诛逆：请选择其中一名角色，若你选择角色为被选择次数唯一最多的角色，%src 对其使用牌无距离次数限制",
   ["#ShowPlayerChosen"] = "%from 选择了 %to",
@@ -377,7 +377,11 @@ local zhongzen = fk.CreateTriggerSkill{
       room:doIndicate(player.id, table.map(targets, Util.IdMapper))
 
       for _, p in ipairs(targets) do
-        if not p.dead and not player.dead then
+        if not player:isAlive() then
+          break
+        end
+
+        if p:getHandcardNum() > 0 and not p:isAlive() then
           local ids = room:askForCard(p, 1, 1, false, self.name, false, '.', '#zhongzhen::' .. player.id)
           room:obtainCard(player, ids, false, fk.ReasonGive, p.id, self.name)
         end
@@ -633,48 +637,70 @@ Fk:loadTranslationTable{
 }
 
 local zhangjiao = General(extension, "js__zhangjiao", "qun", 4)
-local xiangru = fk.CreateTriggerSkill{
-  name = "xiangru",
+Fk:loadTranslationTable{
+  ["js__zhangjiao"] = "张角",
+  ["#js__zhangjiao"] = "万蛾扑火",
+  ["illustrator:js__zhangjiao"] = "鬼画府",
+}
+
+local js__xiangru = fk.CreateTriggerSkill{
+  name = "js__xiangru",
   anim_type = "defensive",
   events = {fk.DamageInflicted},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(self) and data.from and (target==player or (target ~= player and #player:getCardIds("he") >1 and data.from ~= player and target:isWounded())) then
-      return data.damage >= target.hp + target.shield
+    if not (player:hasSkill(self) and data.from and data.from:isAlive() and data.damage >= (target.hp + target.shield)) then
+      return false
     end
+
+    local room = player.room
+    if target == player then
+      return table.find(room.alive_players, function(p) return p ~= player and #p:getCardIds("he") > 1 and p ~= data.from end)
+    elseif target ~= player and target:isWounded() then
+      return #player:getCardIds("he") > 1 and player ~= data.from
+    end
+
+    return false
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if target ~= player then
-      local cards = room:askForCard(player, 2, 2, true, self.name, true, ".", "#xiangru-give:"..target.id..":"..data.from.id)
+      local cards = room:askForCard(player, 2, 2, true, self.name, true, ".", "#xiangru-give:" .. target.id .. ":" .. data.from.id)
       if #cards > 1 then
         self.cost_data = cards
         return true
       end
     else
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if #p:getCardIds("he") >1 and p:isWounded() then
-          local cards = room:askForCard(p, 2, 2, true, self.name, true, ".", "#xiangru-give:"..target.id..":"..data.from.id)
-        if #cards > 1 then
-          self.cost_data = cards
-          return true
-        end
+        if #p:getCardIds("he") > 1 and p:isWounded() and p ~= data.from then
+          local cards = room:askForCard(p, 2, 2, true, self.name, true, ".", "#xiangru-give:" .. target.id .. ":" .. data.from.id)
+          if #cards > 1 then
+            self.cost_data = cards
+            return true       
+          end
         end
       end
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:obtainCard(data.from.id, self.cost_data, false, fk.ReasonGive)
+    room:obtainCard(data.from.id, self.cost_data, false, fk.ReasonGive, (room:getCardOwner(self.cost_data[1]) or {}).id)
     return true
   end,
 }
+Fk:loadTranslationTable{
+  ["js__xiangru"] = "相濡",
+  [":js__xiangru"] = "当一名已受伤的其他角色/你受到致命伤害时，你/其他已受伤的角色可以交给伤害来源两张牌防止此伤害。",
+  ["#xiangru-give"] = "相濡：是否交给 %dest 两张牌，防止 %src 受到的伤害？",
+}
+
+zhangjiao:addSkill(js__xiangru)
+
 local js__wudao = fk.CreateTriggerSkill{
   name = "js__wudao",
   frequency = Skill.Wake,
   events = {fk.EnterDying},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and
-      player:usedSkillTimes(self.name, Player.HistoryGame) == 0
+    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryGame) == 0
   end,
   can_wake = function(self, event, target, player, data)
     return player:isKongcheng()
@@ -691,9 +717,16 @@ local js__wudao = fk.CreateTriggerSkill{
       })
     end
     if player.dead then return false end
-    room:handleAddLoseSkills(player, "js__jinglei", nil, true, false)
+    room:handleAddLoseSkills(player, "js__jinglei")
   end,
 }
+Fk:loadTranslationTable{
+  ["js__wudao"] = "悟道",
+  [":js__wudao"] = "觉醒技，当一名角色进入濒死状态时，若你没有手牌，你增加一点体力上限并回复一点体力，获得技能“惊雷”。",
+}
+
+zhangjiao:addSkill(js__wudao)
+
 local jinglei_active = fk.CreateActiveSkill{
   name = "jinglei_active",
   card_num = 0,
@@ -717,8 +750,7 @@ local js__jinglei = fk.CreateTriggerSkill{
   anim_type = "control",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and
-      player.phase == Player.Start
+    return target == player and player:hasSkill(self) and player.phase == Player.Start
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -726,8 +758,15 @@ local js__jinglei = fk.CreateTriggerSkill{
     for _, p in ipairs(room.alive_players) do
       min_num = math.min(min_num, p:getHandcardNum())
     end
-    local to = room:askForChoosePlayers(player, table.map(table.filter(room.alive_players, function(p)
-      return p:getHandcardNum() ~= min_num end), Util.IdMapper), 1, 1, "#jinglei-choose", self.name, true)
+    local to = room:askForChoosePlayers(
+      player,
+      table.map(table.filter(room.alive_players, function(p) return p:getHandcardNum() > min_num end), Util.IdMapper),
+      1,
+      1,
+      "#jinglei-choose",
+      self.name,
+      true
+    )
     if #to > 0 then
       self.cost_data = to[1]
       return true
@@ -738,13 +777,14 @@ local js__jinglei = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local n = to:getHandcardNum()
     room:setPlayerMark(player, self.name, n)
-    local success, dat = room:askForUseActiveSkill(player, "jinglei_active", "#jinglei-use::"..to.id..":"..n, false)
+    local success, dat = room:askForUseActiveSkill(player, "jinglei_active", "#jinglei-use::" .. to.id .. ":" .. n, false)
     if success then
       local tos = table.simpleClone(dat.targets)
       room:sortPlayersByAction(tos)
       for _, id in ipairs(tos) do
         local p = room:getPlayerById(id)
-        if not p.dead then
+        if p:isAlive() and to:isAlive() then
+          room:doIndicate(p.id, { to.id })
           room:damage{
             from = p,
             to = to,
@@ -757,26 +797,15 @@ local js__jinglei = fk.CreateTriggerSkill{
     end
   end,
 }
-zhangjiao:addSkill(xiangru)
-zhangjiao:addRelatedSkill(js__jinglei)
-zhangjiao:addSkill(js__wudao)
 Fk:loadTranslationTable{
-  ["js__zhangjiao"] = "张角",
-  ["#js__zhangjiao"] = "飞蛾扑火",
-  ["illustrator:js__zhangjiao"] = "鬼画府",
-  ["xiangru"] = "相濡",
-  [":xiangru"] = "一名已受伤的其他角色/你受到致命伤害时，你/其他已受伤的角色可以交给伤害来源两张牌"..
-  "防止此伤害。",
-  ["#xiangru-give"] = "相濡：是否交给 %dest 两张牌，防止 %src 受到的伤害?",
-  ["js__wudao"] = "悟道",
-  [":js__wudao"] = "觉醒技，当一名角色进入濒死状态时，若你没有手牌，你增加1点体力上限并回复1点体力，获得“惊雷”。",
-  ["jinglei"] = "惊雷",
-  ["#jinglei-choose"] = "惊雷：选择一名角色，然后令任意名手牌数之和小于其的角色各对其造成1点雷电伤害?",
-  ["#jinglei-use"] = "惊雷：选择任意名手牌数之和不大于%arg的角色各对 %dest 造成1点雷电伤害。",
-  ["jinglei_active"] = "惊雷",
   ["js__jinglei"] = "惊雷",
-  [":js__jinglei"] = "准备阶段，你可以选择一名手牌数不为最少的角色，然后你令任意名手牌数之和小于其的角色各对其造成1点雷电伤害。",
+  [":js__jinglei"] = "准备阶段开始时，你可以选择一名手牌数不为唯一最少的角色，然后你令任意名手牌数之和小于其的角色各对其造成1点雷电伤害。",  
+  ["#jinglei-choose"] = "惊雷：你可选择一名角色，然后令任意名手牌数之和小于其的角色各对其造成一点雷电伤害",
+  ["#jinglei-use"] = "惊雷：选择任意名手牌数之和不大于 %arg 的角色各对 %dest 造成一点雷电伤害。",
+  ["jinglei_active"] = "惊雷",
 }
+
+zhangjiao:addRelatedSkill(js__jinglei)
 
 --local dongzhuo = General(extension, "js__dongzhuo", "qun", 4)
 Fk:loadTranslationTable{
@@ -806,15 +835,73 @@ Fk:loadTranslationTable{
   [":yangge"] = "每轮限一次，体力值最低的其他角色可以于其出牌阶段对你发动〖密诏〗。"
 }
 
---local yangqiu = General(extension, "yangqiu", "qun", 4)
+local yangqiu = General(extension, "yangqiu", "qun", 4)
 Fk:loadTranslationTable{
   ["yangqiu"] = "阳球",
   ["#yangqiu"] = "身滔水火",
   ["illustrator:yangqiu"] = "鬼画府",
-  ["saojian"] = "埽奸",
-  [":saojian"] = "出牌阶段限一次，你可以观看一名其他角色的手牌并向其以外的角色展示其中一张，然后其重复弃置一张手牌（至多五次），"..
-  "直至其弃置了你展示的牌。然后若其手牌数大于你，你失去1点体力。",
 }
+
+local saojian = fk.CreateActiveSkill{
+  name = "saojian",
+  anim_type = "control",
+  card_num = 0,
+  target_num = 1,
+  prompt = "#saojian",
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
+  end,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local to = room:getPlayerById(effect.tos[1])
+    if to:isKongcheng() then
+      return
+    end
+
+    local ids, choice = U.askforChooseCardsAndChoice(
+      player,
+      to:getCardIds("h"),
+      { "OK" },
+      self.name,
+      "#saojian-view::" .. to.id,
+      nil,
+      1,
+      1
+    )
+
+    local toViewPlayers = table.filter(room.alive_players, function(p) return p ~= player and p ~= to end)
+    if #toViewPlayers > 0 then
+      U.viewCards(toViewPlayers, ids, "saojian_view", "#saojian-view::" .. to.id)
+    end
+
+    for i = 1, 5 do
+      local idsDiscarded = room:askForDiscard(to, 1, 1, false, self.name, false, ".", "#saojian-discard:::" .. 6 - i)
+      if #idsDiscarded > 0 and idsDiscarded[1] == ids[1] then
+        break
+      end
+    end
+
+    if player:isAlive() and to:getHandcardNum() > player:getHandcardNum() then
+      room:loseHp(player, 1, self.name)
+    end
+  end,
+}
+
+Fk:loadTranslationTable{
+  ["saojian"] = "埽奸",
+  [":saojian"] = "出牌阶段限一次，你可以观看一名其他角色的手牌并选择其中一张令除其外的角色观看，然后其重复弃置一张手牌（至多五次），" ..
+  "直至其弃置了你选择的牌。然后若其手牌数大于你，你失去一点体力。",
+  ["#saojian"] = "埽奸：你可观看一名其他角色的手牌，令其弃置手牌直到弃到你所选的牌",
+  ["saojian_view"] = "埽奸观看",
+  ["#saojian-view"] = "埽奸：当前观看的是 %dest 的手牌",
+  ["#saojian-discard"] = "埽奸：请弃置一张手牌，直到你弃置到“埽奸”选择的牌（剩余 %arg 次）",
+}
+
+yangqiu:addSkill(saojian)
 
 --local liubiao = General(extension, "js__liubiao", "qun", 4)
 Fk:loadTranslationTable{
