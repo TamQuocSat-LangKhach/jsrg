@@ -75,7 +75,7 @@ local shade = fk.CreateBasicCard{
 extension:addCard(shade)
 Fk:loadTranslationTable{
   ["shade"] = "影",
-	[":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏。<br/>当一名角色获得【影】时，均为从游戏外获得♠A的【影】。",
+  [":shade"] = "基本牌<br/><b>效果</b>：没有效果，不能被使用。<br/>当【影】进入弃牌堆后移出游戏。<br/>当一名角色获得【影】时，均为从游戏外获得♠A的【影】。",
 }
 
 local demobilizedSkill = fk.CreateActiveSkill{
