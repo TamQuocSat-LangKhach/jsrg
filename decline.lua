@@ -377,11 +377,7 @@ local zhongzen = fk.CreateTriggerSkill{
       room:doIndicate(player.id, table.map(targets, Util.IdMapper))
 
       for _, p in ipairs(targets) do
-        if not player:isAlive() then
-          break
-        end
-
-        if p:getHandcardNum() > 0 and not p:isAlive() then
+        if player:isAlive() and p:getHandcardNum() > 0 and p:isAlive() then
           local ids = room:askForCard(p, 1, 1, false, self.name, false, '.', '#zhongzhen::' .. player.id)
           room:obtainCard(player, ids, false, fk.ReasonGive, p.id, self.name)
         end
