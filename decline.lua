@@ -345,7 +345,7 @@ yuanshao:addSkill(hezhi)
 local songhuanghou = General(extension, "songhuanghou", "qun", 3, 3, General.Female)
 Fk:loadTranslationTable{
   ["songhuanghou"] = "宋皇后",
-  ["#songhuanghou"] = "兰心慧质",
+  ["#songhuanghou"] = "兰心蕙质",
   ["illustrator:songhuanghou"] = "峰雨同程",
   ["~songhuanghou"] = "",
 }
@@ -1031,12 +1031,14 @@ local zhushou = fk.CreateTriggerSkill{
         for _, info in ipairs(e.data) do
           if info.toArea == Card.DiscardPile then
             for _, moveInfo in ipairs(info.moveInfo) do
-              local card = Fk:getCardById(moveInfo.cardId)
-              if card.number > biggestNumber then
-                cardWithBiggestNumber = card.id
-                biggestNumber = card.number
-              elseif card.number == biggestNumber then
-                cardWithBiggestNumber = nil
+              if room:getCardArea(moveInfo.cardId) == Card.DiscardPile then
+                local card = Fk:getCardById(moveInfo.cardId)
+                if card.number > biggestNumber then
+                  cardWithBiggestNumber = card.id
+                  biggestNumber = card.number
+                elseif card.number == biggestNumber then
+                  cardWithBiggestNumber = nil
+                end
               end
             end
           end
@@ -1105,7 +1107,7 @@ local zhushou = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["zhushou"] = "诛首",
-  [":zhushou"] = "你失去过牌的回合结束时，你可以选择弃牌中本回合置入的点数唯一最大的牌，"..
+  [":zhushou"] = "你失去过牌的回合结束时，你可以选择弃牌堆中本回合进入的点数唯一最大的牌，"..
   "然后你对本回合失去过此牌的一名角色造成1点伤害。",
   ["#zhushou-choose"] = "诛首：你可对其中一名角色造成1点伤害",
 }
@@ -1203,7 +1205,7 @@ zhanghuan:addRelatedSkill("mizhao")
 local yangqiu = General(extension, "yangqiu", "qun", 4)
 Fk:loadTranslationTable{
   ["yangqiu"] = "阳球",
-  ["#yangqiu"] = "身滔水火",
+  ["#yangqiu"] = "身蹈水火",
   ["illustrator:yangqiu"] = "鬼画府",
 }
 
@@ -1268,17 +1270,158 @@ Fk:loadTranslationTable{
 
 yangqiu:addSkill(saojian)
 
---local liubiao = General(extension, "js__liubiao", "qun", 4)
+local liubiao = General(extension, "js__liubiao", "qun", 4)
 Fk:loadTranslationTable{
   ["js__liubiao"] = "刘表",
   ["#js__liubiao"] = "单骑入荆",
   ["illustrator:js__liubiao"] = "鬼画府",
-  ["yansha"] = "宴杀",
-  [":yansha"] = "出牌阶段限一次，你可以视为使用一张以任意名角色为目标的【五谷丰登】；"..
-  "结算后所有非目标角色依次可以将一张装备牌当做无距离限制的【杀】对其中一名目标使用。",
-  ["qingping"] = "清平",
-  [":qingping"] = "结束阶段，若你攻击范围内的角色手牌数均大于0且不大于你，你摸等同于这些角色的牌数。",
 }
+
+local yansha = fk.CreateActiveSkill{
+  name = "yansha",
+  anim_type = "control",
+  card_num = 0,
+  min_target_num = 1,
+  prompt = "#yansha",
+  can_use = function(self, player)
+    return
+      player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
+      U.canUseCard(Fk:currentRoom(), player, Fk:cloneCard("amazing_grace"))
+  end,
+  card_filter = Util.FalseFunc,
+  target_filter = function(self, to_select, selected)
+    local room = Fk:currentRoom()
+    return U.canUseCardTo(room, Self, room:getPlayerById(to_select), Fk:cloneCard("amazing_grace"))
+  end,
+  on_use = function(self, room, effect)
+    local amazingGrace = Fk:cloneCard("amazing_grace")
+    amazingGrace.skillName = self.name
+    room:useCard{
+      from = effect.from,
+      tos = table.map(effect.tos, function(to) return { to } end),
+      card = amazingGrace,
+    }
+  end,
+}
+local yanshaTrigger = fk.CreateTriggerSkill{
+  name = "#yansha_trigger",
+  mute = true,
+  events = {fk.CardUseFinished},
+  can_trigger = function(self, event, target, player, data)
+    local targets = TargetGroup:getRealTargets(data.tos)
+    return
+      table.contains(data.card.skillNames, yansha.name) and
+      #targets > 0 and
+      not table.contains(targets, player.id)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    room:setPlayerMark(player, yansha.name, TargetGroup:getRealTargets(data.tos))
+    local success, dat = room:askForUseViewAsSkill(
+      player,
+      "yanshaViewas",
+      "#yansha-slash",
+      true,
+      {bypass_times = true, bypass_distances = true}
+    )
+    room:setPlayerMark(player, yansha.name, 0)
+
+    if success then
+      self.cost_data = dat
+      return true
+    end
+
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local dat = self.cost_data
+    local card = Fk.skills["yanshaViewas"]:viewAs(dat.cards)
+    table.removeOne(card.skillNames, "yanshaSlash")
+    room:useCard{
+      from = player.id,
+      tos = table.map(dat.targets, function(p) return {p} end),
+      card = card,
+      extraUse = true,
+    }
+  end,
+}
+local yanshaViewas = fk.CreateViewAsSkill{
+  name = "yanshaViewas",
+  pattern = "slash",
+  card_filter = function(self, to_select, selected)
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
+  end,
+  view_as = function(self, cards)
+    if #cards ~= 1 then return end
+    local card = Fk:cloneCard("slash")
+    card:addSubcard(cards[1])
+    card.skillName = "yanshaSlash"
+    return card
+  end,
+}
+local yanshaProhibit = fk.CreateProhibitSkill{
+  name = "#yansha_prohibit",
+  is_prohibited = function(self, from, to, card)
+    return
+      card and
+      table.contains(card.skillNames, "yanshaSlash") and
+      not table.contains(U.getMark(from, yansha.name), to.id)
+  end,
+}
+Fk:loadTranslationTable{
+  ["yansha"] = "宴杀",
+  [":yansha"] = "出牌阶段限一次，你可以视为使用一张以至少一名角色为目标的【五谷丰登】。"..
+  "此牌结算结束后，所有非目标角色依次可以将一张装备牌当做无距离限制的【杀】对其中一名目标角色使用。",
+  ["#yansha"] = "宴杀：你可视为使用指定任意目标的【五谷丰登】，结算后非目标可将装备当【杀】对目标使用",
+  ["yanshaViewas"] = "宴杀",
+  ["#yansha-slash"] = "宴杀：你可以将一张装备牌当无距离限制的【杀】对其中一名角色使用",
+}
+
+Fk:addSkill(yanshaViewas)
+yansha:addRelatedSkill(yanshaTrigger)
+yansha:addRelatedSkill(yanshaProhibit)
+liubiao:addSkill(yansha)
+
+local qingping = fk.CreateTriggerSkill{
+  name = "qingping",
+  events = {fk.EventPhaseStart},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      player.phase == Player.Finish and
+      not table.find(
+        player.room.alive_players,
+        function(p)
+          return
+            player:inMyAttackRange(p) and
+            (
+              p:getHandcardNum() < 1 or
+              p:getHandcardNum() > player:getHandcardNum()
+            )
+        end
+      )
+  end,
+  on_use = function(self, event, target, player, data)
+    local targetNum = #table.filter(
+      player.room.alive_players,
+      function(p)
+        return
+          player:inMyAttackRange(p) and
+          p:getHandcardNum() > 0 and
+          p:getHandcardNum() <= player:getHandcardNum()
+      end
+    )
+    player:drawCards(targetNum, self.name)
+  end,
+}
+Fk:loadTranslationTable{
+  ["qingping"] = "清平",
+  [":qingping"] = "结束阶段开始时，若你攻击范围内的角色手牌数均大于0且不大于你，则你可以摸等同于这些角色的牌数。",
+}
+
+liubiao:addSkill(qingping)
 
 --local chengfan = General(extension, "chenfan", "qun", 3)
 Fk:loadTranslationTable{
