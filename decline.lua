@@ -1296,54 +1296,41 @@ local yansha = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local amazingGrace = Fk:cloneCard("amazing_grace")
     amazingGrace.skillName = self.name
-    room:useCard{
+
+    local useData = {
       from = effect.from,
       tos = table.map(effect.tos, function(to) return { to } end),
       card = amazingGrace,
     }
-  end,
-}
-local yanshaTrigger = fk.CreateTriggerSkill{
-  name = "#yansha_trigger",
-  mute = true,
-  events = {fk.CardUseFinished},
-  can_trigger = function(self, event, target, player, data)
-    local targets = TargetGroup:getRealTargets(data.tos)
-    return
-      table.contains(data.card.skillNames, yansha.name) and
-      #targets > 0 and
-      not table.contains(targets, player.id)
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, yansha.name, TargetGroup:getRealTargets(data.tos))
-    local success, dat = room:askForUseViewAsSkill(
-      player,
-      "yanshaViewas",
-      "#yansha-slash",
-      true,
-      {bypass_times = true, bypass_distances = true}
-    )
-    room:setPlayerMark(player, yansha.name, 0)
+    room:useCard(useData)
 
-    if success then
-      self.cost_data = dat
-      return true
+    local targets = TargetGroup:getRealTargets(useData.tos)
+    if #targets > 0 then
+      for _, p in ipairs(room:getAlivePlayers()) do
+        if p:isAlive() and not table.contains(targets, p.id) then
+          room:setPlayerMark(p, self.name, TargetGroup:getRealTargets(useData.tos))
+          local success, dat = room:askForUseViewAsSkill(
+            p,
+            "yanshaViewas",
+            "#yansha-slash",
+            true,
+            {bypass_times = true, bypass_distances = true}
+          )
+          room:setPlayerMark(p, self.name, 0)
+
+          if success then
+            local card = Fk.skills["yanshaViewas"]:viewAs(dat.cards)
+            table.removeOne(card.skillNames, "yanshaSlash")
+            room:useCard{
+              from = p.id,
+              tos = table.map(dat.targets, function(toId) return { toId } end),
+              card = card,
+              extraUse = true,
+            }
+          end
+        end
+      end
     end
-
-    return false
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    local dat = self.cost_data
-    local card = Fk.skills["yanshaViewas"]:viewAs(dat.cards)
-    table.removeOne(card.skillNames, "yanshaSlash")
-    room:useCard{
-      from = player.id,
-      tos = table.map(dat.targets, function(p) return {p} end),
-      card = card,
-      extraUse = true,
-    }
   end,
 }
 local yanshaViewas = fk.CreateViewAsSkill{
@@ -1371,15 +1358,14 @@ local yanshaProhibit = fk.CreateProhibitSkill{
 }
 Fk:loadTranslationTable{
   ["yansha"] = "宴杀",
-  [":yansha"] = "出牌阶段限一次，你可以视为使用一张以至少一名角色为目标的【五谷丰登】。"..
-  "此牌结算结束后，所有非目标角色依次可以将一张装备牌当做无距离限制的【杀】对其中一名目标角色使用。",
+  [":yansha"] = "出牌阶段限一次，你可以视为使用一张以至少一名角色为目标的【五谷丰登】，"..
+  "然后所有非目标角色依次可以将一张装备牌当做无距离限制的【杀】对其中一名目标角色使用。",
   ["#yansha"] = "宴杀：你可视为使用指定任意目标的【五谷丰登】，结算后非目标可将装备当【杀】对目标使用",
   ["yanshaViewas"] = "宴杀",
   ["#yansha-slash"] = "宴杀：你可以将一张装备牌当无距离限制的【杀】对其中一名角色使用",
 }
 
 Fk:addSkill(yanshaViewas)
-yansha:addRelatedSkill(yanshaTrigger)
 yansha:addRelatedSkill(yanshaProhibit)
 liubiao:addSkill(yansha)
 
@@ -1418,22 +1404,214 @@ local qingping = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["qingping"] = "清平",
-  [":qingping"] = "结束阶段开始时，若你攻击范围内的角色手牌数均大于0且不大于你，则你可以摸等同于这些角色的牌数。",
+  [":qingping"] = "结束阶段开始时，若你攻击范围内的角色手牌数均大于0且不大于你，则你可以摸等同于这些角色数的牌。",
 }
 
 liubiao:addSkill(qingping)
 
---local chengfan = General(extension, "chenfan", "qun", 3)
+local chenfan = General(extension, "chenfan", "qun", 3)
 Fk:loadTranslationTable{
   ["chenfan"] = "陈蕃",
-  ["#chenfan"] = "不畏强禦",
+  ["#chenfan"] = "不畏强御",
   ["illustrator:chenfan"] = "峰雨同程",
   ["gangfen"] = "刚忿",
-  [":gangfen"] = "手牌数大于你的角色使用【杀】指定目标后，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
+  [":gangfen"] = "手牌数大于你的角色使用【杀】指定第一个目标时，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
   "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
   ["dangren"] = "当仁",
   [":dangren"] = "转换技，阳：当你需要对你使用【桃】时，你可以视为使用之；阴：当你需要对其他角色使用【桃】时，你须视为使用之。",
 }
+
+local gangfen = fk.CreateTriggerSkill{
+  name = "gangfen",
+  events = {fk.TargetSpecifying},
+  can_trigger = function(self, event, target, player, data)
+    return
+      data.firstTarget and
+      data.card.trueName == "slash" and
+      player:hasSkill(self) and
+      target:getHandcardNum() > player:getHandcardNum() and
+      table.contains(U.getUseExtraTargets(player.room, data, true, true), player.id)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    return
+      room:askForSkillInvoke(
+        player,
+        self.name,
+        data,
+        "#gangfen-invoke::" .. target.id .. ":" .. data.card:toLogString() .. ":" .. #U.getActualUseTargets(room, data, event)
+      )
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    AimGroup:addTargets(room, data, player.id)
+    room:sendLog{
+      type = "#GangFenAdd",
+      from = player.id,
+      to = { target.id },
+      arg = data.card:toLogString(),
+      arg2 = #U.getActualUseTargets(room, data, event),
+      toast = true,
+    }
+    local availableTargets = U.getUseExtraTargets(player.room, data, true, true)
+    room:sortPlayersByAction(availableTargets)
+    for _, pId in ipairs(availableTargets) do
+      if
+        room:askForSkillInvoke(
+          room:getPlayerById(pId),
+          self.name,
+          data,
+          "#gangfen-invoke::" .. target.id .. ":" .. data.card:toLogString() .. ":" .. #U.getActualUseTargets(room, data, event)
+        )
+      then
+        room:doIndicate(target.id, { pId })
+        AimGroup:addTargets(room, data, pId)
+        room:sendLog{
+          type = "#GangFenAdd",
+          from = player.id,
+          to = { target.id },
+          arg = data.card:toLogString(),
+          arg2 = #U.getActualUseTargets(room, data, event),
+          toast = true,
+        }
+      end
+    end
+
+    local handcards = target:getCardIds("h")
+    if target:isAlive() and #handcards > 0 then
+      target:showCards(handcards)
+      room:delay(2000)
+    end
+
+    dbg()
+    if
+      #table.filter(handcards, function(id) return Fk:getCardById(id).color == Card.Black end) <
+      #U.getActualUseTargets(room, data, event)
+    then
+      for _, id in ipairs(AimGroup:getAllTargets(data.tos)) do
+        AimGroup:cancelTarget(data, id)
+      end
+      room:sendLog{
+        type = "#GangFenCancel",
+        from = target.id,
+        arg = data.card:toLogString(),
+        toast = true,
+      }
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["gangfen"] = "刚忿",
+  [":gangfen"] = "当手牌数大于你的角色使用【杀】指定目标时，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
+  "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
+  ["#gangfen-invoke"] = "刚忿：你可以成为 %dest 使用的 %arg 的额外目标，若最后使用者手中黑牌少于目标数则取消所有目标（当前目标数为%arg2）",
+  ["#GangFenAdd"] = "%from 因“刚忿”选择成为 %to 使用的 %arg 的目标（当前目标数为%arg2）",
+  ["#GangFenCancel"] = "%from 手牌中的黑色牌数小于 %arg 的目标数，因“刚忿”而被取消",
+}
+
+chenfan:addSkill(gangfen)
+
+local dangren = fk.CreateViewAsSkill{
+  name = "dangren",
+  anim_type = "support",
+  pattern = "peach",
+  switch_skill_name = "dangren",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if #cards ~= 0 then
+      return nil
+    end
+    local c = Fk:cloneCard("peach")
+    c.skillName = self.name
+    return c
+  end,
+  enabled_at_play = function(self, player)
+    return player:getSwitchSkillState(self.name) == fk.SwitchYang
+  end,
+  enabled_at_response = function(self, player, res)
+    return
+      not res and
+      player:getSwitchSkillState(self.name) == fk.SwitchYang and
+      not table.find(Fk:currentRoom().alive_players, function(p) return p ~= player and p.dying end)
+  end,
+}
+local dangrenTrigger = fk.CreateTriggerSkill{
+  name = "#dangren_trigger",
+  anim_type = "support",
+  events = {fk.AskForCardUse},
+  switch_skill_name = "dangren",
+  can_trigger = function(self, event, target, player, data)
+    if
+      not (
+        target == player and
+        player:hasSkill(dangren) and
+        player:getSwitchSkillState(dangren.name) == fk.SwitchYin and 
+        data.pattern
+      )
+    then
+      return false
+    end
+
+    local matcherParsed = Exppattern:Parse(data.pattern)
+    local peach = Fk:cloneCard("peach")
+    return
+      table.find(
+        matcherParsed.matchers,
+        function(matcher)
+          return
+            table.contains(matcher.name or {}, "peach") or
+            table.contains(matcher.trueName or {}, "peach")
+        end
+      ) and
+      matcherParsed:match(peach) and
+      table.find(
+        ((data.extraData or {}).must_targets or {}),
+        function(p)
+          return
+            p ~= player.id and
+            not (
+              player:prohibitUse(peach) and
+              player:isProhibited(player.room:getPlayerById(p), peach)
+            )
+        end
+      )
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local peach = Fk:cloneCard("peach")
+    local others = table.filter(
+      data.extraData.must_targets, 
+      function(p)
+        return
+          p ~= player.id and
+          not (
+            player:prohibitUse(peach) and
+            player:isProhibited(player.room:getPlayerById(p), peach)
+          )
+      end
+    )
+
+    if #others > 0 then
+      room:sortPlayersByAction(others)
+      data.result = {
+        from = player.id,
+        to = others[1],
+        card = peach,
+      }
+
+      return true
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["dangren"] = "当仁",
+  [":dangren"] = "转换技，阳：当你需要对你使用【桃】时，你可以视为使用之；阴：当你需要对其他角色使用【桃】时，你须视为使用之。",
+  ["#dangren_trigger"] = "当仁",
+}
+
+dangren:addRelatedSkill(dangrenTrigger)
+chenfan:addSkill(dangren)
 
 --local zhangju = General(extension, "zhangju", "qun", 4)
 Fk:loadTranslationTable{

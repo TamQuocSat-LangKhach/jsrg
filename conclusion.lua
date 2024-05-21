@@ -1575,7 +1575,7 @@ local js__zhubei = fk.CreateTriggerSkill{
 }
 local js__zhubei_targetmod = fk.CreateTargetModSkill{
   name = "#js__zhubei_targetmod",
-  bypass_distances = function(self, player, skill, card, to)
+  bypass_times = function(self, player, skill, card, to)
     return player:hasSkill("js__zhubei") and to and to:getMark("js__zhubei_lost-turn") > 0
   end,
 }
@@ -1592,7 +1592,7 @@ Fk:loadTranslationTable{
   ["js__dailao"] = "待劳",
   [":js__dailao"] = "出牌阶段，若你没有可以使用的手牌，你可以展示所有手牌并摸两张牌，然后结束回合。",
   ["js__zhubei"] = "逐北",
-  [":js__zhubei"] = "锁定技，你对本回合受到过伤害/失去过最后手牌的角色造成的伤害+1/使用牌无距离次数限制。",
+  [":js__zhubei"] = "锁定技，你对本回合受到过伤害/失去过最后手牌的角色造成的伤害+1/使用牌无次数限制。",
 }
 
 local sunjun = General(extension, "js__sunjun", "wu", 4)
