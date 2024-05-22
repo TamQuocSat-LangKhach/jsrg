@@ -1506,7 +1506,7 @@ Fk:loadTranslationTable{
   "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
   ["#gangfen-invoke"] = "刚忿：你可以成为 %dest 使用的 %arg 的额外目标，若最后使用者手中黑牌少于目标数则取消所有目标（当前目标数为%arg2）",
   ["#GangFenAdd"] = "%from 因“刚忿”选择成为 %to 使用的 %arg 的目标（当前目标数为%arg2）",
-  ["#GangFenCancel"] = "%from 手牌中的黑色牌数小于 %arg 的目标数，因“刚忿”而被取消",
+  ["#GangFenCancel"] = "%from 手牌中的黑色牌数小于 %arg 的目标数，因“刚忿”被取消",
 }
 
 chenfan:addSkill(gangfen)
