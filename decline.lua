@@ -1483,7 +1483,6 @@ local gangfen = fk.CreateTriggerSkill{
       room:delay(2000)
     end
 
-    dbg()
     if
       #table.filter(handcards, function(id) return Fk:getCardById(id).color == Card.Black end) <
       #U.getActualUseTargets(room, data, event)
