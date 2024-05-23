@@ -115,7 +115,7 @@ local zhenfeng = fk.CreateViewAsSkill{
           local p = Self
           repeat
             for _, s in ipairs(p.player_skills) do
-              if not (s.attached_equip or s.name:endsWith("&")) then
+              if s:isPlayerSkill(p) then
                 if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(c.name).."】") or
                   string.find(Fk:translate(":"..s.name), Fk:translate(c.name)[1].."【"..Fk:translate(c.trueName).."】") then
                   table.insertIfNeed(names, c.name)
@@ -162,7 +162,7 @@ local zhenfeng_trigger = fk.CreateTriggerSkill{
       local to = player.room:getPlayerById(data.to)
       if to.dead then return end
       for _, s in ipairs(to.player_skills) do
-        if not (s.attached_equip or s.name:endsWith("&")) then
+        if s:isPlayerSkill(to) then
           if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(data.card.name).."】") or
             string.find(Fk:translate(":"..s.name), Fk:translate(data.card.name)[1].."【"..Fk:translate(data.card.trueName).."】") then
             return true
