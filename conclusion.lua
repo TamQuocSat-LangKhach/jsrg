@@ -1110,11 +1110,20 @@ local weizhui = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   anim_type = "negative",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not target:isNude() and target.kingdom == "wei" and U.canUseCardTo(player.room, target, player, Fk:cloneCard("dismantlement"))
+    return player:hasSkill(self) and player ~= target and target.phase == Player.Finish and not player:isAllNude()
+    and not target:isNude() and target.kingdom == "wei"
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local card = room:askForCard(target, 1, 1, true, self.name, true, ".|.|spade,club", "#weizhui-use:"..player.id)
+    local cardIds = table.filter(target:getCardIds("he"), function (id)
+      if Fk:getCardById(id).color ~= Card.Black then return false end
+      local c = Fk:cloneCard("dismantlement")
+      c.skillName = self.name
+      c:addSubcard(id)
+      return target:canUseTo(c, player)
+    end)
+    if #cardIds == 0 then return end
+    local card = room:askForCard(target, 1, 1, true, self.name, true, tostring(Exppattern{ id = cardIds }), "#weizhui-use:"..player.id)
     if #card > 0 then
       self.cost_data = card
       return true
@@ -1130,6 +1139,7 @@ caofang:addSkill(weizhui)
 Fk:loadTranslationTable{
   ["js__caofang"] = "曹芳",
   ["#js__caofang"] = "引狼入廟",
+  ["cv:js__caofang"] = "甄弦",
   ["illustrator:js__caofang"] = "鬼画府",
   ["zhaotu"] = "招图",
   [":zhaotu"] = "每轮限一次，你可以将一张红色非锦囊牌当做【乐不思蜀】使用，此回合结束后，目标执行一个手牌上限-2的回合。",
@@ -1143,6 +1153,14 @@ Fk:loadTranslationTable{
   [":weizhui"] = "主公技，其他魏势力角色的结束阶段，其可以将一张黑色牌当做【过河拆桥】对你使用。",
   ["#weizhui-use"] = "危坠：你可以将一张黑色牌当【过河拆桥】对 %src 使用",
   ["weizhui_active"] = "危坠",
+
+  ["$zhaotu1"] = "卿持此诏，惟盈惟谨，勿蹈山阳公覆辙。",
+  ["$zhaotu2"] = "司马师觑百官如草芥，社稷早晚必归此人。",
+  ["$jingju1"] = "朕有罪…求大将军饶恕…",
+  ["$jingju2"] = "朕本无此心、绝无此心！",
+  ["$weizhui1"] = "大魏高楼百尺，竟无一栋梁。",
+  ["$weizhui2"] = "高飞入危云，簌簌兮如坠。",
+  ["~js__caofang"] = "报应不爽，司马家亦有今日。",
 }
 local simayi = General(extension, "js__simayi", "wei", 4)
 local yingshi = fk.CreateTriggerSkill{
