@@ -638,9 +638,7 @@ local jizhaoq = fk.CreateTriggerSkill{
       return not p:isKongcheng() or table.find(room.alive_players, function(to)
         return p:canMoveCardsInBoardTo(to, nil)
       end)
-    end), function(p)
-      return p.id
-    end)
+    end), Util.IdMapper)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#jizhaoq-choose", self.name, true)
     if #to > 0 then
@@ -653,25 +651,25 @@ local jizhaoq = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data)
     local use = nil
     if not to:isKongcheng() then
-      local pattern = "^(jink,nullification)|.|.|.|.|.|"
-      for _, id in ipairs(to:getCardIds("h")) do
-        local card = Fk:getCardById(id)
-        if not to:prohibitUse(card) and card.skill:canUse(to, card) then
-          pattern = pattern..id..","
-        end
-      end
-      pattern = string.sub(pattern, 1, #pattern - 1)
-      use = room:askForUseCard(to, "", pattern, "#jizhaoq-use:"..player.id, true, {bypass_times = true})
+      use = U.askForUseRealCard(room, to, to:getCardIds("h"), ".", self.name, "#jizhaoq-use:"..player.id, {bypass_times = true}, true, true)
     end
     if use then
       use.extraUse = true
       room:useCard(use)
     else
-      local targets = table.map(table.filter(room.alive_players, function(p)
-        return to:canMoveCardsInBoardTo(p, nil) end), function(p) return p.id end)
-      if #targets > 0 then
-        local t = room:askForChoosePlayers(player, targets, 1, 1, "#jizhaoq-move::"..to.id, self.name, true)
-        if #t > 0 then
+      local choices = {}
+      if not to:isKongcheng() then table.insert(choices, "jizhaoq_hand") end
+      local targets = table.filter(room.alive_players, function(p) return to:canMoveCardsInBoardTo(p, nil) end)
+      if #targets > 0 then table.insert(choices, "jizhaoq_board") end
+      if #choices == 0 then return end
+      local choice = room:askForChoice(player, choices, self.name)
+      if choice == "jizhaoq_hand" then targets = room:getOtherPlayers(to) end
+      local t = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#jizhaoq-move::"..to.id, self.name, true)
+      if #t > 0 then
+        if choice == "jizhaoq_hand" then
+          local cid = room:askForCardChosen(player, to, "h", self.name)
+          room:moveCardTo(cid, Player.Hand, room:getPlayerById(t[1]), fk.ReasonJustMove, self.name, nil, false, player.id)
+        else
           room:askForMoveCardInBoard(player, to, room:getPlayerById(t[1]), self.name, nil, to, {})
         end
       end
@@ -695,6 +693,8 @@ Fk:loadTranslationTable{
   ["#jizhaoq-choose"] = "急召：你可以指定一名角色，令其选择使用一张手牌或你移动其区域内一张牌",
   ["#jizhaoq-use"] = "急召：使用一张手牌，或点“取消” %src 可以移动你区域内一张牌",
   ["#jizhaoq-move"] = "急召：你可以选择一名角色，将 %dest 区域内的一张牌移至目标角色区域",
+  ["jizhaoq_hand"] = "移动手牌",
+  ["jizhaoq_board"] = "移动场上牌",
 }
 
 local xushao = General(extension, "js__xushao", "qun", 3)
