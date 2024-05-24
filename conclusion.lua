@@ -796,6 +796,7 @@ liuyong:addSkill(js__fengxiang)
 Fk:loadTranslationTable{
   ["js__liuyong"] = "刘永",
   ["#js__liuyong"] = "甘陵王",
+	["designer:js__liuyong"] = "山巅隐士",
   ["illustrator:js__liuyong"] = "君桓文化",
   ["js__danxinn"] = "丹心",
   [":js__danxinn"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",

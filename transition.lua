@@ -829,12 +829,11 @@ local guiji = fk.CreateActiveSkill{
   name = "guiji",
   anim_type = "support",
   target_num = 1,
+  prompt = "#guiji-prompt",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and not player:isKongcheng()
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
     local target = Fk:currentRoom():getPlayerById(to_select)
     return Self.id ~= to_select and target.gender == General.Male and #selected == 0 and target:getHandcardNum() < Self:getHandcardNum() 
@@ -875,13 +874,12 @@ local guiji_delay = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventPhaseStart},
+  refresh_events = {fk.EventPhaseChanging},
   can_refresh = function(self, event, target, player, data)
-    return target:getMark("@@guiji") ~= 0 and target.phase == Player.Discard
+    return player == target and target:getMark("@@guiji") ~= 0 and data.from == Player.Play
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(target, "@@guiji", 0)
+    player.room:setPlayerMark(target, "@@guiji", 0)
   end,
 }
 local jiaohao = fk.CreateTriggerSkill{
@@ -971,16 +969,25 @@ local jiaohao_active = fk.CreateActiveSkill{
 Fk:loadTranslationTable{
   ["js__sunshangxiang"] = "孙尚香",
   ["#js__sunshangxiang"] = "情断吴江",
+  ["cv:js__sunshangxiang"] = "山风",
+	["illustrator:js__sunshangxiang"] = "鬼画府",
   ["guiji"] = "闺忌",
   [":guiji"] = "每回合限一次，出牌阶段，你可以与一名手牌数小于你的男性角色交换手牌，然后其下个出牌阶段结束时，你可以与其交换手牌。",
   ["jiaohao"] = "骄豪",
   [":jiaohao"] = "其他角色出牌阶段限一次，其可以将手牌中的一张装备牌置于你的装备区中；准备阶段，你获得X张【影】（X为你空置的装备栏数的一半且向上取整）。",
   ["#guiji_delay"] = "闺忌",
   ["@@guiji"] = "闺忌",
+  ["#guiji-prompt"] = "闺忌：你可以与一名手牌数小于你的男性角色交换手牌",
   ["#guiji-invoke"] = "闺忌：是否与 %dest 交换手牌？",
   ["jiaohao&"] = "骄豪",
   [":jiaohao&"] = "出牌阶段限一次，你可以将手牌中的一张装备牌置于孙尚香的装备区内。",
   ["#jiaohao&"] = "骄豪：你可以将手牌中的一张装备牌置入孙尚香的装备区",
+
+  ["$guiji1"] = "孙家虎女，向来无所忌讳。",
+  ["$guiji2"] = "厮杀半生，尚惧兵器邪？",
+  ["$jiaohao1"] = "桃花马、请长缨，将军何必是丈夫。",
+  ["$jiaohao2"] = "本夫人处事，何须犬马置喙？",
+  ["~js__sunshangxiang"] = "手裁蜀锦君肩上，情断吴江帆影中……",
 }
 
 local pangtong = General(extension, "js__pangtong", "qun", 3)
