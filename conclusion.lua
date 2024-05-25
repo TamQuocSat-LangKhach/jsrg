@@ -1194,7 +1194,7 @@ local yingshi = fk.CreateTriggerSkill{
 }
 local tuigu = fk.CreateTriggerSkill{
   name = "tuigu",
-  anim_type = "drawcard",
+  mute = true,
   events = {fk.TurnStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self)
@@ -1206,6 +1206,8 @@ local tuigu = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    player:broadcastSkillInvoke(self.name, math.random(2))
+    room:notifySkillInvoked(player, self.name, "drawcard")
     player:turnOver()
     if player.dead then return false end
     local n = #room.alive_players // 2
@@ -1265,9 +1267,9 @@ local tuigu_recoverAndTurn = fk.CreateTriggerSkill{
       for _, move in ipairs(data) do
         if move.from == player.id then
           for _, info in ipairs(move.moveInfo) do
-             if info.fromArea == Card.PlayerEquip then
-               return true
-             end
+            if info.fromArea == Card.PlayerEquip then
+              return true
+            end
           end
         end
       end
@@ -1280,11 +1282,12 @@ local tuigu_recoverAndTurn = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    player:broadcastSkillInvoke("tuigu")
-    room:notifySkillInvoked(player, "tuigu", "control")
     if event == fk.RoundEnd then
+      player:broadcastSkillInvoke("tuigu", math.random(3,5))
+      room:notifySkillInvoked(player, "tuigu", "control")
       U.gainAnExtraTurn(player, true, "tuigu")
     else
+      room:notifySkillInvoked(player, "tuigu", "defensive")
       room:recover({
         who = player,
         num = 1,
@@ -1308,15 +1311,26 @@ simayi:addSkill(tuigu)
 Fk:loadTranslationTable{
   ["js__simayi"] = "司马懿",
   ["#js__simayi"] = "危崖隐羽",
+  ["cv:js__simayi"] = "寂镜",
   ["illustrator:js__simayi"] = "鬼画府",
+
   ["js__yingshi"] = "鹰视",
   [":js__yingshi"] = "当你翻面后，你可以观看牌堆底的三张牌（若场上阵亡角色数大于2则改为五张），" ..
   "然后将其中任意牌以任意顺序放置牌堆顶，其余牌以任意顺序放置牌堆底。",
   ["tuigu"] = "蜕骨",
   [":tuigu"] = "回合开始时，你可以翻面令你本回合手牌上限+X，然后摸X张牌并视为使用一张【解甲归田】（目标角色不能使用这些装备牌直到其回合结束，X为场上角色数的一半，向下取整）；每轮结束时，若你本轮未行动过，你执行一个额外的回合；当你失去装备区里的牌后，你回复一点体力。",
-  ["#tuigu-invoke"] = "蜕骨：是否发动“蜕骨”，将武将牌翻面并令本回合手牌上限+%arg ，然后摸等量张牌？ ",
-  ["#tuigu-jiejia"] = "蜕骨：请选择你要使用【解甲归田】的目标",
+  ["#tuigu-invoke"] = "蜕骨：你可以将武将牌翻面，令本回合手牌上限+%arg ，然后摸 %arg 张牌",
+  ["#tuigu-jiejia"] = "蜕骨：选择你使用【解甲归田】的目标（令其收回装备区所有牌）",
   ["@@tuigu-inhand"] = "蜕骨",
+
+  ["$js__yingshi1"] = "亮志大而不见机，已堕吾画中。",
+  ["$js__yingshi2"] = "贼偏执一端不能察变，破之必矣。",
+  ["$tuigu1"] = "臣老年虚乏，唯愿乞骸骨。",
+  ["$tuigu2"] = "今指水为誓，若有相违，天弃之！",
+  ["$tuigu3"] = "汉室世衰，天命在曹；曹氏世衰，天命归我。",
+  ["$tuigu4"] = "天时已至而犹谦让，舜禹所不为也。",
+  ["$tuigu5"] = "皇天眷我，神人同谋，当取此天下。",
+  ["~js__simayi"] = "天下汹汹，我当何去何从……",
 }
 
 local guozhao = General(extension, "js__guozhao", "wei", 3, 3, General.Female)
