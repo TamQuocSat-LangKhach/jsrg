@@ -1,6 +1,8 @@
 local extension = Package("continue")
 extension.extensionName = "jsrg"
 
+local U = require "packages/utility/utility"
+
 Fk:loadTranslationTable{
   ["continue"] = "江山如故·承",
 }
@@ -1377,48 +1379,49 @@ local jixiang_delay = fk.CreateTriggerSkill{
     player.room:addPlayerMark(player, "chengxian_extratimes-phase")
   end,
 }
+local function getTargetsNum(player, card)
+  if player:prohibitUse(card) or not player:canUse(card) then return 0 end
+  if card.skill:getMinTargetNum() == 0 and not card.multiple_targets then
+    return 1
+  else
+    local x = 0
+    for _, p in ipairs(Fk:currentRoom().alive_players) do
+      if not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, true) then
+        x = x + 1
+      end
+    end
+    return x
+  end
+end
 local chengxian = fk.CreateViewAsSkill{
   name = "chengxian",
   prompt = "#chengxian-active",
   interaction = function()
-    local names = {}
-    local mark = Self:getMark("chengxian-turn")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card:isCommonTrick() and not card.is_derived then
-        local to_use = Fk:cloneCard(card.name)
-        if Self:canUse(to_use) and not Self:prohibitUse(to_use) then
-          if type(mark) ~= "table" or (not table.contains(mark, card.trueName)) then
-            table.insertIfNeed(names, card.name)
-          end
-        end
-      end
+    local mark = U.getMark(Self, "chengxian-turn")
+    local all_names = U.getAllCardNames("t")
+    local handcards = Self:getCardIds(Player.Hand)
+    local names = table.filter(all_names, function(name)
+      return not table.contains(mark, Fk:cloneCard(name).trueName) and table.find(handcards, function (id)
+        local to_use = Fk:cloneCard(name)
+        to_use:addSubcard(id)
+        to_use.skillName = "chengxian"
+        local x = getTargetsNum(Self, to_use)
+        return x > 0 and x == getTargetsNum(Self, Fk:getCardById(id))
+      end)
+    end)
+    if #names > 0 then
+      return UI.ComboBox { choices = names, all_choices = all_names }
     end
-    return UI.ComboBox { choices = names }
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 + player:getMark("chengxian_extratimes-phase")
   end,
   card_filter = function(self, to_select, selected)
-    local targetsNum = function(card)
-      if Self:prohibitUse(card) or not Self:canUse(card) then return 0 end
-      if card.skill:getMinTargetNum() == 0 and not card.multiple_targets then
-        return 1
-      else
-        local x = 0
-        for _, p in ipairs(Fk:currentRoom().alive_players) do
-          if not Self:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, Self.id, card, true) then
-            x = x + 1
-          end
-        end
-        return x
-      end
-    end
     if self.interaction.data == nil or #selected > 0 or Fk:currentRoom():getCardArea(to_select) == Player.Equip then return false end
     local to_use = Fk:cloneCard(self.interaction.data)
     to_use:addSubcard(to_select)
     to_use.skillName = self.name
-    return targetsNum(to_use) == targetsNum(Fk:getCardById(to_select))
+    return getTargetsNum(Self, to_use) == getTargetsNum(Self, Fk:getCardById(to_select))
   end,
   view_as = function(self, cards)
     if #cards ~= 1 or not self.interaction.data then return nil end
@@ -1428,8 +1431,7 @@ local chengxian = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    local mark = player:getMark("chengxian-turn")
-    if mark == 0 then mark = {} end
+    local mark = U.getMark(player, "chengxian-turn")
     table.insert(mark, use.card.trueName)
     player.room:setPlayerMark(player, "chengxian-turn", mark)
   end,
