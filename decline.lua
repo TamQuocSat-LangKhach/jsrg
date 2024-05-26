@@ -1232,7 +1232,7 @@ local saojian = fk.CreateActiveSkill{
     local ids, choice = U.askforChooseCardsAndChoice(
       player,
       to:getCardIds("h"),
-      { "OK" },
+      { "reveal", "not_reveal" },
       self.name,
       "#saojian-view::" .. to.id,
       nil,
@@ -1240,9 +1240,23 @@ local saojian = fk.CreateActiveSkill{
       1
     )
 
-    local toViewPlayers = table.filter(room.alive_players, function(p) return p ~= player and p ~= to end)
-    if #toViewPlayers > 0 then
-      U.viewCards(toViewPlayers, ids, "saojian_view", "#saojian-view::" .. to.id)
+    if choice == "reveal" then
+      local toViewPlayers = table.filter(room.alive_players, function(p) return p ~= to end)
+      if #toViewPlayers > 0 then
+        for _, p in ipairs(toViewPlayers) do
+          p:doNotify(
+            "ShowCard",
+            json.encode{
+              from = player.id,
+              cards = ids,
+            }
+          )
+        end
+        room:sendFootnote(ids, {
+          type = "#SaoJianReveal",
+          from = player.id,
+        })
+      end
     end
 
     for i = 1, 5 do
@@ -1264,6 +1278,9 @@ Fk:loadTranslationTable{
   "直至其弃置了你选择的牌。然后若其手牌数大于你，你失去一点体力。",
   ["#saojian"] = "埽奸：你可观看一名其他角色的手牌，令其弃置手牌直到弃到你所选的牌",
   ["saojian_view"] = "埽奸观看",
+  ["reveal"] = "他人可观看",
+  ["not_reveal"] = "不可观看",
+  ["#SaoJianReveal"] = "%from选择",
   ["#saojian-view"] = "埽奸：当前观看的是 %dest 的手牌",
   ["#saojian-discard"] = "埽奸：请弃置一张手牌，直到你弃置到“埽奸”选择的牌（剩余 %arg 次）",
 }
