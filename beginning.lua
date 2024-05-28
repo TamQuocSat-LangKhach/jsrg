@@ -8,6 +8,7 @@ Fk:loadTranslationTable{
   ["js"] = "江山",
 }
 
+---@param player Player
 local function getTrueSkills(player)
   local skills = {}
   for _, s in ipairs(player.player_skills) do

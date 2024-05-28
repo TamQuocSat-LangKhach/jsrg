@@ -96,7 +96,7 @@ local zhimeng = fk.CreateTriggerSkill{
           playersDisplayed[pIds[1]] = suit
         end
       end
-  
+
       room:sortPlayersByAction(targetsToObtain)
       for _, pId in ipairs(targetsToObtain) do
         local cardsInProcessing = table.filter(cards, (function(id) return room:getCardArea(id) == Card.Processing end))
@@ -883,7 +883,7 @@ local js__wudao = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["js__wudao"] = "悟道",
-  [":js__wudao"] = "觉醒技，当一名角色进入濒死状态时，若你没有手牌，你增加一点体力上限并回复一点体力，获得技能“惊雷”。",
+  [":js__wudao"] = "觉醒技，当一名角色进入濒死状态时，若你没有手牌，你增加1点体力上限并回复1点体力，获得〖惊雷〗。",
 }
 
 zhangjiao:addSkill(js__wudao)
@@ -1192,10 +1192,10 @@ local yanggeActive = fk.CreateActiveSkill{
 }
 Fk:loadTranslationTable{
   ["yangge"] = "扬戈",
-  [":yangge"] = "每轮限一次，体力值最低的其他角色可以于其出牌阶段对你发动“密诏”。",
+  [":yangge"] = "每轮限一次，体力值最低的其他角色可以于其出牌阶段对你发动〖密诏〗。",
   ["yangge&"] = "扬戈",
-  [":yangge&"] = "出牌阶段，你可以对一名有“扬戈”的角色发动“密诏”（其每轮限一次）。",
-  ["#yangge"] = "扬戈：你可选择一名拥有“扬戈”角色，对其发动“密诏”",
+  [":yangge&"] = "出牌阶段，你可以对一名有〖扬戈〗的角色发动〖密诏〗（其每轮限一次）。",
+  ["#yangge"] = "扬戈：你可选择一名拥有〖扬戈〗角色，对其发动〖密诏〗",
 }
 
 Fk:addSkill(yanggeActive)
@@ -1275,7 +1275,7 @@ local saojian = fk.CreateActiveSkill{
 Fk:loadTranslationTable{
   ["saojian"] = "埽奸",
   [":saojian"] = "出牌阶段限一次，你可以观看一名其他角色的手牌并选择其中一张令除其外的角色观看，然后其重复弃置一张手牌（至多五次），" ..
-  "直至其弃置了你选择的牌。然后若其手牌数大于你，你失去一点体力。",
+  "直至其弃置了你选择的牌。然后若其手牌数大于你，你失去1点体力。",
   ["#saojian"] = "埽奸：你可观看一名其他角色的手牌，令其弃置手牌直到弃到你所选的牌",
   ["saojian_view"] = "埽奸观看",
   ["reveal"] = "他人可观看",

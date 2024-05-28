@@ -116,8 +116,8 @@ local zhenfeng = fk.CreateViewAsSkill{
           repeat
             for _, s in ipairs(p.player_skills) do
               if s:isPlayerSkill(p) then
-                if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(c.name).."】") or
-                  string.find(Fk:translate(":"..s.name), Fk:translate(c.name)[1].."【"..Fk:translate(c.trueName).."】") then
+                if string.find(Fk:translate(":"..s.name, "zh_CN"), "【"..Fk:translate(c.name, "zh_CN").."】") or
+                  string.find(Fk:translate(":"..s.name, "zh_CN"), Fk:translate(c.name, "zh_CN")[1].."【"..Fk:translate(c.trueName, "zh_CN").."】") then
                   table.insertIfNeed(names, c.name)
                 end
               end
@@ -163,8 +163,8 @@ local zhenfeng_trigger = fk.CreateTriggerSkill{
       if to.dead then return end
       for _, s in ipairs(to.player_skills) do
         if s:isPlayerSkill(to) then
-          if string.find(Fk:translate(":"..s.name), "【"..Fk:translate(data.card.name).."】") or
-            string.find(Fk:translate(":"..s.name), Fk:translate(data.card.name)[1].."【"..Fk:translate(data.card.trueName).."】") then
+          if string.find(Fk:translate(":"..s.name, "zh_CN"), "【"..Fk:translate(data.card.name, "zh_CN").."】") or
+            string.find(Fk:translate(":"..s.name, "zh_CN"), Fk:translate(data.card.name, "zh_CN")[1].."【"..Fk:translate(data.card.trueName, "zh_CN").."】") then
             return true
           end
         end
@@ -647,7 +647,7 @@ local cuifeng_trigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:usedSkillTimes("cuifeng", Player.HistoryTurn) > 0 and player:hasSkill("cuifeng", true) then
       local n = 0
-      player.room.logic:getEventsOfScope(GameEvent.UseCard, 999, function(e)
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
         local use = e.data[1]
         if use.from == player.id and table.contains(use.card.skillNames, "cuifeng") then
           if use.damageDealt then
@@ -658,6 +658,7 @@ local cuifeng_trigger = fk.CreateTriggerSkill{
             end
           end
         end
+        return false
       end, Player.HistoryTurn)
       return n ~= 1
     end
@@ -847,7 +848,7 @@ local guiji = fk.CreateActiveSkill{
     table.insertIfNeed(mark, player.id)
     room:setPlayerMark(to, "@@guiji", mark)
   end,
- }
+}
 local guiji_delay = fk.CreateTriggerSkill{
   name = "#guiji_delay",
   events = {fk.EventPhaseEnd},
@@ -961,16 +962,16 @@ local jiaohao_active = fk.CreateActiveSkill{
       skillName = "jiaohao",
     })
   end,
- }
- Fk:addSkill(jiaohao_active)
- guiji:addRelatedSkill(guiji_delay)
- sunshangxiang:addSkill(guiji)
- sunshangxiang:addSkill(jiaohao)
+}
+Fk:addSkill(jiaohao_active)
+guiji:addRelatedSkill(guiji_delay)
+sunshangxiang:addSkill(guiji)
+sunshangxiang:addSkill(jiaohao)
 Fk:loadTranslationTable{
   ["js__sunshangxiang"] = "孙尚香",
   ["#js__sunshangxiang"] = "情断吴江",
   ["cv:js__sunshangxiang"] = "山风",
-	["illustrator:js__sunshangxiang"] = "鬼画府",
+  ["illustrator:js__sunshangxiang"] = "鬼画府",
   ["guiji"] = "闺忌",
   [":guiji"] = "每回合限一次，出牌阶段，你可以与一名手牌数小于你的男性角色交换手牌，然后其下个出牌阶段结束时，你可以与其交换手牌。",
   ["jiaohao"] = "骄豪",
