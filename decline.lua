@@ -1629,16 +1629,217 @@ Fk:loadTranslationTable{
 dangren:addRelatedSkill(dangrenTrigger)
 chenfan:addSkill(dangren)
 
---local zhangju = General(extension, "zhangju", "qun", 4)
+local zhangju = General(extension, "zhangju", "qun", 4)
 Fk:loadTranslationTable{
   ["zhangju"] = "张举",
   ["#zhangju"] = "草头天子",
   ["illustrator:zhangju"] = "峰雨同程",
-  ["qiluanh"] = "起乱",
-  [":qiluanh"] = "每回合限两次，当你需要使用【杀】或【闪】时，你可以弃置任意张牌并令至多等量名其他角色选择是否替你使用之。"..
-  "当有角色响应时，你摸等同于弃置的牌数。",
-  ["xiangjia"] = "相假",
-  [":xiangjia"] = "出牌阶段限一次，若你装备区有武器牌，你可以视为使用一张【借刀杀人】。结算后目标可以视为对你使用一张【借刀杀人】。",
 }
+
+local qiluanChooser = fk.CreateActiveSkill{
+  name = "js__qiluan_chooser",
+  min_card_num = 1,
+  min_target_num = 1,
+  feasible = function (self, selected, selected_cards)
+    return #selected > 0 and #selected == #selected_cards
+  end,
+  card_filter = function(self, to_select, selected)
+    return not Self:prohibitDiscard(Fk:getCardById(to_select))
+  end,
+  target_filter = function(self, to_select, selected, selected_cards)
+    return #selected < #selected_cards and Self.id ~= to_select
+  end,
+}
+local qiluan = fk.CreateViewAsSkill{
+  name = "js__qiluan",
+  anim_type = "offensive",
+  pattern = "slash",
+  prompt = "#js__qiluan",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if #cards ~= 0 then
+      return nil
+    end
+    local c = Fk:cloneCard("slash")
+    c.skillName = self.name
+    return c
+  end,
+  before_use = function(self, player, use)
+    local room = player.room
+    if use.tos then
+      room:doIndicate(player.id, TargetGroup:getRealTargets(use.tos))
+    end
+
+    local success, dat = room:askForUseActiveSkill(player, "js__qiluan_chooser", "#js__qiluan-use_slash", false)
+    local targets = success and dat.targets or room:getOtherPlayers(player)[1]
+    local cards =
+      success and
+      dat.cards or
+      table.find(player:getCardIds("he"), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end)
+
+    room:throwCard(cards, self.name, player, player)
+
+    for _, pId in ipairs(targets) do
+      local cardResponded = room:askForResponse(room:getPlayerById(pId), "slash", "slash", "#js__qiluan-slash:" .. player.id, true)
+      if cardResponded then
+        player:drawCards(#cards, self.name)
+
+        room:responseCard({
+          from = pId,
+          card = cardResponded,
+          skipDrop = true,
+        })
+
+        use.card = cardResponded
+        return
+      end
+    end
+
+    return self.name
+  end,
+  enabled_at_play = function(self, player)
+    return
+      player:usedSkillTimes(self.name) < 2 and
+      table.find(player:getCardIds("he"), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end) and
+      table.find(Fk:currentRoom().alive_players, function(p) return p ~= player end)
+  end,
+  enabled_at_response = function(self, player, response)
+    return
+      not response and
+      player:usedSkillTimes(self.name) < 2 and
+      table.find(player:getCardIds("he"), function(id) return not player:prohibitDiscard(Fk:getCardById(id)) end) and
+      table.find(Fk:currentRoom().alive_players, function(p) return p ~= player end)
+  end,
+}
+local qiluanJink = fk.CreateTriggerSkill{
+  name = "#js__qiluan_jink",
+  anim_type = "defensive",
+  main_skill = qiluan,
+  events = {fk.AskForCardUse},
+  can_trigger = function(self, event, target, player, data)
+    return
+      target == player and
+      player:hasSkill(self) and
+      player:usedSkillTimes(self.name) < 2 and
+      (data.cardName == "jink" or (data.pattern and Exppattern:Parse(data.pattern):matchExp("jink|0|nosuit|none"))) and
+      (data.extraData == nil or data.extraData.jsQiluanAsk == nil)
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local success, dat = room:askForUseActiveSkill(player, "js__qiluan_chooser", "#js__qiluan-use_jink", true)
+    
+    if success then
+      self.cost_data = dat
+      return true
+    end
+
+    return false
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    room:throwCard(self.cost_data.cards, self.name, player, player)
+
+    room:doIndicate(player.id, self.cost_data.targets)
+    for _, pId in ipairs(self.cost_data.targets) do
+      local p = room:getPlayerById(pId)
+      if p:isAlive() then
+        local cardResponded = room:askForResponse(p, "jink", "jink", "#js__qiluan-jink:" .. player.id, true, { jsQiluanAsk = true })
+        if cardResponded then
+          player:drawCards(#self.cost_data.cards, self.name)
+
+          room:responseCard({
+            from = p.id,
+            card = cardResponded,
+            skipDrop = true,
+          })
+
+          data.result = {
+            from = player.id,
+            card = Fk:cloneCard('jink'),
+          }
+          data.result.card:addSubcards(room:getSubcardsByRule(cardResponded, { Card.Processing }))
+          data.result.card.skillName = self.name
+
+          if data.eventData then
+            data.result.toCard = data.eventData.toCard
+            data.result.responseToEvent = data.eventData.responseToEvent
+          end
+          return true
+        end
+      end
+    end
+  end,
+}
+Fk:loadTranslationTable{
+  ["js__qiluan"] = "起乱",
+  [":js__qiluan"] = "每回合限两次，当你需要使用【杀】或【闪】时，你可以弃置任意张牌并令至多等量名其他角色选择是否替你使用之。"..
+  "当有角色响应时，你摸等同于弃置的牌数。",
+  ["#js__qiluan"] = "起乱：你可选择【杀】的目标，然后弃任意牌令等量其他角色选择是否替你出【杀】",
+  ["js__qiluan_chooser"] = "起乱",
+  ["#js__qiluan-use_slash"] = "起乱：选择任意张牌和等量其他角色，令其选择是否替你出【杀】",
+  ["#js__qiluan-use_jink"] = "起乱：选择任意张牌和等量其他角色，令其选择是否替你出【闪】",
+  ["#js__qiluan-slash"] = "起乱：你可打出一张【杀】视为 %src 使用此牌",
+  ["#js__qiluan_jink"] = "起乱",
+  ["#js__qiluan-jink"] = "起乱：你可打出一张【闪】视为 %src 使用此牌",
+}
+
+Fk:addSkill(qiluanChooser)
+qiluan:addRelatedSkill(qiluanJink)
+zhangju:addSkill(qiluan)
+
+local xiangjia = fk.CreateViewAsSkill{
+  name = "xiangjia",
+  anim_type = "control",
+  pattern = "collateral",
+  prompt = "#xiangjia",
+  card_filter = Util.FalseFunc,
+  view_as = function(self, cards)
+    if #cards ~= 0 then
+      return nil
+    end
+    local c = Fk:cloneCard("collateral")
+    c.skillName = self.name
+    return c
+  end,
+  after_use = function(self, player, use)
+    local room = player.room
+    local targets = TargetGroup:getRealTargets(use.tos)
+    local collateral = Fk:cloneCard("collateral")
+    for _, pId in ipairs(targets) do
+      local p = room:getPlayerById(pId)
+      if p:isAlive() and U.canUseCardTo(room, p, player, collateral) then
+        local availableTargets = table.map(
+          table.filter(
+            room.alive_players,
+            function(to) return collateral.skill:targetFilter(to.id, { player.id }, nil, collateral) end
+          ),
+          Util.IdMapper
+        )
+
+        if #availableTargets > 0 then
+          local tos = room:askForChoosePlayers(p, availableTargets, 1, 1, "#xiangjia-use::" .. player.id, self.name)
+          if #tos > 0 then
+            room:useCard{
+              from = pId,
+              tos = {{ player.id }, { tos[1] }},
+              card = collateral,
+            }
+          end
+        end
+      end
+    end
+  end,
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(self.name) == 0 and player:getEquipment(Card.SubtypeWeapon)
+  end,
+}
+Fk:loadTranslationTable{
+  ["xiangjia"] = "相假",
+  [":xiangjia"] = "出牌阶段限一次，若你装备区有武器牌，你可以视为使用一张【借刀杀人】，然后目标角色可以视为对你使用一张【借刀杀人】。",
+  ["#xiangjia"] = "相假：你可视为使用【借刀杀人】，然后目标角色可视为对你使用【借刀杀人】",
+  ["#xiangjia-use"] = "相假：你可视为对 %dest 使用【借刀杀人】（请选择 %dest 【杀】的目标）",
+}
+
+zhangju:addSkill(xiangjia)
 
 return extension

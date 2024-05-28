@@ -175,6 +175,7 @@ caocao:addRelatedSkill("feiying")
 Fk:loadTranslationTable{
   ["js__caocao"] = "曹操",
   ["#js__caocao"] = "汉征西将军",
+  ["cv:js__caocao"] = "樰默",
   ["illustrator:js__caocao"] = "凡果",
 
   ["zhenglve"] = "政略",
