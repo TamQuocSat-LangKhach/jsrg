@@ -1640,9 +1640,6 @@ local qiluanChooser = fk.CreateActiveSkill{
   name = "js__qiluan_chooser",
   min_card_num = 1,
   min_target_num = 1,
-  feasible = function (self, selected, selected_cards)
-    return #selected > 0 and #selected == #selected_cards
-  end,
   card_filter = function(self, to_select, selected)
     return not Self:prohibitDiscard(Fk:getCardById(to_select))
   end,
@@ -1772,7 +1769,7 @@ local qiluanJink = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["js__qiluan"] = "起乱",
-  [":js__qiluan"] = "每回合限两次，当你需要使用【杀】或【闪】时，你可以弃置任意张牌并令至多等量名其他角色选择是否替你使用之。"..
+  [":js__qiluan"] = "每回合限两次，当你需要使用【杀】或【闪】时，你可以弃置至少一张牌并令至多等量名其他角色选择是否替你使用之。"..
   "当有角色响应时，你摸等同于弃置的牌数。",
   ["#js__qiluan"] = "起乱：你可选择【杀】的目标，然后弃任意牌令等量其他角色选择是否替你出【杀】",
   ["js__qiluan_chooser"] = "起乱",
