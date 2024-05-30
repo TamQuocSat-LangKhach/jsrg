@@ -1431,11 +1431,6 @@ Fk:loadTranslationTable{
   ["chenfan"] = "陈蕃",
   ["#chenfan"] = "不畏强御",
   ["illustrator:chenfan"] = "峰雨同程",
-  ["gangfen"] = "刚忿",
-  [":gangfen"] = "手牌数大于你的角色使用【杀】指定第一个目标时，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
-  "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
-  ["dangren"] = "当仁",
-  [":dangren"] = "转换技，阳：当你需要对你使用【桃】时，你可以视为使用之；阴：当你需要对其他角色使用【桃】时，你须视为使用之。",
 }
 
 local gangfen = fk.CreateTriggerSkill{
@@ -1485,7 +1480,7 @@ local gangfen = fk.CreateTriggerSkill{
         AimGroup:addTargets(room, data, pId)
         room:sendLog{
           type = "#GangFenAdd",
-          from = player.id,
+          from = pId,
           to = { target.id },
           arg = data.card:toLogString(),
           arg2 = #U.getActualUseTargets(room, data, event),
@@ -1513,12 +1508,14 @@ local gangfen = fk.CreateTriggerSkill{
         arg = data.card:toLogString(),
         toast = true,
       }
+
+      return true
     end
   end,
 }
 Fk:loadTranslationTable{
   ["gangfen"] = "刚忿",
-  [":gangfen"] = "当手牌数大于你的角色使用【杀】指定目标时，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
+  [":gangfen"] = "当手牌数大于你的角色使用【杀】指定第一个目标时，你可以成为此【杀】的额外目标，并令所有其他角色均可以如此做。"..
   "然后使用者展示所有手牌，若其中黑色牌小于目标数，则取消所有目标。",
   ["#gangfen-invoke"] = "刚忿：你可以成为 %dest 使用的 %arg 的额外目标，若最后使用者手中黑牌少于目标数则取消所有目标（当前目标数为%arg2）",
   ["#GangFenAdd"] = "%from 因“刚忿”选择成为 %to 使用的 %arg 的目标（当前目标数为%arg2）",
