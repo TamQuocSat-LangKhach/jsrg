@@ -947,7 +947,7 @@ local zhangdeng_trigger = fk.CreateTriggerSkill{
     return player:hasSkill(self) and not player.faceup and table.contains(data.card.skillNames, zhangdeng.name) and
     player:getMark("zhangdeng_used-turn") > 1
   end,
-  on_cost = function() return true end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:turnOver()
   end,
@@ -977,7 +977,7 @@ local zhangdeng_attached = fk.CreateViewAsSkill{
   name = "zhangdeng&",
   prompt = "#zhangdeng-active",
   pattern = "analeptic",
-  card_filter = function() return false end,
+  card_filter = Util.FalseFunc,
   before_use = function(self, player)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
@@ -1017,7 +1017,7 @@ Fk:loadTranslationTable{
   ["#zhangdeng_trigger"] = "帐灯",
   [":zhangdeng"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次及以上发动时，你翻面至正面朝上。",
   ["zhangdeng&"] = "帐灯",
-  [":zhangdeng&"] = "当你需要使用【酒】时，若邹氏的武将牌背面朝上，你可以视为使用之。",
+  [":zhangdeng&"] = "当你需要使用【酒】时，若你与邹氏的武将牌均为背面朝上，你可以视为使用之。",
   ["#guyin-choice"] = "%src发动了孤吟，是否将武将牌翻面",
   ["turnOver"] = "翻面",
   ["#zhangdeng-active"] = "发动帐灯，视为使用一张【酒】",
