@@ -1553,6 +1553,7 @@ local dangrenTrigger = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.AskForCardUse},
   switch_skill_name = "dangren",
+  main_skill = dangren,
   can_trigger = function(self, event, target, player, data)
     if
       not (
