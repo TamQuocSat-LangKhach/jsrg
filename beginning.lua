@@ -2039,56 +2039,56 @@ local liubei = General(extension, "js__liubei", "qun", 4)
 local jishan = fk.CreateTriggerSkill{
   name = "jishan",
   anim_type = "support",
-  events = {fk.DamageInflicted},
+  events = {fk.DamageInflicted, fk.Damage},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
+    if event == fk.DamageInflicted then
+      return player:hasSkill(self) and player:getMark("jishan_prevent-turn") == 0
+    else
+      return target == player and player:hasSkill(self) and player:getMark("jishan_recover-turn") == 0
+    end
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askForSkillInvoke(player, self.name, nil, "#jishan-invoke::"..target.id)
-  end,
-  on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:doIndicate(player.id, {target.id})
-    room:loseHp(player, 1, self.name)
-    room:addPlayerMark(target, self.name, 1)
-    if not player.dead then
-      player:drawCards(1, self.name)
-    end
-    if not target.dead then
-      target:drawCards(1, self.name)
-    end
-    return true
-  end,
-}
-local jishan_trigger = fk.CreateTriggerSkill{
-  name = "#jishan_trigger",
-  anim_type = "support",
-  events = {fk.Damage},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(jishan) and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
-  end,
-  on_cost = function(self, event, target, player, data)
-    local room = player.room
-    local targets = {}
-    for _, to in ipairs(room:getAlivePlayers()) do
-      if to:getMark("jishan") > 0 and to:isWounded() and table.every(room:getAlivePlayers(), function(p) return p.hp >= to.hp end) then
-        table.insert(targets, to.id)
+    if event == fk.DamageInflicted then
+      return player.room:askForSkillInvoke(player, self.name, nil, "#jishan-invoke::"..target.id)
+    else
+      local room = player.room
+      local targets = table.filter(room.alive_players, function(to)
+        return table.contains(U.getMark(player, "jishan_record"), to.id) and to:isWounded() 
+        and table.every(room.alive_players, function(p) return p.hp >= to.hp end)
+      end)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#jishan-choose", self.name, true)
+      if #to > 0 then
+        self.cost_data = to[1]
+        return true
       end
     end
-    if #targets == 0 then return end
-    local to = room:askForChoosePlayers(player, targets, 1, 1, "#jishan-choose", self.name, true)
-    if #to > 0 then
-      self.cost_data = to[1]
-      return true
-    end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:recover{
-      who = player.room:getPlayerById(self.cost_data),
-      num = 1,
-      recoverBy = player,
-      skillName = self.name
-    }
+    local room = player.room
+    if event == fk.DamageInflicted then
+      room:doIndicate(player.id, {target.id})
+      room:setPlayerMark(player, "jishan_prevent-turn", 1)
+      local mark = U.getMark(player, "jishan_record")
+      table.insertIfNeed(mark, target.id)
+      room:setPlayerMark(player, "jishan_record", mark)
+      room:loseHp(player, 1, self.name)
+      if not player.dead then
+        player:drawCards(1, self.name)
+      end
+      if not target.dead then
+        target:drawCards(1, self.name)
+      end
+      return true
+    else
+      room:setPlayerMark(player, "jishan_recover-turn", 1)
+      room:recover{
+        who = room:getPlayerById(self.cost_data),
+        num = 1,
+        recoverBy = player,
+        skillName = self.name
+      }
+    end
   end,
 }
 local zhenqiao = fk.CreateTriggerSkill{
@@ -2097,7 +2097,8 @@ local zhenqiao = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {fk.TargetSpecified},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and player:getEquipment(Card.SubtypeWeapon) == nil
+    return target == player and player:hasSkill(self) and data.card.trueName == "slash" and data.firstTarget
+    and player:getEquipment(Card.SubtypeWeapon) == nil
   end,
   on_use = function(self, event, target, player, data)
     data.additionalEffect = (data.additionalEffect or 0) + 1
@@ -2113,7 +2114,6 @@ local zhenqiao_attackrange = fk.CreateAttackRangeSkill{
     return 0
   end,
 }
-jishan:addRelatedSkill(jishan_trigger)
 zhenqiao:addRelatedSkill(zhenqiao_attackrange)
 liubei:addSkill(jishan)
 liubei:addSkill(zhenqiao)
@@ -2129,7 +2129,6 @@ Fk:loadTranslationTable{
   ["zhenqiao"] = "振鞘",
   [":zhenqiao"] = "锁定技，你的攻击范围+1；当你使用【杀】指定目标后，若你的装备区没有武器牌，则此【杀】额外结算一次。",
   ["#jishan-invoke"] = "积善：你可以失去1点体力防止 %dest 受到的伤害，然后你与其各摸一张牌",
-  ["#jishan_trigger"] = "积善",
   ["#jishan-choose"] = "积善：你可以令一名角色回复1点体力",
 
   -- CV: 玖心粽子
