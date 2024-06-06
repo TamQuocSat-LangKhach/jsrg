@@ -1186,7 +1186,7 @@ local yanggeActive = fk.CreateActiveSkill{
         loser = target
       end
       if loser.dead then return end
-      room:useVirtualCard("slash", nil, winner, { loser }, yangge.name)
+      room:useVirtualCard("slash", nil, winner, { loser }, yangge.name, true)
     end
   end,
 }
@@ -1194,7 +1194,7 @@ Fk:loadTranslationTable{
   ["yangge"] = "扬戈",
   [":yangge"] = "每轮限一次，体力值最低的其他角色可以于其出牌阶段对你发动〖密诏〗。",
   ["yangge&"] = "扬戈",
-  [":yangge&"] = "出牌阶段，你可以对一名有〖扬戈〗的角色发动〖密诏〗（其每轮限一次）。",
+  [":yangge&"] = "出牌阶段，若你体力值为最低，你可以对一名有〖扬戈〗的角色发动〖密诏〗（其每轮限一次）。",
   ["#yangge"] = "扬戈：你可选择一名拥有〖扬戈〗角色，对其发动〖密诏〗",
 }
 

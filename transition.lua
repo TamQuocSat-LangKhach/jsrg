@@ -38,9 +38,10 @@ local qingzi = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return #p:getCardIds("e") > 0 end), function (p) return p.id end)
+      return #p:getCardIds("e") > 0 end), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 999, "#qingzi-choose", self.name, true)
     if #tos > 0 then
+      room:sortPlayersByAction(tos)
       self.cost_data = tos
       return true
     end
@@ -54,27 +55,26 @@ local qingzi = fk.CreateTriggerSkill{
         local c = room:askForCardChosen(player, p, "e", self.name)
         room:throwCard({c}, self.name, p, player)
         if not p:hasSkill("ol_ex__shensu", true) and not p.dead then
-          player.tag[self.name] = player.tag[self.name] or {}
-          table.insert(player.tag[self.name], p.id)
+          local mark = U.getMark(player, "qingzi_target")
+          table.insert(mark, p.id)
+          room:setPlayerMark(player, "qingzi_target", mark)
           room:handleAddLoseSkills(p, "ol_ex__shensu", nil, true, false)
         end
       end
     end
   end,
 
-  refresh_events = {fk.TurnStart},
+  refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
-    return target == player and player.tag[self.name]
+    return target == player and player:getMark("qingzi_target") ~= 0
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(player.tag[self.name]) do
+    for _, id in ipairs(player:getMark("qingzi_target")) do
       local p = room:getPlayerById(id)
-      if not p.dead then
-        room:handleAddLoseSkills(p, "-ol_ex__shensu", nil, true, false)
-      end
+      room:handleAddLoseSkills(p, "-ol_ex__shensu", nil, true, false)
     end
-    player.tag[self.name] = {}
+    room:setPlayerMark(player, "qingzi_target", 0)
   end,
 }
 local dingce = fk.CreateTriggerSkill{
