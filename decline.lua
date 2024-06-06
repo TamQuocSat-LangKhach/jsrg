@@ -1287,7 +1287,7 @@ Fk:loadTranslationTable{
 
 yangqiu:addSkill(saojian)
 
-local liubiao = General(extension, "js__liubiao", "qun", 4)
+local liubiao = General(extension, "js__liubiao", "qun", 3)
 Fk:loadTranslationTable{
   ["js__liubiao"] = "刘表",
   ["#js__liubiao"] = "单骑入荆",
