@@ -1206,7 +1206,13 @@ local yangqiu = General(extension, "yangqiu", "qun", 4)
 Fk:loadTranslationTable{
   ["yangqiu"] = "阳球",
   ["#yangqiu"] = "身蹈水火",
+  ["cv:yangqiu"] = "KEVIN",
   ["illustrator:yangqiu"] = "鬼画府",
+  ["$saojian1"] = "虎豹豺狼、蚊蝇鼠蟑，按律，皆斩。",
+  ["$saojian2"] = "蒙鹰犬之任，埽朝廷奸鄙。",
+  ["$saojian3"] = "陛下，请假臣一月之期！",
+  ["$saojian4"] = "出生，你又藏了什么？",
+  ["~yangqiu"] = "党人皆力锄奸宦而死，阳球之后，亦有志士。",
 }
 
 local saojian = fk.CreateActiveSkill{
@@ -1215,6 +1221,7 @@ local saojian = fk.CreateActiveSkill{
   card_num = 0,
   target_num = 1,
   prompt = "#saojian",
+  mute = true,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -1223,6 +1230,8 @@ local saojian = fk.CreateActiveSkill{
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
   on_use = function(self, room, effect)
+    room:notifySkillInvoked(player, self.name)
+    player:broadcastSkillInvoke(self.name, math.random(1, 2))
     local player = room:getPlayerById(effect.from)
     local to = room:getPlayerById(effect.tos[1])
     if to:isKongcheng() then
@@ -1264,9 +1273,11 @@ local saojian = fk.CreateActiveSkill{
       if #idsDiscarded > 0 and idsDiscarded[1] == ids[1] then
         break
       end
+      if i == 5 then player:broadcastSkillInvoke("saojian", 4) end
     end
 
     if player:isAlive() and to:getHandcardNum() > player:getHandcardNum() then
+      player:broadcastSkillInvoke("saojian", 3)
       room:loseHp(player, 1, self.name)
     end
   end,
