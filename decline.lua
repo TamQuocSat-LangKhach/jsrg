@@ -1230,9 +1230,10 @@ local saojian = fk.CreateActiveSkill{
     return #selected == 0 and to_select ~= Self.id and not Fk:currentRoom():getPlayerById(to_select):isKongcheng()
   end,
   on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
     room:notifySkillInvoked(player, self.name)
     player:broadcastSkillInvoke(self.name, math.random(1, 2))
-    local player = room:getPlayerById(effect.from)
+
     local to = room:getPlayerById(effect.tos[1])
     if to:isKongcheng() then
       return
