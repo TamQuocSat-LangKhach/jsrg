@@ -26,13 +26,79 @@ local getShade = function (room, n)
   return ids
 end
 
-local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
+---@param player ServerPlayer @ 操作蓄谋的玩家
+---@param card integer | Card  @ 用来蓄谋的牌
+---@param skill_name? string @ 技能名
+---@param proposer? integer @ 移动操作者的id
+---@return nil
+local premeditate = function(player, card, skill_name, proposer)
+  skill_name = skill_name or ""
+  proposer = proposer or player.id
+  local room = player.room
+  if type(card) == "table" then
+    assert(not card:isVirtual() or #card.subcards == 1)
+    card = card:getEffectiveId()
+  end
+  local xumou = Fk:cloneCard("premeditate")
+  xumou:addSubcard(card)
+  player:addVirtualEquip(xumou)
+  room:moveCardTo(xumou, Player.Judge, player, fk.ReasonJustMove, skill_name, "", false, proposer, "", {proposer, player.id})
+end
+
+local premeditate_rule = fk.CreateTriggerSkill{
+  name = "#premeditate_rule",
+  events = {fk.EventPhaseStart},
+  mute = true,
+  global = true,
+  priority = 0,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.phase == Player.Judge
+  end,
+  on_cost = Util.TrueFunc,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local cards = player:getCardIds(Player.Judge)
+    for i = #cards, 1, -1 do
+      if table.contains(player:getCardIds(Player.Judge), cards[i]) then
+        if player.dead then return end
+        local xumou = player:getVirualEquip(cards[i])
+        if xumou and xumou.name == "premeditate" then
+          local use = U.askForUseRealCard(room, player, {cards[i]}, ".", "premeditate",
+            "#premeditate-use:::"..Fk:getCardById(cards[i], true):toLogString(),
+            {expand_pile = {cards[i]}, extra_use = true}, true, true)
+          if use then
+            room:setPlayerMark(player, "premeditate_"..use.card.trueName.."-phase", 1)
+            use.extra_data = use.extra_data or {}
+            use.extra_data.premeditate = true
+            room:useCard(use)
+          else
+            break
+          end
+        end
+      end
+    end
+    cards = player:getCardIds(Player.Judge)
+    local xumou = table.filter(cards, function(id)
+      local card = player:getVirualEquip(id)
+      return card and card.name == "premeditate"
+    end)
+    room:moveCardTo(xumou, Card.DiscardPile, nil, fk.ReasonPutIntoDiscardPile, "premeditate", nil, true, player.id)
+  end,
+}
+local premeditate_prohibit = fk.CreateProhibitSkill{
+  name = "#premeditate_prohibit",
+  global = true,
+  prohibit_use = function(self, player, card)
+    return player:getMark("premeditate_"..card.trueName.."-phase") > 0
+  end,
+}
+Fk:addSkill(premeditate_rule)
+Fk:addSkill(premeditate_prohibit)
 Fk:loadTranslationTable{
-  ["js__zhugeliang"] = "诸葛亮",
-  ["#js__zhugeliang"] = "炎汉忠魂",
-  ["illustrator:js__zhugeliang"] = "鬼画府",
+  ["#premeditate-use"] = "你可以使用此蓄谋牌%arg，或点“取消”将所有蓄谋牌置入弃牌堆",
 }
 
+local zhugeliang = General(extension, "js__zhugeliang", "shu", 3)
 local wentian = fk.CreateViewAsSkill{
   name = "wentian",
   pattern = "fire_attack,nullification",
@@ -154,20 +220,6 @@ local wentianTrigger = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:loadTranslationTable{
-  ["wentian"] = "问天",
-  ["#wentian_trigger"] = "问天",
-  [":wentian"] = "你可以将牌堆顶的牌当【无懈可击】/【火攻】使用，若此牌不为黑色/红色，本技能于本轮内失效；\
-  每回合限一次，你的任意阶段开始时，你可以观看牌堆顶五张牌，然后将其中一张牌交给一名其他角色，其余牌以任意顺序置于牌堆顶或牌堆底。",
-  ["@@wentian_nullified-round"] = "问天失效",
-  ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
-  ["wentian_give"] = "问天给牌",
-  ["#wentian-give"] = "问天：请选择其中一张牌交给一名其他角色",
-}
-
-wentian:addRelatedSkill(wentianTrigger)
-zhugeliang:addSkill(wentian)
-
 local chushi = fk.CreateActiveSkill{
   name = "chushi",
   anim_type = "support",
@@ -252,18 +304,6 @@ local chushiBuff = fk.CreateTriggerSkill{
     data.damage = data.damage + player:getMark("@chushiBuff-round")
   end,
 }
-Fk:loadTranslationTable{
-  ["chushi"] = "出师",
-  ["#chushi"] = "出师：你可以和主公议事，红色你与其摸牌，黑色你本轮属性伤害增加",
-  ["#chushi_buff"] = "出师",
-  [":chushi"] = "出牌阶段限一次，你可以和主公议事，若结果为：红色，你与其各摸一张牌，然后重复此摸牌流程，直到你与其手牌之和不小于7\
-  （若此主公为你，则改为你重复摸一张牌直到你的手牌数不小于7）；黑色，当你于本轮内造成属性伤害时，此伤害+1。",
-  ["@chushiBuff-round"] = "出师+",
-}
-
-chushi:addRelatedSkill(chushiBuff)
-zhugeliang:addSkill(chushi)
-
 local yinlue = fk.CreateTriggerSkill{
   name = "yinlue",
   anim_type = "support",
@@ -348,13 +388,34 @@ local yinlue = fk.CreateTriggerSkill{
     end
   end,
 }
+chushi:addRelatedSkill(chushiBuff)
+wentian:addRelatedSkill(wentianTrigger)
+zhugeliang:addSkill(wentian)
+zhugeliang:addSkill(chushi)
+zhugeliang:addSkill(yinlue)
 Fk:loadTranslationTable{
+  ["js__zhugeliang"] = "诸葛亮",
+  ["#js__zhugeliang"] = "炎汉忠魂",
+  ["illustrator:js__zhugeliang"] = "鬼画府",
+
+  ["wentian"] = "问天",
+  ["#wentian_trigger"] = "问天",
+  [":wentian"] = "你可以将牌堆顶的牌当【无懈可击】/【火攻】使用，若此牌不为黑色/红色，本技能于本轮内失效；\
+  每回合限一次，你的任意阶段开始时，你可以观看牌堆顶五张牌，然后将其中一张牌交给一名其他角色，其余牌以任意顺序置于牌堆顶或牌堆底。",
+  ["chushi"] = "出师",
+  [":chushi"] = "出牌阶段限一次，你可以和主公议事，若结果为：红色，你与其各摸一张牌，然后重复此摸牌流程，直到你与其手牌之和不小于7\
+  （若此主公为你，则改为你重复摸一张牌直到你的手牌数不小于7）；黑色，当你于本轮内造成属性伤害时，此伤害+1。",
   ["yinlue"] = "隐略",
   [":yinlue"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
+  ["@@wentian_nullified-round"] = "问天失效",
+  ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
+  ["wentian_give"] = "问天给牌",
+  ["#wentian-give"] = "问天：请选择其中一张牌交给一名其他角色",
+  ["#chushi_buff"] = "出师",
+  ["#chushi"] = "出师：你可以和主公议事，红色你与其摸牌，黑色你本轮属性伤害增加",
+  ["@chushiBuff-round"] = "出师+",
   ["#yinlue-ask"] = "隐略：你可以防止 %dest 受到的 %arg 伤害，回合结束执行仅有 %arg2 的回合",
 }
-
-zhugeliang:addSkill(yinlue)
 
 local jiangwei = General(extension, "js__jiangwei", "shu", 4)
 Fk:loadTranslationTable{
@@ -799,55 +860,126 @@ Fk:loadTranslationTable{
   ["designer:js__liuyong"] = "山巅隐士",
   ["illustrator:js__liuyong"] = "君桓文化",
   ["js__danxinn"] = "丹心",
-  [":js__danxinn"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到♥牌的角色回复1点体力，此牌结算后，本回合内你计算与此牌目标的距离+1。",
+  [":js__danxinn"] = "你可以将一张牌当做【推心置腹】使用，你须展示获得和给出的牌，以此法得到<font color='red'>♥</font>牌的角色回复1点体力，"..
+  "此牌结算后，本回合内你计算与此牌目标的距离+1。",
   ["#js__danxinn_delay"] = "丹心",
   ["js__fengxiang"] = "封乡",
   [":js__fengxiang"] = "锁定技，当你受到伤害后，你须与一名其他角色交换装备区内的所有牌，若你装备区内的牌数因此而减少，你摸等同于减少数的牌。",
   ["#js__fengxiang-choose"] = "封乡：与一名其他角色交换装备区内的所有牌",
 }
 
--- local guoxun = General(extension, "js__guoxiu", "wei", 4)
+local guoxun = General(extension, "js__guoxiu", "wei", 4)
+guoxun.total_hidden = true
+local eqian = fk.CreateTriggerSkill{
+  name = "eqian",
+  anim_type = "control",
+  events = {fk.EventPhaseStart, fk.TargetSpecified},
+  can_trigger = function(self, event, target, player, data)
+    if target == player and player:hasSkill(self) then
+      if event == fk.EventPhaseStart then
+        return player.phase == Player.Finish and not player:isKongcheng() and not table.contains(player.sealedSlots, Player.JudgeSlot)
+      else
+        return (data.card.trueName == "slash" or (data.extra_data and data.extra_data.premeditate)) and
+          #AimGroup:getAllTargets(data.tos) == 1 and data.to ~= player.id
+      end
+    end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      local cards = room:askForCard(player, 1, 1, false, self.name, true, "", "#eqian-put")
+      if #cards > 0 then
+        self.cost_data = cards[1]
+        return true
+      end
+    else
+      return room:askForSkillInvoke(player, self.name, nil, "#eqian-invoke:::"..data.card:toLogString())
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    if event == fk.EventPhaseStart then
+      premeditate(player, self.cost_data, self.name, player.id)
+      while not player:isKongcheng() and not player.dead and not table.contains(player.sealedSlots, Player.JudgeSlot) do
+        local cards = room:askForCard(player, 1, 1, false, self.name, true, "", "#eqian-put")
+        if #cards > 0 then
+          premeditate(player, cards[1], self.name, player.id)
+        else
+          return
+        end
+      end
+    else
+      data.extraUse = true
+      player:addCardUseHistory(data.card.trueName, -1)
+      local to = room:getPlayerById(data.to)
+      if not to.dead and not to:isNude() then
+        local card = room:askForCardChosen(player, to, "he", self.name, "#eqian-prey::"..to.id)
+        room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonPrey, self.name, "", false, player.id)
+        if not to.dead and room:askForSkillInvoke(to, self.name, nil, "#eqian-distance:"..player.id) then
+          room:addPlayerMark(to, "@eqian-turn", 2)
+        end
+      end
+    end
+  end,
+}
+local eqian_distance = fk.CreateDistanceSkill{
+  name = "#eqian_distance",
+  correct_func = function(self, from, to)
+    if from.phase ~= Player.NotActive then
+      return to:getMark("@eqian-turn")
+    end
+    return 0
+  end,
+}
 local fusha = fk.CreateActiveSkill{
   name = "fusha",
   anim_type = "offensive",
   card_num = 0,
   target_num = 1,
-  prompt = "#fusha-prompt",
+  prompt = function()
+    return "#fusha-prompt:::"..math.min(Self:getAttackRange(), #Fk:currentRoom().players)
+  end,
   card_filter = Util.FalseFunc,
   frequency = Skill.Limited,
   can_use = function(self, player)
-    local n = #table.filter(Fk:currentRoom().alive_players, function(p) return player:inMyAttackRange(p) end)
-    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and n == 1
+    return player:usedSkillTimes(self.name, Player.HistoryGame) == 0 and
+      #table.filter(Fk:currentRoom().alive_players, function(p) return player:inMyAttackRange(p) end) == 1
   end,
   target_filter = function(self, to_select, selected)
-    return #selected == 0 and Self:inMyAttackRange(to_select) 
+    return #selected == 0 and Self:inMyAttackRange(Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])  
-    local num = math.min(player:getAttackRange(), #room.alive_players)
+    local target = room:getPlayerById(effect.tos[1])
     room:damage{
       from = player,
       to = target,
-      damage = num,
+      damage = math.min(player:getAttackRange(), #room.players),
       skillName = self.name,
     }
   end
 }
+eqian:addRelatedSkill(eqian_distance)
+guoxun:addSkill(eqian)
+guoxun:addSkill(fusha)
 Fk:loadTranslationTable{
   ["js__guoxiu"] = "郭循",
-  ["eqian"] = "遏前",
-  [":eqian"] = "结束阶段，你可以【蓄谋】任意次;当你使用【杀】或【蓄谋】牌指定其他角色为唯一目标后，"..
-  "你可以令此牌不计入次数限制且获得目标一张牌，然后目标可以令你本回合计算与其的距离+2。",
-  ["fusha"] = "伏杀",
-  [":fusha"] = "限定技，出牌阶段，若你的攻击范围内仅有一名角色，你可以对其造成X点伤害(X为你的攻击范围且至多为游戏人数)。",
-}
+  ["#js__guoxiu"] = "秉心不回",
+  ["illustrator:js__guoxiu"] = "鬼画府",
 
--- local gaoxiang = General(extension, "js__gaoxiang", "shu", 4)
-Fk:loadTranslationTable{
-  ["js__gaoxiang"] = "高翔",
-  ["js__chiying"] = "驰应",
-  [":js__chiying"] = "出牌阶段限一次，你可以选择一名体力值小于等于你的角色，令其攻击范围内的其他角色各弃置一张牌。若你选择的是其他角色，则其获得其中的基本牌。",
+  ["eqian"] = "遏前",
+  [":eqian"] = "结束阶段，你可以“蓄谋”任意次；当你使用【杀】或“蓄谋”牌指定其他角色为唯一目标后，你可以令此牌不计入次数限制且获得目标一张牌，"..
+  "然后目标可以令你本回合计算与其的距离+2。"..
+  "<br/><font color='grey'>#<b>蓄谋</b>：将一张手牌扣置于判定区，判定阶段开始时，按置入顺序（后置入的先处理）依次处理“蓄谋”牌：1.使用此牌，"..
+  "然后此阶段不能再使用此牌名的牌；2.将所有“蓄谋”牌置入弃牌堆。",
+  ["fusha"] = "伏杀",
+  [":fusha"] = "限定技，出牌阶段，若你的攻击范围内仅有一名角色，你可以对其造成X点伤害（X为你的攻击范围且至多为游戏人数）。",
+  ["#eqian-put"] = "遏前：你可以“蓄谋”任意次，将一张手牌作为“蓄谋”牌扣置于判定区",
+  ["#eqian-invoke"] = "遏前：你可以令此%arg不计次数，并获得目标一张牌",
+  ["#eqian-prey"] = "遏前：获得 %dest 一张牌",
+  ["#eqian-distance"] = "遏前：是否令 %src 本回合与你距离+2？",
+  ["@eqian-turn"] = "遏前",
+  ["#fusha-prompt"] = "伏杀：对一名角色造成%arg点伤害！",
 }
 
 local zhaoyun = General(extension, "js__zhaoyun", "shu", 4)
@@ -1162,6 +1294,7 @@ Fk:loadTranslationTable{
   ["$weizhui2"] = "高飞入危云，簌簌兮如坠。",
   ["~js__caofang"] = "报应不爽，司马家亦有今日。",
 }
+
 local simayi = General(extension, "js__simayi", "wei", 4)
 local yingshi = fk.CreateTriggerSkill{
   name = "js__yingshi",
@@ -1451,7 +1584,6 @@ local js__zunwei = fk.CreateActiveSkill{
 }
 guozhao:addSkill(js__pianchong)
 guozhao:addSkill(js__zunwei)
-
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["#js__guozhao"] = "碧海青天",
@@ -1475,17 +1607,6 @@ Fk:loadTranslationTable{
   ["$js__zunwei1"] = "妾蒲柳之姿，幸蒙君恩方化从龙之凤。",
   ["$js__zunwei2"] = "尊位椒房、垂立九五，君之恩也、妾之幸也。",
   ["~js__guozhao"] = "曹元仲，你为何害我？",
-}
-
---local wenqin = General(extension, "js__wenqin", "wei", 4)
-Fk:loadTranslationTable{
-  ["js__wenqin"] = "文钦",
-  ["js__guangao"] = "广傲",
-  [":js__guangao"] = "你使用【杀】可以多指定一个目标，其他角色使用【杀】可以多指定你为目标，若你的手牌数为偶数，你可以摸一张牌，并令此【杀】对其中任意目标无效。",
-  ["js__huiqi"] = "慧企",
-  [":js__huiqi"] = "觉醒技，每回合结束后，若本回合内有且仅有包含你在内的三名角色成为过牌的目标，你回复一点体力，并获得“楷举”。",
-  ["js__kaiju"] = "楷举",
-  [":js__kaiju"] = "出牌阶段限一次，你可以令任意名本回合内成为过牌的目标的角色可以将一张黑色牌当做【杀】使用。",
 }
 
 local luxun = General(extension, "js__luxun", "wu", 3)
@@ -1629,12 +1750,6 @@ Fk:loadTranslationTable{
 }
 
 local sunjun = General(extension, "js__sunjun", "wu", 4)
-Fk:loadTranslationTable{
-  ["js__sunjun"] = "孙峻",
-  ["#js__sunjun"] = "朋党执虎",
-  ["illustrator:js__sunjun"] = "鬼画府",
-}
-
 local yaoyan = fk.CreateTriggerSkill{
   name = "yaoyan",
   anim_type = "offensive",
@@ -1706,20 +1821,6 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
     end
   end,
 }
-Fk:loadTranslationTable{
-  ["yaoyan"] = "邀宴",
-  ["#yaoyan_discussion"] = "邀宴",
-  [":yaoyan"] = "准备阶段开始时，你可以令所有角色依次选择是否于本回合结束时参与议事，若此议事结果为：红色，你获得至少一名未参与议事的角色各一张手牌" ..
-  "；黑色，你对一名参与议事的角色造成2点伤害。",
-  ["@@yaoyan-turn"] = "邀宴",
-  ["#yaoyan-ask"] = "邀宴；你是否于本回合结束后参与议事？",
-  ["#yaoyan-prey"] = "邀宴；你可以选择其中至少一名角色，获得他们的各一张手牌",
-  ["#yaoyan-damage"] = "邀宴：你可以对其中一名角色造成2点伤害",
-}
-
-yaoyan:addRelatedSkill(yaoyanDiscussion)
-sunjun:addSkill(yaoyan)
-
 local bazheng = fk.CreateTriggerSkill{
   name = "bazheng",
   anim_type = "control",
@@ -1773,28 +1874,25 @@ local bazheng = fk.CreateTriggerSkill{
     }
   end,
 }
+yaoyan:addRelatedSkill(yaoyanDiscussion)
+sunjun:addSkill(yaoyan)
+sunjun:addSkill(bazheng)
 Fk:loadTranslationTable{
+  ["js__sunjun"] = "孙峻",
+  ["#js__sunjun"] = "朋党执虎",
+  ["illustrator:js__sunjun"] = "鬼画府",
+
+  ["yaoyan"] = "邀宴",
+  ["#yaoyan_discussion"] = "邀宴",
+  [":yaoyan"] = "准备阶段开始时，你可以令所有角色依次选择是否于本回合结束时参与议事，若此议事结果为：红色，你获得至少一名未参与议事的角色各一张手牌" ..
+  "；黑色，你对一名参与议事的角色造成2点伤害。",
   ["bazheng"] = "霸政",
   [":bazheng"] = "锁定技，当你参与的议事展示意见后，参与议事角色中本回合受到过你造成伤害的角色意见改为与你相同。",
+  ["@@yaoyan-turn"] = "邀宴",
+  ["#yaoyan-ask"] = "邀宴；你是否于本回合结束后参与议事？",
+  ["#yaoyan-prey"] = "邀宴；你可以选择其中至少一名角色，获得他们的各一张手牌",
+  ["#yaoyan-damage"] = "邀宴：你可以对其中一名角色造成2点伤害",
   ["#LogChangeOpinion"] = "%to 的意见被视为 %arg",
-}
-
-sunjun:addSkill(bazheng)
-
---local weiwenzhugezhi = General(extension, "weiwenzhugezhi", "wu", 4)
-Fk:loadTranslationTable{
-  ["js__weiwenzhugezhi"] = "卫温&诸葛直",
-  ["js__fuhai"] = "浮海",
-  [":js__fuhai"] = "出牌阶段限一次，你可以令所有其他角色同时展示一张手牌(没有则跳过)，然后你选择一个方向(顺时针或者逆时针)，并摸X张牌(X为从你开始，该方向上的角色展示的牌点数严格递增或严格递减的牌数，且至少为1)。",
-}
-
---local zhangxuan = General(extension, "js__zhangxuan", "wu", 3, 3, General.Female)
-Fk:loadTranslationTable{
-  ["js__zhangxuan"] = "张璇",
-  ["js__tongli"] = "同礼",
-  [":js__tongli"] = "出牌阶段，当你使用基本牌或普通锦囊牌指定目标后，若你手牌中的花色数等于你此阶段使用牌的张数，你可以展示所有手牌，令此牌效果额外结算一次。",
-  ["js__shezang"] = "奢葬",
-  [":js__shezang"] = "每轮限一次，当你进入濒死状态时或其他角色于你的回合内进入濒死状态时，你可以可以亮出牌堆顶的四张牌，并获得其中任意张花色各不相同的牌。",
 }
 
 --local sunlubansunluyu = General(extension, "js__sunlubansunluyu", "wu", 3, 3, General.Female)
@@ -1802,11 +1900,14 @@ Fk:loadTranslationTable{
   ["js__sunlubansunluyu"] = "孙鲁班孙鲁育",
   ["#js__sunlubansunluyu"] = "恶紫夺朱",
   ["illustrator:js__sunlubansunluyu"] = "鬼画府",
+
   ["daimou"] = "殆谋",
-  [":daimou"] = "每回合各限一次，当一名角色使用【杀】指定其他角色/你为目标时，你可以用牌堆顶的牌【蓄谋】/你须弃置你区域里的一张【蓄谋】牌。"..
-  "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。",
+  [":daimou"] = "每回合各限一次，当一名角色使用【杀】指定其他角色/你为目标时，你可以用牌堆顶的牌“蓄谋”/你须弃置你区域里的一张“蓄谋”牌。"..
+  "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。"..
+  "<br/><font color='grey'>#\"<b>蓄谋</b>\"：将一张手牌扣置于判定区，判定阶段开始时，按置入顺序（后置入的先处理）依次处理“蓄谋”牌：1.使用此牌，"..
+  "然后此阶段不能再使用此牌名的牌；2.将所有“蓄谋”牌置入弃牌堆。",
   ["fangjie"] = "芳潔",
-  [":fangjie"] = "准备阶段，若你没有【蓄谋】牌，你回复一点体力并摸一张牌，否则你可以弃置任意张你区域里的【蓄谋】牌并失去此技能。",
+  [":fangjie"] = "准备阶段，若你没有“蓄谋”牌，你回复一点体力并摸一张牌，否则你可以弃置任意张你区域里的“蓄谋”牌并失去此技能。",
 }
 
 return extension
