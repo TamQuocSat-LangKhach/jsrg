@@ -89,7 +89,7 @@ local premeditate_prohibit = fk.CreateProhibitSkill{
   name = "#premeditate_prohibit",
   global = true,
   prohibit_use = function(self, player, card)
-    return player:getMark("premeditate_"..card.trueName.."-phase") > 0
+    return card and player:getMark("premeditate_"..card.trueName.."-phase") > 0
   end,
 }
 Fk:addSkill(premeditate_rule)

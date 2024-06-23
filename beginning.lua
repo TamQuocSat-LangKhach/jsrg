@@ -8,17 +8,6 @@ Fk:loadTranslationTable{
   ["js"] = "江山",
 }
 
----@param player Player
-local function getTrueSkills(player)
-  local skills = {}
-  for _, s in ipairs(player.player_skills) do
-    if s:isPlayerSkill(player) then
-      table.insertIfNeed(skills, s.name)
-    end
-  end
-  return skills
-end
-
 local caocao = General(extension, "js__caocao", "qun", 4)
 local zhenglve = fk.CreateTriggerSkill{
   name = "zhenglve",
@@ -382,7 +371,9 @@ local shenchong_trigger = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, "shenchong", "negative")
     local to = room:getPlayerById(player:getMark("shenchong"))
     room:doIndicate(player.id, {to.id})
-    local skills = getTrueSkills(to)
+    local skills = table.filter(to.player_skills, function(skill)
+      return skill:isPlayerSkill(to)
+    end)
     room:handleAddLoseSkills(to, "-"..table.concat(skills, "|-"), nil, true, false)
     to:throwAllCards("h")
   end,
@@ -527,7 +518,11 @@ local juxia = fk.CreateTriggerSkill{
   events = {fk.TargetConfirmed},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.from and data.from ~= player.id and
-      #getTrueSkills(player.room:getPlayerById(data.from)) > #getTrueSkills(player) and
+      #table.filter(player.room:getPlayerById(data.from).player_skills, function(skill)
+        return skill:isPlayerSkill(player.room:getPlayerById(data.from))
+      end) > #table.filter(player.player_skills, function(skill)
+        return skill:isPlayerSkill(player)
+      end) and
       player:usedSkillTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
