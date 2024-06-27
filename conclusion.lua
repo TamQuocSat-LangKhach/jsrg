@@ -1309,7 +1309,7 @@ local yingshi = fk.CreateTriggerSkill{
     local num = 3
     if n > 2 then num = 5 end
     local cards = room:getNCards(num, "bottom")
-    local ret = U.askForArrangeCards(player, self.name, {{}, cards, "Top", "Bottom"}, "", true, 0, {num, num}, {0, 0})
+    local ret = room:askForArrangeCards(player, self.name, {{}, cards, "Top", "Bottom"}, "", true, 0, {num, num}, {0, 0})
     local top, bottom = ret[1], ret[2]
     for i = #top, 1, -1 do
       table.insert(room.draw_pile, 1, top[i])
