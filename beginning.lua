@@ -371,8 +371,10 @@ local shenchong_trigger = fk.CreateTriggerSkill{
     room:notifySkillInvoked(player, "shenchong", "negative")
     local to = room:getPlayerById(player:getMark("shenchong"))
     room:doIndicate(player.id, {to.id})
-    local skills = table.filter(to.player_skills, function(skill)
+    local skills = table.map(table.filter(to.player_skills, function(skill)
       return skill:isPlayerSkill(to)
+    end), function(s)
+      return s.name
     end)
     room:handleAddLoseSkills(to, "-"..table.concat(skills, "|-"), nil, true, false)
     to:throwAllCards("h")
