@@ -1729,7 +1729,7 @@ local js__zhubei = fk.CreateTriggerSkill{
 }
 local js__zhubei_targetmod = fk.CreateTargetModSkill{
   name = "#js__zhubei_targetmod",
-  bypass_times = function(self, player, skill, card, to)
+  bypass_times = function (self, player, skill, scope, card, to)
     return player:hasSkill("js__zhubei") and to and to:getMark("js__zhubei_lost-turn") > 0
   end,
 }
