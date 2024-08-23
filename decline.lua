@@ -139,19 +139,22 @@ local tianyu = fk.CreateTriggerSkill{
     for _, info in ipairs(data) do
       if info.toArea == Card.DiscardPile then
         for _, moveInfo in ipairs(info.moveInfo) do
-          local cardMoved = Fk:getCardById(moveInfo.cardId)
-          if cardMoved.is_damage_card or cardMoved.type == Card.TypeEquip then
-            table.insert(toObtain, moveInfo.cardId)
+          if moveInfo.fromArea ~= Player.Hand and moveInfo.fromArea ~= Player.Equip then
+            local cardMoved = Fk:getCardById(moveInfo.cardId)
+            if cardMoved.is_damage_card or cardMoved.type == Card.TypeEquip then
+              table.insert(toObtain, moveInfo.cardId)
+            end
           end
         end
       end
     end
+    local room = player.room
+    table.filter(toObtain, function(id) return room:getCardArea(id) == Card.DiscardPile end)
 
     if #toObtain == 0 then
       return false
     end
 
-    local room = player.room
     room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, info in ipairs(e.data) do
         if
@@ -161,15 +164,14 @@ local tianyu = fk.CreateTriggerSkill{
             info.moveInfo,
             function(moveInfo) return table.contains({ Card.PlayerHand, Card.PlayerEquip }, moveInfo.fromArea) end
           )
-          for _, moveInfo in ipairs(infosFound) do 
+          for _, moveInfo in ipairs(infosFound) do
             table.removeOne(toObtain, moveInfo.cardId)
           end
         end
       end
-      return false
+      return #toObtain == 0
     end, Player.HistoryTurn)
 
-    table.filter(toObtain, function(id) return room:getCardArea(id) == Card.DiscardPile end)
     if #toObtain > 0 then
       self.cost_data = toObtain
       return true

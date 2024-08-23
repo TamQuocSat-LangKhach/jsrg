@@ -1691,7 +1691,7 @@ local js__dailao = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     player:showCards(player:getCardIds("h"))
     player:drawCards(2, self.name)
-    room.logic:breakTurn()
+    room:endTurn()
   end,
 }
 luxun:addSkill(js__dailao)
