@@ -208,46 +208,34 @@ local js__biaozhao = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), function(p) return p.id end)
+    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 2, 2, "#js__biaozhao-choose", self.name, true)
     if #tos == 2 then
-      self.cost_data = tos
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local target1, target2 = room:getPlayerById(self.cost_data[1]), room:getPlayerById(self.cost_data[2])
-    local mark1 = target1:getMark("@@js__biaozhao1")
-    if mark1 == 0 then mark1 = {} end
-    table.insert(mark1, player.id)
-    room:setPlayerMark(target1, "@@js__biaozhao1", mark1)
-    local mark2 = target2:getMark("@@js__biaozhao2")
-    if mark2 == 0 then mark2 = {} end
-    table.insert(mark2, player.id)
-    room:setPlayerMark(target2, "@@js__biaozhao2", mark2)
+    local target1, target2 = room:getPlayerById(self.cost_data.tos[1]), room:getPlayerById(self.cost_data.tos[2])
+    room:addTableMark(target1, "@@js__biaozhao1", player.id)
+    room:addTableMark(target2, "@@js__biaozhao2", player.id)
   end,
 
   refresh_events = {fk.TurnStart, fk.Death},
   can_refresh = function(self, event, target, player, data)
     return target == player and table.find(player.room.alive_players, function(p)
-      return (p:getMark("@@js__biaozhao1") ~= 0 and table.contains(p:getMark("@@js__biaozhao1"), player.id)) or
-        (p:getMark("@@js__biaozhao2") ~= 0 and table.contains(p:getMark("@@js__biaozhao2"), player.id)) end)
+      return table.contains(p:getTableMark("@@js__biaozhao1"), player.id) or table.contains(p:getTableMark("@@js__biaozhao2"), player.id)
+    end)
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       if p:getMark("@@js__biaozhao1") ~= 0 then
-        table.removeOne(p:getMark("@@js__biaozhao1"), player.id)
-        if #p:getMark("@@js__biaozhao1") == 0 then
-          room:setPlayerMark(p, "@@js__biaozhao1", 0)
-        end
+        room:removeTableMark(p, "@@js__biaozhao1", player.id)
       end
       if p:getMark("@@js__biaozhao2") ~= 0 then
-        table.removeOne(p:getMark("@@js__biaozhao2"), player.id)
-        if #p:getMark("@@js__biaozhao2") == 0 then
-          room:setPlayerMark(p, "@@js__biaozhao2", 0)
-        end
+        room:removeTableMark(p, "@@js__biaozhao2", player.id)
       end
     end
   end,
@@ -334,7 +322,7 @@ Fk:loadTranslationTable{
   "第二名角色对你使用牌造成伤害+1。",
   ["js__yechou"] = "业仇",
   [":js__yechou"] = "当你死亡时，你可以选择一名其他角色，本局游戏当其受到致命伤害时，此伤害翻倍。",
-  ["#js__biaozhao-choose"] = "表召：选择两名角色，A对B使用牌无距离次数限制，B使用牌对你造成伤害+1",
+  ["#js__biaozhao-choose"] = "表召：你可选择两名角色，第一个对第二个使用牌无距离次数限制，第二个使用牌对你造成伤害+1",
   ["@@js__biaozhao1"] = "表召",
   ["@@js__biaozhao2"] = "表召目标",
   ["#js__yechou-choose"] = "业仇：你可以令一名角色本局游戏受到致命伤害时加倍！",
@@ -367,7 +355,7 @@ local js__cangchu = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = self.cost_data
-    local targets = table.map(room.alive_players, function(p) return p.id end)
+    local targets = table.map(room.alive_players, Util.IdMapper)
     local prompt = "#js__cangchu1-choose:::"..x
     if x > #targets then
       x = #targets
@@ -376,16 +364,17 @@ local js__cangchu = fk.CreateTriggerSkill{
     local tos = room:askForChoosePlayers(player, targets, 1, x, prompt, self.name, true)
     if #tos > 0 then
       room:sortPlayersByAction(tos)
-      self.cost_data = {tos, tonumber(prompt[13])}
+      self.cost_data = {tos = tos, num = tonumber(prompt[13])}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(self.cost_data[1]) do
+    local num = self.cost_data.num
+    for _, id in ipairs(self.cost_data.tos) do
       local p = room:getPlayerById(id)
       if not p.dead then
-        p:drawCards(self.cost_data[2], self.name)
+        p:drawCards(num, self.name)
       end
     end
   end,
