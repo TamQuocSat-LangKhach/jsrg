@@ -237,9 +237,7 @@ local chushi = fk.CreateActiveSkill{
         table.find(Fk:currentRoom().alive_players, function(p) return p.role == "lord" and not p:isKongcheng() end)
       )
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
     if #table.filter(Fk:currentRoom().alive_players, function(p) return p.role == "lord" end) < 2 then
       return false
@@ -264,7 +262,6 @@ local chushi = fk.CreateActiveSkill{
       reason = self.name,
       from = player,
       tos = table.filter(targets, function(p) return not p:isKongcheng() end),
-      results = {},
     }
     if discussion.color == "red" then
       local drawTargets = { player.id }
@@ -436,9 +433,6 @@ local jinfa = fk.CreateActiveSkill{
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:currentRoom():getCardArea(to_select) == Player.Hand
   end,
-  target_filter = function(self, to_select, selected)
-    return false
-  end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() and p.maxHp <= player.maxHp end)
@@ -451,7 +445,6 @@ local jinfa = fk.CreateActiveSkill{
       reason = self.name,
       from = player,
       tos = targets,
-      results = {},
       extra_data = { jinfaCard = effect.cards[1] }
     }
   end,
@@ -584,10 +577,10 @@ local fumou = fk.CreateTriggerSkill{
     room:doIndicate(player.id, diffPlayerIds)
 
     for playerId, result in pairs(diffResults) do
-      if result.toCard.color ~= Card.NoColor then
+      if result.opinion ~= "nocolor" then
         local to = room:getPlayerById(playerId)
         local colorsProhibited = U.getMark(to, "@js__fumouDebuff-turn")
-        table.insert(colorsProhibited, result.toCard:getColorString())
+        table.insert(colorsProhibited, result.opinion)
 
         room:setPlayerMark(to, "@js__fumouDebuff-turn", colorsProhibited)
       end
@@ -620,7 +613,7 @@ local fumouProhibit = fk.CreateProhibitSkill{
 }
 Fk:loadTranslationTable{
   ["js__fumou"] = "复谋",
-  [":js__fumou"] = "魏势力技，当你参与的议事结束后，所有与你意见不同的角色本回合内不能使用或打出其意见牌颜色的牌，然后" ..
+  [":js__fumou"] = "魏势力技，当你参与的议事结束后，所有与你意见不同的角色本回合内不能使用或打出其意见颜色的牌，然后" ..
   "你可将一张【影】当【出其不意】对其中一名角色使用。",
   ["@js__fumouDebuff-turn"] = "复谋",
   ["js__fumou_viewas"] = "复谋",
@@ -1788,7 +1781,6 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
       reason = self.name,
       from = player,
       tos = targets,
-      results = {},
     }
 
     if discussion.color == "red" then
@@ -1827,49 +1819,30 @@ local bazheng = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   events = {"fk.DiscussionCardsDisplayed"},
   can_trigger = function(self, event, target, player, data)
-    if not (player:hasSkill(self) and data.results[player.id]) then
-      return false
-    end
-
-    return #U.getActualDamageEvents(player.room, 1, function(event)
-      local damageData = event.data[1]
-      return damageData.from == player and damageData.to ~= player and damageData.to:isAlive() and data.results[damageData.to.id]
-    end, Player.PhaseTurn) > 0
+    return player:hasSkill(self) and data.results[player.id] and
+      #player.room.logic:getActualDamageEvents(1, function(e)
+        local damage = e.data[1]
+        return damage.from and damage.from == player and damage.to ~= player and damage.to:isAlive() and data.results[damage.to.id]
+      end, Player.HistoryTurn) > 0
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
 
     local targets = {}
-    U.getActualDamageEvents(player.room, 999, function(event)
+    player.room.logic:getActualDamageEvents(999, function(event)
       local damageData = event.data[1]
       local victimId = damageData.to.id
       if damageData.from == player and damageData.to ~= player and damageData.to:isAlive() and data.results[victimId] then
         data.results[victimId].opinion = data.results[player.id].opinion
         table.insert(targets, victimId)
       end
-    end, Player.PhaseTurn)
+    end, Player.HistoryTurn)
     room:doIndicate(player.id, targets)
-
-    local names = table.map(targets, function(playerId)
-      local p = room:getPlayerById(playerId)
-      local nameStr = p.general
-      if p.deputyGeneral then
-        nameStr = nameStr .. p.deputyGeneral
-      end
-
-      return Fk:translate(nameStr)
-    end)
-
-    local colorStr = {
-      [1] = "black",
-      [2] = "red",
-      [3] = "nocolor"
-    }
 
     room:sendLog{
       type = "#LogChangeOpinion",
       to = targets,
-      arg = colorStr[data.results[player.id].opinion],
+      arg = data.results[player.id].opinion,
       toast = true,
     }
   end,

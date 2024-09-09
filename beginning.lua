@@ -306,22 +306,21 @@ local chaozheng = fk.CreateTriggerSkill{
       reason = self.name,
       from = player,
       tos = targets,
-      results = {},
     }
     if discussion.color == "red" then
       for _, p in ipairs(targets) do
-        if p:isWounded() and not p.dead and discussion.results[p.id].opinion == Card.Red then
+        if p:isWounded() and not p.dead and discussion.results[p.id].opinion == "red" then
           room:recover({
             who = p,
             num = 1,
             recoverBy = player,
-            skillName = self.name
+            skillName = self.name,
           })
         end
       end
     elseif discussion.color == "black" then
       for _, p in ipairs(targets) do
-        if not p.dead and discussion.results[p.id].opinion == Card.Red then
+        if not p.dead and discussion.results[p.id].opinion == "black" then
           room:loseHp(p, 1, self.name)
         end
       end
@@ -1620,7 +1619,7 @@ Fk:loadTranslationTable{
   ["fengzi"] = "丰姿",
   [":fengzi"] = "每阶段限一次，当你于出牌阶段内使用基本牌或普通锦囊牌时，你可以弃置一张类型相同的手牌令此牌额外结算一次。",
   ["jizhan"] = "吉占",
-  [":jizhan"] = "摸牌阶段，你可以改为展示牌堆顶的一张牌，猜测牌堆顶下一张牌点数大于或小于此牌，然后展示之，若猜对则继续猜测。最后你获得",
+  [":jizhan"] = "摸牌阶段，你可以改为展示牌堆顶的一张牌，猜测牌堆顶下一张牌点数大于或小于此牌，然后展示之，若猜对则继续猜测。最后你获得"..
   "所有展示的牌。",
   ["fusong"] = "赋颂",
   [":fusong"] = "当你死亡时，你可以令一名体力上限大于你的角色选择获得〖丰姿〗或〖吉占〗。",
@@ -2164,7 +2163,6 @@ local shelun = fk.CreateActiveSkill{
       reason = self.name,
       from = player,
       tos = targets,
-      results = {},
     }
     if discussion.color == "red" then
       if not target.dead and not target:isNude() and not player.dead then
