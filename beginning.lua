@@ -251,10 +251,11 @@ local juelie = fk.CreateTriggerSkill{
       data.damage = data.damage + 1
     else
       local room = player.room
-      room:throwCard(self.cost_data.cards, self.name, player, player)
+      local cards = table.simpleClone(self.cost_data.cards)
+      room:throwCard(cards, self.name, player, player)
       local to = room:getPlayerById(data.to)
       if player.dead or to.dead or to:isNude() then return end
-      local cards = room:askForCardsChosen(player, to, 1, #self.cost_data.cards, "he", self.name)
+      cards = room:askForCardsChosen(player, to, 1, math.min(#cards, #to:getCardIds("he")), "he", self.name)
       room:throwCard(cards, self.name, to, player)
     end
   end,
