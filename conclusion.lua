@@ -1164,7 +1164,7 @@ local zhaotu_trigger = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
     room:setPlayerMark(to, "@@zhaotu", 1)
-    U.gainAnExtraTurn(to, true, "zhaotu")
+    to:gainAnExtraTurn(true, "zhaotu")
   end,
 
   refresh_events = {fk.TurnStart},
@@ -1411,7 +1411,7 @@ local tuigu_recoverAndTurn = fk.CreateTriggerSkill{
     if event == fk.RoundEnd then
       player:broadcastSkillInvoke("tuigu", math.random(3,5))
       room:notifySkillInvoked(player, "tuigu", "control")
-      U.gainAnExtraTurn(player, true, "tuigu")
+      player:gainAnExtraTurn(true, "tuigu")
     else
       room:notifySkillInvoked(player, "tuigu", "defensive")
       room:recover({

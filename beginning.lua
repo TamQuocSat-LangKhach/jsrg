@@ -254,7 +254,7 @@ local juelie = fk.CreateTriggerSkill{
       room:throwCard(self.cost_data.cards, self.name, player, player)
       local to = room:getPlayerById(data.to)
       if player.dead or to.dead or to:isNude() then return end
-      local cards = room:askForCardsChosen(player, to, 1, #self.cost_data, "he", self.name)
+      local cards = room:askForCardsChosen(player, to, 1, #self.cost_data.cards, "he", self.name)
       room:throwCard(cards, self.name, to, player)
     end
   end,
