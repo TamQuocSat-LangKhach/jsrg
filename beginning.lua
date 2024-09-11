@@ -321,7 +321,7 @@ local chaozheng = fk.CreateTriggerSkill{
       end
     elseif discussion.color == "black" then
       for _, p in ipairs(targets) do
-        if not p.dead and discussion.results[p.id].opinion == "black" then
+        if not p.dead and discussion.results[p.id].opinion == "red" then
           room:loseHp(p, 1, self.name)
         end
       end
