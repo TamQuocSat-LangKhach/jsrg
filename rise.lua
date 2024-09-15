@@ -545,7 +545,7 @@ local beizhi = fk.CreateActiveSkill{
       targets = dat.targets
     end
     room:sortPlayersByAction(targets)
-    room:useVirtualCard("duel", nil, player, table.map(targets, Util.Id2PlayerMapper), self.name)
+    room:useVirtualCard("duel", nil, winner, table.map(targets, Util.Id2PlayerMapper), self.name)
   end,
 }
 local beizhi_delay = fk.CreateTriggerSkill{
