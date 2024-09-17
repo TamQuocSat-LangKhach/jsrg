@@ -1975,7 +1975,7 @@ local tongjue = fk.CreateActiveSkill{
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
   end,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and not table.contains(Self:getCardIds("h"), to_select)
+    return #selected == 0 and table.contains(Self:getCardIds("h"), to_select)
   end,
   target_filter = function(self, to_select, selected)
     local target = Fk:currentRoom():getPlayerById(to_select)
