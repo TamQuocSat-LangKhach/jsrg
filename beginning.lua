@@ -878,7 +878,7 @@ local pingjian = fk.CreateTriggerSkill{
     end
     removeFangke(player, choice)
     if choice == owner and not player.dead then
-      player:drawCards(1)
+      player:drawCards(1, self.name)
     end
   end,
 
