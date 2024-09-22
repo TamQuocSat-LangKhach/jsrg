@@ -382,6 +382,7 @@ local minfeng = fk.CreateTriggerSkill{
   events = {fk.CardUsing},
   can_trigger = function(self, event, target, player, data)
     if target == player and player.phase == Player.NotActive and player:getHandcardNum() < player.maxHp and
+      player:hasSkill(self) and
       data.card.number > 0 and data.card.number < 13 then
       local room = player.room
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn)
@@ -407,16 +408,24 @@ local minfeng = fk.CreateTriggerSkill{
     player:drawCards(player.maxHp - player:getHandcardNum(), self.name)
   end,
 
-  refresh_events = {fk.AfterCardUseDeclared},
+  refresh_events = {fk.AfterCardUseDeclared, fk.EventLoseSkill},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self, true) and player.phase == Player.NotActive
+    if event == fk.AfterCardUseDeclared then
+      return player:hasSkill(self, true) and player.phase == Player.NotActive
+    else
+      return target == player and data == self
+    end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if data.card.number == 0 then
-      room:setPlayerMark(player, "@minfeng-turn", 0)
+    if event == fk.AfterCardUseDeclared then
+      if data.card.number == 0 then
+        room:setPlayerMark(player, "@minfeng-turn", 0)
+      else
+        room:setPlayerMark(player, "@minfeng-turn", data.card.number)
+      end
     else
-      room:setPlayerMark(player, "@minfeng-turn", data.card.number)
+      room:setPlayerMark(player, "@minfeng-turn", 0)
     end
   end,
 }
