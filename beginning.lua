@@ -949,7 +949,7 @@ local zhaobing = fk.CreateTriggerSkill{
           local card = room:askForCard(p, 1, 1, false, self.name, true, "slash", "#zhaobing-card:"..player.id)
           if #card > 0 then
             p:showCards(card)
-            if not player.dead and table.contains(p:getCardIds("h"), card) then
+            if not player.dead and table.contains(p:getCardIds("h"), card[1]) then
               room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonGive, self.name, nil, true, p.id)
             end
           else
@@ -976,7 +976,7 @@ local zhuhuanh = fk.CreateTriggerSkill{
     player:showCards(cards)
     if player.dead then return end
     cards = table.filter(cards, function (id)
-      return table.contains(player:getCardIds(id)) and Fk:getCardById(id).trueName == "slash" and not player:prohibitDiscard(id)
+      return table.contains(player:getCardIds("h"), id) and Fk:getCardById(id).trueName == "slash" and not player:prohibitDiscard(id)
     end)
     local n = #cards
     room:throwCard(cards, self.name, player, player)
