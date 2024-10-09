@@ -636,7 +636,7 @@ local qingjiaol = fk.CreateViewAsSkill{
         table.insert(names, name)
       end
     end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -719,11 +719,11 @@ local qiongtu = fk.CreateViewAsSkill{
     if #cards ~= 1 then return end
     local card = Fk:cloneCard("nullification")
     card.skillName = self.name
-    card:setMark(self.name, cards[1])
+    self.cost_data = cards
     return card
   end,
   before_use = function(self, player, use)
-    player:addToPile(self.name, use.card:getMark(self.name), true, self.name)
+    player:addToPile(self.name, self.cost_data, true, self.name)
   end,
   enabled_at_response = function(self, player, response)
     return not response and player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and not player:isNude()
@@ -1051,7 +1051,7 @@ local nianen = fk.CreateViewAsSkill{
       end
     end
     if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -1350,7 +1350,7 @@ local chengxian = fk.CreateViewAsSkill{
   name = "chengxian",
   prompt = "#chengxian-active",
   interaction = function()
-    local mark = U.getMark(Self, "chengxian-turn")
+    local mark = Self:getTableMark("chengxian-turn")
     local all_names = U.getAllCardNames("t")
     local handcards = Self:getCardIds(Player.Hand)
     local names = table.filter(all_names, function(name)
@@ -1363,7 +1363,7 @@ local chengxian = fk.CreateViewAsSkill{
       end)
     end)
     if #names > 0 then
-      return UI.ComboBox { choices = names, all_choices = all_names }
+      return U.CardNameBox { choices = names, all_choices = all_names }
     end
   end,
   enabled_at_play = function(self, player)
@@ -1384,9 +1384,7 @@ local chengxian = fk.CreateViewAsSkill{
     return card
   end,
   before_use = function(self, player, use)
-    local mark = U.getMark(player, "chengxian-turn")
-    table.insert(mark, use.card.trueName)
-    player.room:setPlayerMark(player, "chengxian-turn", mark)
+    player.room:addTableMark(player, "chengxian-turn", use.card.trueName)
   end,
 }
 jixiang:addRelatedSkill(jixiang_delay)

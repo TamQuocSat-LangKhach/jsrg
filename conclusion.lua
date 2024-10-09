@@ -115,11 +115,9 @@ local wentian = fk.CreateViewAsSkill{
       end
     end
     if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
-  card_filter = function(self, to_select, selected)
-    return false
-  end,
+  card_filter = Util.FalseFunc,
   view_as = function(self, cards)
     if #cards ~= 0 or not self.interaction.data then return end
     local card = Fk:cloneCard(self.interaction.data)
@@ -146,40 +144,18 @@ local wentian = fk.CreateViewAsSkill{
     return player:getMark("@@wentian_nullified-round") == 0 and not response
   end,
 }
-local wentianGive = fk.CreateActiveSkill{
-  name = "wentian_give",
-  expand_pile = function () return U.getMark(Self, "wentianCards") end,
-  card_num = 1,
-  target_num = 1,
-  card_filter = function(self, to_select, selected, targets)
-    local ids = Self:getMark("wentianCards")
-    return #selected == 0 and type(ids) == "table" and table.contains(ids, to_select)
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected == 0 and to_select ~= Self.id and #selected_cards == 1
-  end,
-}
-Fk:addSkill(wentianGive)
 local wentianTrigger = fk.CreateTriggerSkill{
   name = "#wentian_trigger",
   anim_type = "control",
+  main_skill = wentian,
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    local normalPhases = {
-      Player.Start,
-      Player.Judge,
-      Player.Draw,
-      Player.Play,
-      Player.Discard,
-      Player.Finish,
-    }
-
     return
       target == player and
       player:hasSkill(self) and
-      player:usedSkillTimes(self.name, Player.HistoryTurn) == 0 and
+      player:getMark("wentian_trigger-turn") == 0 and
       player:getMark("@@wentian_nullified-round") == 0 and
-      table.contains(normalPhases, player.phase)
+      player.phase > 1 and player.phase < 8
   end,
   on_cost = function(self, event, target, player, data)
     local phase_name_table = {
@@ -195,13 +171,21 @@ local wentianTrigger = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
+    room:setPlayerMark(player, "wentian_trigger-turn", 1)
     local topCardIds = room:getNCards(5)
 
     local others = room:getOtherPlayers(player)
     if #others > 0 then
-      room:setPlayerMark(player, "wentianCards", topCardIds)
-      local _, ret = room:askForUseActiveSkill(player, "wentian_give", "#wentian-give", false, nil, false)
-      room:setPlayerMark(player, "wentianCards", 0)
+      local _, ret = room:askForUseActiveSkill(player, "ex__choose_skill", "#wentian-give", false, {
+        targets = table.map(others, Util.IdMapper),
+        min_c_num = 1,
+        max_c_num = 1,
+        min_t_num = 1,
+        max_t_num = 1,
+        pattern = tostring(Exppattern{ id = topCardIds }),
+        skillName = "wentian",
+        expand_pile = topCardIds,
+      }, false)
 
       local toGive = ret and ret.cards[1] or topCardIds[1]
       table.removeOne(topCardIds, toGive)
@@ -579,7 +563,7 @@ local fumou = fk.CreateTriggerSkill{
     for playerId, result in pairs(diffResults) do
       if result.opinion ~= "nocolor" then
         local to = room:getPlayerById(playerId)
-        local colorsProhibited = U.getMark(to, "@js__fumouDebuff-turn")
+        local colorsProhibited = to:getTableMark("@js__fumouDebuff-turn")
         table.insert(colorsProhibited, result.opinion)
 
         room:setPlayerMark(to, "@js__fumouDebuff-turn", colorsProhibited)
@@ -602,13 +586,13 @@ local fumou = fk.CreateTriggerSkill{
 local fumouProhibit = fk.CreateProhibitSkill{
   name = "#js__fumou_prohibit",
   prohibit_use = function(self, player, card)
-    return card and table.contains(U.getMark(player, "@js__fumouDebuff-turn"), card:getColorString())
+    return card and table.contains(player:getTableMark("@js__fumouDebuff-turn"), card:getColorString())
   end,
   prohibit_response = function(self, player, card)
-    return card and table.contains(U.getMark(player, "@js__fumouDebuff-turn"), card:getColorString())
+    return card and table.contains(player:getTableMark("@js__fumouDebuff-turn"), card:getColorString())
   end,
   is_prohibited = function(self, from, to, card)
-    return card and table.contains(card.skillNames, "js__fumou_tag") and not table.contains(U.getMark(from, "js__fumou_targets"), to.id)
+    return card and table.contains(card.skillNames, "js__fumou_tag") and not table.contains(from:getTableMark("js__fumou_targets"), to.id)
   end,
 }
 Fk:loadTranslationTable{
@@ -1470,7 +1454,7 @@ local js__pianchong = fk.CreateTriggerSkill{
       local turn_event = room.logic:getCurrentEvent():findParent(GameEvent.Turn, false)
       if turn_event == nil then return false end
       local end_id = turn_event.id
-      return #U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+      return #room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
           if move.from == player.id then
             for _, info in ipairs(move.moveInfo) do
@@ -1498,7 +1482,7 @@ local js__pianchong = fk.CreateTriggerSkill{
     if turn_event == nil then return false end
     local end_id = turn_event.id
     local cards = {}
-    U.getEventsByRule(room, GameEvent.MoveCards, 1, function (e)
+    room.logic:getEventsByRule(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
@@ -1694,9 +1678,10 @@ local js__zhubei = fk.CreateTriggerSkill{
   events = {fk.DamageCaused},
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
-    if target == player and player:hasSkill(self) then
-      return #U.getActualDamageEvents(player.room, 2, function(e) return e.data[1].to == data.to end) > 0
-    end
+    return target == player and player:hasSkill(self) and
+      #player.room.logic:getActualDamageEvents(2, function(e)
+        return e.data[1].to == data.to
+      end) > 0
   end,
   on_use = function(self, event, target, player, data)
     data.damage = data.damage + 1

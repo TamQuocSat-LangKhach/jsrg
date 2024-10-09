@@ -759,7 +759,7 @@ local jueyin = fk.CreateTriggerSkill{
     local room = player.room
     local record_id = player:getMark("jueyin_damage-turn")
     if record_id == 0 then
-      U.getActualDamageEvents(room, 1, function(e)
+      room.logic:getActualDamageEvents(1, function(e)
         if e.data[1].to == player then
           record_id = e.id
           room:setPlayerMark(player, "jueyin_damage-turn", record_id)
@@ -1456,7 +1456,7 @@ local gangfen = fk.CreateTriggerSkill{
       data.card.trueName == "slash" and
       player:hasSkill(self) and
       target:getHandcardNum() > player:getHandcardNum() and
-      table.contains(U.getUseExtraTargets(player.room, data, true, true), player.id)
+      table.contains(player.room:getUseExtraTargets(data, true, true), player.id)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1479,7 +1479,7 @@ local gangfen = fk.CreateTriggerSkill{
       arg2 = #U.getActualUseTargets(room, data, event),
       toast = true,
     }
-    local availableTargets = U.getUseExtraTargets(player.room, data, true, true)
+    local availableTargets = room:getUseExtraTargets(data, true, true)
     room:sortPlayersByAction(availableTargets)
     for _, pId in ipairs(availableTargets) do
       if
