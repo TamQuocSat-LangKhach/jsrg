@@ -446,19 +446,7 @@ local jinfaTrigger = fk.CreateTriggerSkill{
     if data.color == Fk:getCardById(data.extra_data.jinfaCard):getColorString() then
       local toDraw = table.filter(data.tos, function(p) return p:isAlive() and p:getHandcardNum() < p.maxHp end)
       if #toDraw > 0 then
-        local result = room:askForChoosePlayers(
-          player, table.map(
-            toDraw,
-            function(p)
-              return p.id
-            end
-          ), 1, 2, "#js__jinfa-ask", "js__jinfa", true
-        )
-
-        if #result == 0 then
-          result = toDraw[1]
-        end
-
+        local result = room:askForChoosePlayers(player, table.map(toDraw, Util.IdMapper), 1, 2, "#js__jinfa-ask", "js__jinfa", false)
         room:sortPlayersByAction(result)
         for _, playerId in ipairs(result) do
           local p = room:getPlayerById(playerId)
@@ -1774,7 +1762,8 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
       end)
 
       if #others > 0 then
-        local tos = room:askForChoosePlayers(player, table.map(others, function(p) return p.id end), 1, 999, "#yaoyan-prey", "yaoyan", false, false)
+        local tos = room:askForChoosePlayers(player, table.map(others, Util.IdMapper), 1, 999, "#yaoyan-prey", "yaoyan", false, false)
+        room:sortPlayersByAction(tos)
         for _, playerId in ipairs(tos) do
           local p = room:getPlayerById(playerId)
           if not p:isKongcheng() then
@@ -1785,7 +1774,7 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
       end
     elseif discussion.color == "black" then
       targets = table.filter(targets, function(p) return p:isAlive() end)
-      local tos = room:askForChoosePlayers(player, table.map(targets, function(p) return p.id end), 1, 1, "#yaoyan-damage", "yaoyan", true, false)
+      local tos = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#yaoyan-damage", "yaoyan", true, false)
       if #tos > 0 then
         room:damage{
           from = player,
