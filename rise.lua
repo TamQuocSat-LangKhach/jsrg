@@ -378,6 +378,9 @@ local kuangjian = fk.CreateViewAsSkill{
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
+  before_use = function (self, player, use)
+    use.extraUse = true
+  end,
   view_as = function(self, cards)
     if #cards ~= 1 then return end
     local card = Fk:cloneCard(self.interaction.data)
@@ -402,6 +405,11 @@ local kuangjian = fk.CreateViewAsSkill{
       end
     end
   end,
+  enabled_at_response = function (self, player, response)
+    local banner = Fk:currentRoom():getBanner("kuangjian_dying")
+    if banner == player.id then return false end
+    return not response
+  end,
 }
 local kuangjian_prohibit = fk.CreateProhibitSkill{
   name = "#kuangjian_prohibit",
@@ -415,8 +423,26 @@ local kuangjian_targetmod = fk.CreateTargetModSkill{
     return card and table.contains(card.skillNames, "kuangjian")
   end,
 }
+--- FIXME: 求桃无视合法性判断
+local kuangjian_trigger = fk.CreateTriggerSkill{
+  name = "#kuangjian_trigger",
+
+  refresh_events = {fk.HandleAskForPlayCard},
+  can_refresh = function(self, event, target, player, data)
+    return data.cardName == "peach" and data.extraData and table.contains(data.extraData.must_targets or {}, player.id)
+  end,
+  on_refresh = function(self, event, target, player, data)
+    local room = player.room
+    if not data.afterRequest then
+      room:setBanner("kuangjian_dying", player.id)
+    else
+      room:setBanner("kuangjian_dying", 0)
+    end
+  end,
+}
 kuangjian:addRelatedSkill(kuangjian_prohibit)
 kuangjian:addRelatedSkill(kuangjian_targetmod)
+kuangjian:addRelatedSkill(kuangjian_trigger)
 lukang:addSkill(zhuwei)
 lukang:addSkill(kuangjian)
 Fk:loadTranslationTable{
