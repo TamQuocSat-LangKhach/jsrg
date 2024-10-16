@@ -139,19 +139,22 @@ local tianyu = fk.CreateTriggerSkill{
     for _, info in ipairs(data) do
       if info.toArea == Card.DiscardPile then
         for _, moveInfo in ipairs(info.moveInfo) do
-          local cardMoved = Fk:getCardById(moveInfo.cardId)
-          if cardMoved.is_damage_card or cardMoved.type == Card.TypeEquip then
-            table.insert(toObtain, moveInfo.cardId)
+          if moveInfo.fromArea ~= Player.Hand and moveInfo.fromArea ~= Player.Equip then
+            local cardMoved = Fk:getCardById(moveInfo.cardId)
+            if cardMoved.is_damage_card or cardMoved.type == Card.TypeEquip then
+              table.insert(toObtain, moveInfo.cardId)
+            end
           end
         end
       end
     end
+    local room = player.room
+    table.filter(toObtain, function(id) return room:getCardArea(id) == Card.DiscardPile end)
 
     if #toObtain == 0 then
       return false
     end
 
-    local room = player.room
     room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, info in ipairs(e.data) do
         if
@@ -161,15 +164,14 @@ local tianyu = fk.CreateTriggerSkill{
             info.moveInfo,
             function(moveInfo) return table.contains({ Card.PlayerHand, Card.PlayerEquip }, moveInfo.fromArea) end
           )
-          for _, moveInfo in ipairs(infosFound) do 
+          for _, moveInfo in ipairs(infosFound) do
             table.removeOne(toObtain, moveInfo.cardId)
           end
         end
       end
-      return false
+      return #toObtain == 0
     end, Player.HistoryTurn)
 
-    table.filter(toObtain, function(id) return room:getCardArea(id) == Card.DiscardPile end)
     if #toObtain > 0 then
       self.cost_data = toObtain
       return true
@@ -757,7 +759,7 @@ local jueyin = fk.CreateTriggerSkill{
     local room = player.room
     local record_id = player:getMark("jueyin_damage-turn")
     if record_id == 0 then
-      U.getActualDamageEvents(room, 1, function(e)
+      room.logic:getActualDamageEvents(1, function(e)
         if e.data[1].to == player then
           record_id = e.id
           room:setPlayerMark(player, "jueyin_damage-turn", record_id)
@@ -1454,7 +1456,7 @@ local gangfen = fk.CreateTriggerSkill{
       data.card.trueName == "slash" and
       player:hasSkill(self) and
       target:getHandcardNum() > player:getHandcardNum() and
-      table.contains(U.getUseExtraTargets(player.room, data, true, true), player.id)
+      table.contains(player.room:getUseExtraTargets(data, true, true), player.id)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -1477,7 +1479,7 @@ local gangfen = fk.CreateTriggerSkill{
       arg2 = #U.getActualUseTargets(room, data, event),
       toast = true,
     }
-    local availableTargets = U.getUseExtraTargets(player.room, data, true, true)
+    local availableTargets = room:getUseExtraTargets(data, true, true)
     room:sortPlayersByAction(availableTargets)
     for _, pId in ipairs(availableTargets) do
       if

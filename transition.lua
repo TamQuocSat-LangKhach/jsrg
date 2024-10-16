@@ -42,20 +42,20 @@ local qingzi = fk.CreateTriggerSkill{
     local tos = room:askForChoosePlayers(player, targets, 1, 999, "#qingzi-choose", self.name, true)
     if #tos > 0 then
       room:sortPlayersByAction(tos)
-      self.cost_data = tos
+      self.cost_data = {tos = tos}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, id in ipairs(self.cost_data) do
+    for _, id in ipairs(self.cost_data.tos) do
       if player.dead then return end
       local p = room:getPlayerById(id)
       if not p.dead and #p:getCardIds("e") > 0 then
         local c = room:askForCardChosen(player, p, "e", self.name)
-        room:throwCard({c}, self.name, p, player)
+        room:throwCard(c, self.name, p, player)
         if not p:hasSkill("ol_ex__shensu", true) and not p.dead then
-          local mark = U.getMark(player, "qingzi_target")
+          local mark = player:getTableMark("qingzi_target")
           table.insert(mark, p.id)
           room:setPlayerMark(player, "qingzi_target", mark)
           room:handleAddLoseSkills(p, "ol_ex__shensu", nil, true, false)
@@ -115,7 +115,7 @@ local zhenfeng = fk.CreateViewAsSkill{
           local p = Self
           repeat
             for _, s in ipairs(p.player_skills) do
-              if s:isPlayerSkill(p) then
+              if s:isPlayerSkill(p) and s.visible then
                 if string.find(Fk:translate(":"..s.name, "zh_CN"), "【"..Fk:translate(c.name, "zh_CN").."】") or
                   string.find(Fk:translate(":"..s.name, "zh_CN"), Fk:translate(c.name, "zh_CN")[1].."【"..Fk:translate(c.trueName, "zh_CN").."】") then
                   table.insertIfNeed(names, c.name)
@@ -162,7 +162,7 @@ local zhenfeng_trigger = fk.CreateTriggerSkill{
       local to = player.room:getPlayerById(data.to)
       if to.dead then return end
       for _, s in ipairs(to.player_skills) do
-        if s:isPlayerSkill(to) then
+        if s:isPlayerSkill(to) and s.visible then
           if string.find(Fk:translate(":"..s.name, "zh_CN"), "【"..Fk:translate(data.card.name, "zh_CN").."】") or
             string.find(Fk:translate(":"..s.name, "zh_CN"), Fk:translate(data.card.name, "zh_CN")[1].."【"..Fk:translate(data.card.trueName, "zh_CN").."】") then
             return true
@@ -341,6 +341,12 @@ local zhuiming = fk.CreateTriggerSkill{
     local room = player.room
     local to = room:getPlayerById(AimGroup:getAllTargets(data.tos)[1])
     room:doIndicate(player.id, {to.id})
+    room:sendLog{
+      type = "#zhuiming",
+      from = player.id,
+      arg = self.cost_data,
+      toast = true,
+    }
     room:askForDiscard(to, 0, 999, true, self.name, true, nil, "#zhuiming-discard:"..player.id.."::"..self.cost_data, false)
     if player.dead or to.dead or to:isNude() then return end
     local id = room:askForCardChosen(player, to, "he", self.name)
@@ -363,6 +369,7 @@ Fk:loadTranslationTable{
   [":zhuiming"] = "当你使用【杀】指定唯一目标后，你可以声明一种颜色并令目标弃置任意张牌，然后你展示目标一张牌，若此牌颜色与你声明的颜色相同，"..
   "则此【杀】不计入次数限制、不可被响应且伤害+1。",
   ["#zhuiming-invoke"] = "追命：你可以对 %dest 发动“追命”声明一种颜色",
+  ["#zhuiming"] = "%from 声明 %arg",
   ["#zhuiming-discard"] = "追命：%src 声明%arg，你可以弃置任意张牌",
 }
 
@@ -1090,6 +1097,7 @@ local yangming = fk.CreateActiveSkill{
   anim_type = "control",
   card_num = 0,
   target_num = 1,
+  prompt = "#yangming",
   can_use = function(self, player)
     return not player:isKongcheng() and player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
@@ -1145,6 +1153,7 @@ Fk:loadTranslationTable{
   ["yangming"] = "养名",
   [":yangming"] = "出牌阶段限一次，你可以与一名角色拼点：若其没赢，你可以与其重复此流程；若其赢，其摸等同于其本阶段拼点没赢次数的牌，你回复1点体力。",
   ["js__manjuan&"] = "漫卷",
+  ["#yangming"] = "养名：与一名角色拼点，若其没赢，你可以继续与其拼点；若其赢，其摸拼点没赢次数的牌，你回复1点体力",
   ["#yangming-invoke"] = "养名：你可以继续发动“养名”与 %dest 拼点",
 }
 
@@ -1467,7 +1476,31 @@ local hujian = fk.CreateTriggerSkill{
       if event == fk.GameStart then
         return true
       else
-        return table.find(player.room.discard_pile, function(id) return Fk:getCardById(id).trueName == "blood_sword" end)
+        if table.find(player.room.discard_pile, function(id) return Fk:getCardById(id).trueName == "blood_sword" end) then
+          local room = player.room
+          local e = room.logic:getCurrentEvent()
+          local end_id = e.id
+          local id = 0
+          local events = room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
+          for i = #events, 1, -1 do
+            e = events[i]
+            if e.id <= end_id then break end
+            end_id = e.id
+            local use = e.data[1]
+            id = use.from
+          end
+          events = room.logic.event_recorder[GameEvent.RespondCard] or Util.DummyTable
+          for i = #events, 1, -1 do
+            e = events[i]
+            if e.id <= end_id then break end
+            end_id = e.id
+            local response = e.data[1]
+            id = response.from
+          end
+          if id ~= 0 and not room:getPlayerById(id).dead then
+            self.cost_data = id
+          end
+        end
       end
     end
   end,
@@ -1475,59 +1508,19 @@ local hujian = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return true
     else
-      local room = player.room
-      local e = room.logic:getCurrentEvent()
-      local end_id = e.id
-      local id = 0
-      local events = room.logic.event_recorder[GameEvent.UseCard] or Util.DummyTable
-      for i = #events, 1, -1 do
-        e = events[i]
-        if e.id <= end_id then break end
-        end_id = e.id
-        local use = e.data[1]
-        id = use.from
-      end
-      events = room.logic.event_recorder[GameEvent.RespondCard] or Util.DummyTable
-      for i = #events, 1, -1 do
-        e = events[i]
-        if e.id <= end_id then break end
-        end_id = e.id
-        local response = e.data[1]
-        id = response.from
-      end
-      if id == 0 or room:getPlayerById(id).dead then return end
-      if room:askForSkillInvoke(room:getPlayerById(id), self.name, nil, "#hujian-invoke") then
-        self.cost_data = id
-        return true
-      end
+      return player.room:askForSkillInvoke(player.room:getPlayerById(self.cost_data), self.name, nil, "#hujian-invoke")
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
       local card = room:printCard("blood_sword", Card.Spade, 6)
-      room:moveCards({
-        ids = {card.id},
-        fromArea = Card.Void,
-        to = player.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = true,
-      })
+      room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
     else
       local p = room:getPlayerById(self.cost_data)
       local card = room:getCardsFromPileByRule("blood_sword", 1, "discardPile")
       if #card > 0 then
-        room:moveCards({
-          ids = card,
-          to = p.id,
-          toArea = Card.PlayerHand,
-          moveReason = fk.ReasonJustMove,
-          proposer = p.id,
-          skillName = self.name,
-        })
+        room:moveCardTo(card, Card.PlayerHand, p, fk.ReasonJustMove, self.name, nil, true, p.id)
       end
     end
   end,
@@ -1535,9 +1528,8 @@ local hujian = fk.CreateTriggerSkill{
 local shili = fk.CreateViewAsSkill{
   name = "shili",
   anim_type = "offensive",
-  pattern = "duel",
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip and Fk:currentRoom():getCardArea(to_select) ~= Card.PlayerEquip
+    return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip and table.contains(Self:getCardIds("h"), to_select)
   end,
   view_as = function(self, cards)
     if #cards ~= 1 then return end
