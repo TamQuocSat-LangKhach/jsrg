@@ -534,7 +534,7 @@ jinfa:addRelatedSkill(jinfaTrigger)
 jiangwei:addSkill(jinfa)
 
 local fumouViewas = fk.CreateViewAsSkill{
-  name = "js__fumou_viewas",
+  name = "#js__fumou_viewas",
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).name == "shade"
   end,
@@ -594,10 +594,10 @@ local fumou = fk.CreateTriggerSkill{
     end
 
     room:setPlayerMark(player, "js__fumou_targets", diffPlayerIds)
-    local success, dat = player.room:askForUseActiveSkill(player, "js__fumou_viewas", "#js__fumou-use", true)
+    local success, dat = player.room:askForUseActiveSkill(player, "#js__fumou_viewas", "#js__fumou-use", true)
     room:setPlayerMark(player, "js__fumou_targets", 0)
     if success then
-      local card = Fk.skills["js__fumou_viewas"]:viewAs(dat.cards)
+      local card = Fk.skills["#js__fumou_viewas"]:viewAs(dat.cards)
       room:useCard{
         from = player.id,
         tos = table.map(dat.targets, function(id) return {id} end),
@@ -623,7 +623,7 @@ Fk:loadTranslationTable{
   [":js__fumou"] = "魏势力技，当你参与的议事结束后，所有与你意见不同的角色本回合内不能使用或打出其意见牌颜色的牌，然后" ..
   "你可将一张【影】当【出其不意】对其中一名角色使用。",
   ["@js__fumouDebuff-turn"] = "复谋",
-  ["js__fumou_viewas"] = "复谋",
+  ["#js__fumou_viewas"] = "复谋",
   ["#js__fumou-use"] = "复谋：你可将一张【影】当【出其不意】对其中一名角色使用",
 }
 
