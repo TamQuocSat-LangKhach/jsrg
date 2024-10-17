@@ -220,6 +220,7 @@ Fk:loadTranslationTable{
 }
 
 local simazhao2 = General(extension, "js2__simazhao", "jin", 4)
+simazhao2.hidden = true
 local weisi = fk.CreateActiveSkill{
   name = "weisi",
   anim_type = "offensive",
