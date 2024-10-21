@@ -844,7 +844,7 @@ local guiji = fk.CreateActiveSkill{
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected, selected_cards)
     local target = Fk:currentRoom():getPlayerById(to_select)
-    return Self.id ~= to_select and target.gender == General.Male and #selected == 0 and target:getHandcardNum() < Self:getHandcardNum() 
+    return Self.id ~= to_select and target:isMale() and #selected == 0 and target:getHandcardNum() < Self:getHandcardNum() 
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -1002,10 +1002,10 @@ local pangtong = General(extension, "js__pangtong", "qun", 3)
 local js__manjuan = fk.CreateViewAsSkill{
   name = "js__manjuan",
   pattern = ".",
-  expand_pile = function() return U.getMark(Self, "js__manjuan-turn") end,
+  expand_pile = function() return Self:getTableMark("js__manjuan-turn") end,
   card_filter = function(self, to_select, selected)
-    if #selected == 0 and table.contains(U.getMark(Self, "js__manjuan-turn"), to_select)
-    and not table.contains(U.getMark(Self, "js__manjuan_used-turn"), Fk:getCardById(to_select).number) then
+    if #selected == 0 and table.contains(Self:getTableMark("js__manjuan-turn"), to_select)
+    and not table.contains(Self:getTableMark("js__manjuan_used-turn"), Fk:getCardById(to_select).number) then
       local card = Fk:getCardById(to_select)
       if Fk.currentResponsePattern == nil then
         return Self:canUse(card) and not Self:prohibitUse(card)
@@ -1019,7 +1019,7 @@ local js__manjuan = fk.CreateViewAsSkill{
     return Fk:getCardById(cards[1])
   end,
   before_use = function (self, player, use)
-    local mark = U.getMark(player, "js__manjuan_used-turn")
+    local mark = player:getTableMark("js__manjuan_used-turn")
     table.insert(mark, use.card.number)
     player.room:setPlayerMark(player, "js__manjuan_used-turn", mark)
   end,
@@ -1059,7 +1059,7 @@ local js__manjuan_trigger = fk.CreateTriggerSkill{
   on_refresh = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardsMove then
-      local ids = U.getMark(player, "js__manjuan-turn")
+      local ids = player:getTableMark("js__manjuan-turn")
       for _, move in ipairs(data) do
         if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
@@ -1585,7 +1585,7 @@ local fushan = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "special")
       local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
       if #targets == 0 then return end
-      room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+      room:doIndicate(player.id, table.map(targets, Util.IdMapper))
       local mark = {}
       for _, p in ipairs(targets) do
         if player.dead then return end

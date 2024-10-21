@@ -302,7 +302,7 @@ local chaozheng = fk.CreateTriggerSkill{
     local room = player.room
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
     if #targets == 0 then return end
-    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     local discussion = U.Discussion{
       reason = self.name,
       from = player,
@@ -757,7 +757,7 @@ end
 ---@param general General
 local function addFangke(player, general, addSkill)
   local room = player.room
-  local glist = U.getMark(player, "@&js_fangke")
+  local glist = player:getTableMark("@&js_fangke")
   table.insertIfNeed(glist, general.name)
   room:setPlayerMark(player, "@&js_fangke", glist)
 
@@ -786,7 +786,7 @@ local yingmen = fk.CreateTriggerSkill{
     if event == fk.GameStart then
       return player:hasSkill(self)
     else
-      return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") < 4
+      return target == player and player:hasSkill(self) and #player:getTableMark("@&js_fangke") < 4
     end
   end,
   on_use = function(self, _, _, player, _)
@@ -803,7 +803,7 @@ local yingmen = fk.CreateTriggerSkill{
     end
 
     local m = player:getMark("@&js_fangke")
-    local n = 4 - #U.getMark(player, "@&js_fangke")
+    local n = 4 - #player:getTableMark("@&js_fangke")
     local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
     for _, g in ipairs(generals) do
       addFangke(player, g, player:hasSkill("js__pingjian"))
@@ -851,7 +851,7 @@ local pingjian = fk.CreateTriggerSkill{
   name = "js__pingjian",
   events = {fk.AfterSkillEffect},
   can_trigger = function(self, _, target, player, data)
-    return target == player and player:hasSkill(self) and #U.getMark(player, "@&js_fangke") > 0
+    return target == player and player:hasSkill(self) and #player:getTableMark("@&js_fangke") > 0
       and player:getMark("js_fangke_skills") ~= 0 and
       table.contains(player:getMark("js_fangke_skills"), data.name)
   end,
@@ -2159,7 +2159,7 @@ local shelun = fk.CreateActiveSkill{
     local targets = table.filter(room:getOtherPlayers(target), function(p)
       return not p:isKongcheng() and p:getHandcardNum() <= player:getHandcardNum() end)
     room:delay(1500)
-    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     local discussion = U.Discussion{
       reason = self.name,
       from = player,

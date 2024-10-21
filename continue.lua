@@ -867,13 +867,13 @@ local guyin = fk.CreateTriggerSkill{
     player:turnOver()
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if not p.dead and p.gender == General.Male and
+      if not p.dead and p:isMale() and
           room:askForChoice(p, {"turnOver", "Cancel"}, self.name, "#guyin-choice:" .. player.id) == "turnOver" then
         p:turnOver()
       end
     end
     local x = #table.filter(room.players, function (p)
-      return p.gender == General.Male
+      return p:isMale()
     end)
     local drawer = player
     for _ = 1, x, 1 do

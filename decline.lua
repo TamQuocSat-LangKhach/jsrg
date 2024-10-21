@@ -301,7 +301,7 @@ local zhuni = fk.CreateActiveSkill{
 
     if maxTarget then
       local maxPlayer = room:getPlayerById(maxTarget)
-      local zhuniOwners = U.getMark(maxPlayer, ("@@zhuniOnwers-turn"))
+      local zhuniOwners = maxPlayer:getTableMark(("@@zhuniOnwers-turn"))
       table.insertIfNeed(zhuniOwners, player.id)
       room:setPlayerMark(maxPlayer, "@@zhuniOnwers-turn", zhuniOwners)
     end
@@ -311,12 +311,12 @@ local zhuniTargetmod = fk.CreateTargetModSkill{
   name = "#zhuni_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
     if card and to then
-      return table.contains(U.getMark(to, "@@zhuniOnwers-turn"), player.id)
+      return table.contains(to:getTableMark("@@zhuniOnwers-turn"), player.id)
     end
   end,
   bypass_distances = function(self, player, skill, card, to)
     if card and to then
-      return table.contains(U.getMark(to, "@@zhuniOnwers-turn"), player.id)
+      return table.contains(to:getTableMark("@@zhuniOnwers-turn"), player.id)
     end
   end,
 }
@@ -660,7 +660,7 @@ local zonghai = fk.CreateTriggerSkill{
 
     for _, to in ipairs(tos) do
       local to = room:getPlayerById(to)
-      local zonghaiSource = U.getMark(to, "@@zonghai")
+      local zonghaiSource = to:getTableMark("@@zonghai")
       table.insertIfNeed(zonghaiSource, player.id)
       room:setPlayerMark(to, "@@zonghai", zonghaiSource)
     end
@@ -670,7 +670,7 @@ local zonghai = fk.CreateTriggerSkill{
       curDyingEvent:addCleaner(function()
         for _, p in ipairs(tos) do
           local to = room:getPlayerById(p)
-          local zonghaiSource = U.getMark(to, "@@zonghai")
+          local zonghaiSource = to:getTableMark("@@zonghai")
           table.removeOne(zonghaiSource, player.id)
           room:setPlayerMark(to, "@@zonghai", #zonghaiSource > 0 and zonghaiSource or 0)
         end
@@ -1384,7 +1384,7 @@ local yanshaProhibit = fk.CreateProhibitSkill{
     return
       card and
       table.contains(card.skillNames, "yanshaSlash") and
-      not table.contains(U.getMark(from, yansha.name), to.id)
+      not table.contains(from:getTableMark(yansha.name), to.id)
   end,
 }
 Fk:loadTranslationTable{

@@ -241,7 +241,7 @@ local chushi = fk.CreateActiveSkill{
       table.insert(targets, target)
     end
 
-    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     local discussion = U.Discussion{
       reason = self.name,
       from = player,
@@ -424,7 +424,7 @@ local jinfa = fk.CreateActiveSkill{
     player:showCards(effect.cards)
     room:delay(1500)
 
-    room:doIndicate(player.id, table.map(targets, function(p) return p.id end))
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     local discussion = U.Discussion{
       reason = self.name,
       from = player,
@@ -1727,7 +1727,7 @@ local yaoyan = fk.CreateTriggerSkill{
     local room = player.room
 
     room:setPlayerMark(player, "yaoyan_owner-turn", 1)
-    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), function(p) return p.id end))
+    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), Util.IdMapper))
     for _, p in ipairs(room:getAlivePlayers()) do
       if room:askForSkillInvoke(p, self.name, data, "#yaoyan-ask") then
         room:setPlayerMark(p, "@@yaoyan-turn", 1)
