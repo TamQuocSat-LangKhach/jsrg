@@ -237,7 +237,7 @@ local weisi = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     local target = room:getPlayerById(effect.tos[1])
-    local cards = room:askForCard(target, 0, 999, false, self.name, false, nil, "#weisi-ask:"..player.id)
+    local cards = room:askForCard(target, 1, 999, false, self.name, true, nil, "#weisi-ask:"..player.id)
     if #cards > 0 then
       target:addToPile(self.name, cards, false, self.name, target.id)
     end
@@ -283,12 +283,12 @@ local dangyi = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
   end,
 
-  refresh_events = {fk.EventAcquireSkill},
+  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
   can_refresh = function (self, event, target, player, data)
     return target == player and data == self
   end,
   on_refresh = function (self, event, target, player, data)
-    player.room:addPlayerMark(player, "@dangyi", player:getLostHp() + 1)
+    player.room:addPlayerMark(player, "@dangyi", event == fk.EventLoseSkill and 0 or (player:getLostHp() + 1))
   end,
 }
 weisi:addRelatedSkill(weisi_delay)
