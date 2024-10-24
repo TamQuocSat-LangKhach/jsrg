@@ -495,13 +495,16 @@ local fennan = fk.CreateActiveSkill{
           end
         end
       end, Player.HistoryTurn)
-      if #room:canMoveCardInBoard(nil, room.alive_players, cards) > 0 then
-        local targets = room:askForChooseToMoveCardInBoard(player, "#fennan-move", self.name, false, nil, false, cards)
-        if #targets > 0 then
-          targets = table.map(targets, Util.Id2PlayerMapper)
-          room:askForMoveCardInBoard(player, targets[1], targets[2], self.name, nil, nil, cards)
-        end
-      end
+      local targets = table.filter(room:getOtherPlayers(target), function (p)
+        return table.find(target:getCardIds("ej"), function (id)
+          return not table.contains(cards, id) and target:canMoveCardInBoardTo(p, id)
+        end)
+      end)
+      if #targets == 0 then return end
+      local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1,
+        "#fennan-move::"..target.id, self.name, false)
+      to = room:getPlayerById(to[1])
+      room:askForMoveCardInBoard(player, target, to, self.name, nil, target, cards)
     else
       local n = #player:getCardIds("e")
       local cards = U.askforChooseCardsAndChoice(player, target:getCardIds("h"), {"OK"}, self.name,
@@ -574,7 +577,7 @@ Fk:loadTranslationTable{
   ["#fennan"] = "奋难：令一名角色选择：你翻面，然后移动其场上一张牌；你观看并重铸其手牌",
   ["fennan1"] = "%src翻面，然后其移动场上一张牌",
   ["fennan2"] = "%src观看并重铸你的手牌",
-  ["#fennan-move"] = "奋难：请移动场上一张本回合未移动过的牌",
+  ["#fennan-move"] = "奋难：请将 %dest 场上一张牌移动给另一名角色",
   ["#fennan-recast"] = "奋难：你可以选择 %dest 至多%arg张手牌，令其重铸",
   ["#xunjim-give"] = "勋济：你可以分配这些牌，每名角色至多一张",
 }
