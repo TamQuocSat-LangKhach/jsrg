@@ -1261,9 +1261,9 @@ local qinraoDuelSkill = fk.CreateActiveSkill{
       local cardResponded
       for i = 1, loopTimes do
         if currentResponser == to then
-          cardResponded = room:askForResponse(currentResponser, "slash", nil, "#qinrao-duel", false, nil, effect)
+          cardResponded = room:askForResponse(currentResponser, "slash", nil, "#qinrao-duel", true, nil, effect)
         else
-          cardResponded = room:askForResponse(currentResponser, "slash", nil, nil, false, nil, effect)
+          cardResponded = room:askForResponse(currentResponser, "slash", nil, nil, true, nil, effect)
         end
         if cardResponded then
           room:responseCard({
