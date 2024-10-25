@@ -378,6 +378,7 @@ local shacheng = fk.CreateTriggerSkill{
   name = "shacheng",
   anim_type = "support",
   events = {fk.GameStart, fk.CardUseFinished},
+  derived_piles = "shacheng",
   expand_pile = "shacheng",
   can_trigger = function(self, event, target, player, data)
     if player:hasSkill(self) then
@@ -408,7 +409,7 @@ local shacheng = fk.CreateTriggerSkill{
       room:moveCardTo(self.cost_data.cards, Card.DiscardPile, player, fk.ReasonJustMove, self.name, self.name, true, player.id)
       local to = room:getPlayerById(self.cost_data.targets[1])
       local n = 0
-      player.room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         for _, move in ipairs(e.data) do
           if move.from == to.id then
             for _, info in ipairs(move.moveInfo) do

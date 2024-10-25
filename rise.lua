@@ -239,7 +239,7 @@ local weisi = fk.CreateActiveSkill{
     local target = room:getPlayerById(effect.tos[1])
     local cards = room:askForCard(target, 1, 999, false, self.name, true, nil, "#weisi-ask:"..player.id)
     if #cards > 0 then
-      target:addToPile(self.name, cards, false, self.name, target.id)
+      target:addToPile("$weisi", cards, false, self.name, target.id)
     end
     if player.dead or target.dead then return end
     room:useVirtualCard("duel", nil, player, target, self.name)
@@ -255,7 +255,7 @@ local weisi_delay = fk.CreateTriggerSkill{
         data.card and table.contains(data.card.skillNames, "weisi") and
         not data.to:isKongcheng()
     elseif event == fk.TurnEnd then
-      return #player:getPile("weisi") > 0
+      return #player:getPile("$weisi") > 0
     end
   end,
   on_cost = Util.TrueFunc,
@@ -264,7 +264,7 @@ local weisi_delay = fk.CreateTriggerSkill{
     if event == fk.Damage then
       room:moveCardTo(data.to:getCardIds("h"), Card.PlayerHand, player, fk.ReasonPrey, "weisi", nil, false, player.id)
     elseif event == fk.TurnEnd then
-      room:moveCardTo(player:getPile("weisi"), Card.PlayerHand, player, fk.ReasonJustMove, "weisi", nil, false, player.id)
+      room:moveCardTo(player:getPile("$weisi"), Card.PlayerHand, player, fk.ReasonJustMove, "weisi", nil, false, player.id)
     end
   end,
 }
@@ -307,6 +307,7 @@ Fk:loadTranslationTable{
   [":dangyi"] = "主公技，当你造成伤害时，你可以令此伤害值+1，本局游戏限X次（X为你获得此技能时已损失体力值+1）。",
   ["#weisi"] = "威肆：令一名角色将任意张手牌移出游戏直到回合结束，然后视为对其使用【决斗】！",
   ["#weisi-ask"] = "威肆：%src 将对你使用【决斗】！请将任意张手牌本回合移出游戏，【决斗】对你造成伤害后其获得你所有手牌！",
+  ["$weisi"] = "威肆",
   ["#weisi_delay"] = "威肆",
   ["#dangyi-invoke"] = "荡异：是否令你对 %dest 造成的伤害+1？（还剩%arg次！）",
   ["@dangyi"] = "荡异",
