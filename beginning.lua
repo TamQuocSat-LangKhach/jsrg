@@ -789,7 +789,7 @@ local yingmen = fk.CreateTriggerSkill{
       return target == player and player:hasSkill(self) and #player:getTableMark("@&js_fangke") < 4
     end
   end,
-  on_use = function(self, _, _, player, _)
+  on_use = function (self, event, target, player, data)
     local room = player.room
     local exclude_list = table.map(room.players, function(p)
       return p.general
@@ -803,10 +803,13 @@ local yingmen = fk.CreateTriggerSkill{
     end
 
     local m = player:getMark("@&js_fangke")
-    local n = 4 - #player:getTableMark("@&js_fangke")
-    local generals = Fk:getGeneralsRandomly(n, nil, exclude_list)
+    local n = 4
+    if event ~= fk.GameStart then
+      n = 4 - #player:getTableMark("@&js_fangke")
+    end
+    local generals = table.random(room.general_pile, n)
     for _, g in ipairs(generals) do
-      addFangke(player, g, player:hasSkill("js__pingjian"))
+      addFangke(player, Fk.generals[g], player:hasSkill("js__pingjian", true))
     end
   end,
 
