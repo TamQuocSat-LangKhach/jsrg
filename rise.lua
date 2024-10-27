@@ -894,7 +894,7 @@ local chendu = fk.CreateTriggerSkill{
         for _, id in ipairs(all_cards) do
           room:setCardMark(Fk:getCardById(id), "@DistributionTo", 0)
         end
-        room:doYiji(room, list, player.id, self.name)
+        room:doYiji(list, player.id, self.name)
       end
     end
   end,

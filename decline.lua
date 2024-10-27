@@ -55,33 +55,11 @@ local zhimeng = fk.CreateTriggerSkill{
 
     local targets = table.filter(room.alive_players, function(p) return not p:isKongcheng() end)
     if #targets > 0 then
-      local extraData = {
-        num = 1,
-        min_num = 1,
-        include_equip = false,
-        pattern = ".",
-        reason = self.name,
-      }
-      local prompt = "#js__zhimeng-display"
-      local data = { "choose_cards_skill", prompt, false, extraData }
-
-      for _, to in ipairs(targets) do
-        to.request_data = json.encode(data)
-      end
-
-      room:notifyMoveFocus(targets, self.name)
-      room:doBroadcastRequest("AskForUseActiveSkill", targets)
+      local result = U.askForJointCard(targets, 1, 1, false, self.name, false, nil, "#js__zhimeng-display")
 
       local suitsDisplayed = {}
       for _, p in ipairs(targets) do
-        local cardDisplayed
-        if p.reply_ready then
-          local replyCard = json.decode(p.client_reply).card
-          cardDisplayed = Fk:getCardById(json.decode(replyCard).subcards[1])
-        else
-          cardDisplayed = Fk:getCardById(p:getCardIds(Player.Hand)[1])
-        end
-
+        local cardDisplayed = Fk:getCardById(result[p.id][1])
         suitsDisplayed[cardDisplayed:getSuitString()] = suitsDisplayed[cardDisplayed:getSuitString()] or {}
         table.insert(suitsDisplayed[cardDisplayed:getSuitString()], p.id)
         p:showCards(cardDisplayed)
