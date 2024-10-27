@@ -207,47 +207,45 @@ local zhuni = fk.CreateActiveSkill{
   target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local targets = table.map(table.filter(room.alive_players, function(p) return p ~= player end), Util.IdMapper)
+    room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
+    local targets = room:getOtherPlayers(player)
+    local req = Request:new(targets, "AskForUseActiveSkill")
+    req.focus_text = self.name
     local extraData = {
-      targets = targets,
+      targets = table.map(targets, Util.IdMapper),
       num = 1,
       min_num = 1,
       pattern = "",
       skillName = self.name,
     }
-    local prompt = "#zhuni-choose:" .. player.id
-    local data = { "choose_players_skill", prompt, false, extraData, false }
-
-    for _, to in ipairs(room.alive_players) do
-      to.request_data = json.encode(data)
-      room:doIndicate(effect.from, { to.id })
+    local data = { "choose_players_skill", "#zhuni-choose:"..player.id, false, extraData, false }
+    for _, p in ipairs(room.alive_players) do
+      req:setData(p, data)
+      req:setDefaultReply(p, table.random(targets).id)
     end
-
-    room:notifyMoveFocus(room.alive_players, self.name)
-    room:doBroadcastRequest("AskForUseActiveSkill", room.alive_players)
-
+    req:ask()
     local yourTarget
     if player:hasSkill("hezhi") then
-      if player.reply_ready then
-        yourTarget = json.decode(player.client_reply).targets[1]
+      if type(req:getResult(player)) == "table" then
+        yourTarget = req:getResult(player).targets[1]
       else
-        yourTarget = targets[1]
+        yourTarget = table.random(targets).id
       end
     end
 
     local targetsMap = {}
     for _, p in ipairs(room:getAlivePlayers()) do
       local to
-      if p.reply_ready then
-        to = json.decode(p.client_reply).targets[1]
+      if type(req:getResult(p)) == "table" then
+        to = req:getResult(p).targets[1]
       else
-        to = targets[1]
+        to = table.random(targets).id
       end
-
       room:sendLog{
         type = "#ShowPlayerChosen",
         from = p.id,
         to = { to },
+        toast = true,
       }
       room:doIndicate(p.id, { to })
       room:delay(500)
