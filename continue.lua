@@ -1366,6 +1366,9 @@ local chengxian = fk.CreateViewAsSkill{
       return U.CardNameBox { choices = names, all_choices = all_names }
     end
   end,
+  times = function(self)
+    return 2 + Self:getMark("chengxian_extratimes-phase") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+  end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 + player:getMark("chengxian_extratimes-phase")
   end,
