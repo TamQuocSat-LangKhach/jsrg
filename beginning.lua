@@ -1139,7 +1139,7 @@ local shoushu = fk.CreateTriggerSkill{
     to = room:getPlayerById(to[1])
     local spell = U.prepareDeriveCards(room, {{"js__peace_spell", Card.Heart, 3}}, "shoushu_spell")[1]
     room:setCardMark(Fk:getCardById(spell), MarkEnum.DestructOutEquip, 1)
-    U.moveCardIntoEquip(room, to, spell, self.name, true, player)
+    room:moveCardIntoEquip(to, spell, self.name, true, player)
   end,
 }
 local xundao = fk.CreateTriggerSkill{
