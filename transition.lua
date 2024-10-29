@@ -518,7 +518,7 @@ local funi = fk.CreateTriggerSkill{
       room:notifySkillInvoked(player, self.name, "control")
       local n = (#room.alive_players + 1) // 2
       local ids = getShade(room, n)
-      U.askForDistribution(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", ids)
+      room:askForYiji(player, ids, room.alive_players, self.name, #ids, #ids, "#funi-give", ids)
     elseif event == fk.AfterCardsMove then
       room:setPlayerMark(player, "@@funi-turn", 1)
     elseif event == fk.CardUsing then
