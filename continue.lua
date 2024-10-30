@@ -272,7 +272,7 @@ local js__yechou = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true)
+    return target == player and player:hasSkill(self, false, true)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -935,12 +935,12 @@ local zhangdeng_trigger = fk.CreateTriggerSkill{
     if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
       return data == self
     elseif event == fk.BuryVictim then
-      return player:hasSkill(self.name, true, true)
+      return player:hasSkill(self, true, true)
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self.name, true) or p == player end) then
+    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
       if player:hasSkill("zhangdeng&", true, true) then
         room:handleAddLoseSkills(player, "-zhangdeng&", nil, false, true)
       end
@@ -969,12 +969,12 @@ local zhangdeng_attached = fk.CreateViewAsSkill{
   end,
   enabled_at_play = function (self, player)
     return not player.faceup and not table.every(Fk:currentRoom().alive_players, function (p)
-      return not p:hasSkill(zhangdeng.name) or p.faceup
+      return not p:hasSkill(zhangdeng) or p.faceup
     end)
   end,
   enabled_at_response = function (self, player, response)
     return not response and not player.faceup and  not table.every(Fk:currentRoom().alive_players, function (p)
-      return not p:hasSkill(zhangdeng.name) or p.faceup
+      return not p:hasSkill(zhangdeng) or p.faceup
     end)
   end,
 }

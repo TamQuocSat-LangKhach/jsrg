@@ -1309,7 +1309,7 @@ local js__zhaohan = fk.CreateTriggerSkill{
 
   refresh_events = {fk.AfterDrawPileShuffle},
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(self.name, true)
+    return player:hasSkill(self, true)
   end,
   on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, self.name, 1)
@@ -1584,7 +1584,7 @@ local fusong = fk.CreateTriggerSkill{
   anim_type = "support",
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self.name, false, true) and
+    return target == player and player:hasSkill(self, false, true) and
       table.find(player.room:getOtherPlayers(player), function(p)
         return p.maxHp > player.maxHp and not (p:hasSkill("fengzi", true) and p:hasSkill("jizhan", true))
       end)
