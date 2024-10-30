@@ -939,11 +939,7 @@ local shejus = fk.CreateTriggerSkill{
       to = room:getPlayerById(data.to)
     end
     room:doIndicate(player.id, {to.id})
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = {player, to},
-    }
+    local discussion = U.Discussion(player, {player, to}, self.name)
     if discussion.color == "black" then
       if not player.dead then
         room:changeMaxHp(player, -1)
@@ -1072,11 +1068,7 @@ local shanzheng = fk.CreateActiveSkill{
     table.insert(effect.tos, player.id)
     room:sortPlayersByAction(effect.tos)
     local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = targets,
-    }
+    local discussion = U.Discussion(player, targets, self.name)
     if player.dead then return end
     if discussion.color == "red" then
       targets = table.filter(room.alive_players, function (p)
@@ -1140,9 +1132,9 @@ local xiongbao = fk.CreateTriggerSkill{
           data.results[player.id].opinion = "noresult"
         end
       else
-        local card = Fk:getCardById(table.random(p:getCardIds("h")))
-        data.results[p.id].toCard = card
-        data.results[p.id].opinion = card:getColorString()
+        local id = table.random(p:getCardIds("h"))
+        data.results[p.id].toCards = {id}
+        data.results[p.id].opinion = Fk:getCardById(id):getColorString()
       end
     end
   end,

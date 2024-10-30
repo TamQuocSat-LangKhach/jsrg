@@ -242,11 +242,7 @@ local chushi = fk.CreateActiveSkill{
     end
 
     room:doIndicate(player.id, table.map(targets, Util.IdMapper))
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = table.filter(targets, function(p) return not p:isKongcheng() end),
-    }
+    local discussion = U.Discussion(player, table.filter(targets, function(p) return not p:isKongcheng() end), self.name)
     if discussion.color == "red" then
       local drawTargets = { player.id }
       if player ~= target then
@@ -425,12 +421,7 @@ local jinfa = fk.CreateActiveSkill{
     room:delay(1500)
 
     room:doIndicate(player.id, table.map(targets, Util.IdMapper))
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = targets,
-      extra_data = { jinfaCard = effect.cards[1] }
-    }
+    U.Discussion(player, targets, self.name, { jinfaCard = effect.cards[1] })
   end,
 }
 local jinfaTrigger = fk.CreateTriggerSkill{
@@ -1750,11 +1741,7 @@ local yaoyanDiscussion = fk.CreateTriggerSkill{
     local room = player.room
 
     local targets = table.filter(room.alive_players, function(p) return p:getMark("@@yaoyan-turn") > 0 and not p:isKongcheng() end)
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = targets,
-    }
+    local discussion = U.Discussion(player, targets, self.name)
 
     if discussion.color == "red" then
       local others = table.filter(room.alive_players, function(p)

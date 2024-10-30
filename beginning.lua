@@ -303,11 +303,7 @@ local chaozheng = fk.CreateTriggerSkill{
     local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
     if #targets == 0 then return end
     room:doIndicate(player.id, table.map(targets, Util.IdMapper))
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = targets,
-    }
+    local discussion = U.Discussion(player, targets, self.name)
     if discussion.color == "red" then
       for _, p in ipairs(targets) do
         if p:isWounded() and not p.dead and discussion.results[p.id].opinion == "red" then
@@ -2163,11 +2159,7 @@ local shelun = fk.CreateActiveSkill{
       return not p:isKongcheng() and p:getHandcardNum() <= player:getHandcardNum() end)
     room:delay(1500)
     room:doIndicate(player.id, table.map(targets, Util.IdMapper))
-    local discussion = U.Discussion{
-      reason = self.name,
-      from = player,
-      tos = targets,
-    }
+    local discussion = U.Discussion(player, targets, self.name)
     if discussion.color == "red" then
       if not target.dead and not target:isNude() and not player.dead then
         local id = room:askForCardChosen(player, target, "he", self.name)
