@@ -311,58 +311,9 @@ local yinlue = fk.CreateTriggerSkill{
     )
   end,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    room:setPlayerMark(player, "yinlueUsed" .. data.damageType .. "-round", 1)
-
-    local logic = room.logic
-    local turn = logic:getCurrentEvent():findParent(GameEvent.Turn, true)
-    if turn then
-      turn:prependExitFunc(
-        function()
-          room:sendLog{
-            type = "#GainAnExtraTurn",
-            from = player.id
-          }
-
-          local current = room.current
-          room.current = player
-
-          player.tag["_extra_turn_count"] = player.tag["_extra_turn_count"] or {}
-          local ex_tag = player.tag["_extra_turn_count"]
-          table.insert(ex_tag, "yinlueTurn" .. data.damageType)
-
-          GameEvent.Turn:create(player):exec()
-
-          table.remove(ex_tag)
-
-          room.current = current
-        end
-      )
-    end
-
+    local phase = data.damageType == fk.FireDamage and Player.Draw or Player.Discard
+    player:gainAnExtraTurn(true, self.name, {phase_table = {phase}})
     return true
-  end,
-
-  refresh_events = {fk.EventPhaseChanging},
-  can_refresh = function(self, event, target, player, data)
-    local extraTurnInfo = player.tag["_extra_turn_count"]
-
-    return
-      target == player and
-      type(extraTurnInfo) == "table" and
-      #extraTurnInfo > 0 and
-      type(extraTurnInfo[#extraTurnInfo]) == "string" and
-      extraTurnInfo[#extraTurnInfo]:startsWith("yinlueTurn") and
-      data.to == Player.RoundStart
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local excludePhases = { Player.Start, Player.Judge, Player.Play, Player.Finish }
-    local extraTurnInfo = player.tag["_extra_turn_count"]
-    table.insert(excludePhases, extraTurnInfo[#extraTurnInfo] == "yinlueTurn" .. fk.ThunderDamage and Player.Draw or Player.Discard)
-
-    for _, phase in ipairs(excludePhases) do
-      table.removeOne(player.phases, phase)
-    end
   end,
 }
 chushi:addRelatedSkill(chushiBuff)
