@@ -103,19 +103,11 @@ local wentian = fk.CreateViewAsSkill{
   name = "wentian",
   pattern = "fire_attack,nullification",
   interaction = function()
-    local names = {}
     local availableNames = { "fire_attack", "nullification" }
-    for _, name in ipairs(availableNames) do
-      local card = Fk:cloneCard(name)
-      if 
-        ((Fk.currentResponsePattern == nil and Self:canUse(card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card)))
-      then
-        table.insertIfNeed(names, name)
-      end
+    local names = U.getViewAsCardNames(Self, "wentian", availableNames)
+    if #names > 0 then
+      return U.CardNameBox { choices = names, all_choices = availableNames }
     end
-    if #names == 0 then return end
-    return U.CardNameBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -134,14 +126,15 @@ local wentian = fk.CreateViewAsSkill{
       (use.card.name == "nullification" and cardColor ~= Card.Black) or
       (use.card.name == "fire_attack" and cardColor ~= Card.Red)
     then
-      room:setPlayerMark(player, "@@wentian_nullified-round", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-round", self.name)
+      room:setPlayerMark(player, "wentian_nullified-round", 1)
     end
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("@@wentian_nullified-round") == 0
+    return player:getMark("wentian_nullified-round") == 0
   end,
   enabled_at_response = function(self, player, response)
-    return player:getMark("@@wentian_nullified-round") == 0 and not response
+    return player:getMark("wentian_nullified-round") == 0 and not response
   end,
 }
 local wentianTrigger = fk.CreateTriggerSkill{
@@ -154,7 +147,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
       target == player and
       player:hasSkill(self) and
       player:getMark("wentian_trigger-turn") == 0 and
-      player:getMark("@@wentian_nullified-round") == 0 and
+      player:getMark("wentian_nullified-round") == 0 and
       player.phase > 1 and player.phase < 8
   end,
   on_cost = function(self, event, target, player, data)
@@ -335,7 +328,6 @@ Fk:loadTranslationTable{
   （若此主公为你，则改为你重复摸一张牌直到你的手牌数不小于7）；黑色，当你于本轮内造成属性伤害时，此伤害+1。",
   ["yinlue"] = "隐略",
   [":yinlue"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
-  ["@@wentian_nullified-round"] = "问天失效",
   ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
   ["wentian_give"] = "问天给牌",
   ["#wentian-give"] = "问天：请选择其中一张牌交给一名其他角色",
@@ -964,17 +956,11 @@ local zhendan = fk.CreateViewAsSkill{
   pattern = ".|.|.|.|.|basic",
   prompt = "#zhendan_vies",
   interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and
-        ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        table.insertIfNeed(names, card.name)
-      end
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "zhendan", all_names)
+    if #names > 0 then
+      return U.CardNameBox { choices = names, all_choices = all_names }
     end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
   end,
   card_filter = function(self, to_select, selected)
     if #selected == 1 then return false end
@@ -992,10 +978,10 @@ local zhendan = fk.CreateViewAsSkill{
     return card
   end,
   enabled_at_play = function(self, player)
-    return player:getMark("@@zhendan-round") == 0
+    return player:getMark("zhendan-round") == 0
   end,
   enabled_at_response = function(self, player)
-    return player:getMark("@@zhendan-round") == 0
+    return player:getMark("zhendan-round") == 0
   end,
 }
 local zhendan_trigger = fk.CreateTriggerSkill{
@@ -1005,20 +991,22 @@ local zhendan_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.Damaged, fk.RoundEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill("zhendan") then
-      if event == fk.Damaged and target ~=player then return false end
-      return player:getMark("@@zhendan-round") == 0      
+    if player:hasSkill(zhendan) then
+      if event == fk.Damaged and target ~= player then return false end
+      return player:getMark("zhendan-round") == 0
     end
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
+    local room = player.room
     player:broadcastSkillInvoke("zhendan")
-    player.room:notifySkillInvoked(player, "zhendan", "masochism")
-    local num = #player.room.logic:getEventsOfScope(GameEvent.Turn, 99, function (e)
+    room:notifySkillInvoked(player, "zhendan", "masochism")
+    local num = #room.logic:getEventsOfScope(GameEvent.Turn, 99, function (e)
       return true
     end, Player.HistoryRound)
-    player:drawCards(math.min(num, 5), zhendan.name)
-    player.room:setPlayerMark(player, "@@zhendan-round", 1)
+    player:drawCards(math.min(num, 5), "zhendan")
+    room:addTableMark(player, MarkEnum.InvalidSkills .. "-round", "zhendan")
+    room:setPlayerMark(player, "zhendan-round", 1)
   end,
 }
 longlin:addRelatedSkill(longlin_prohibit)
@@ -1038,7 +1026,6 @@ Fk:loadTranslationTable{
   [":zhendan"] = "你可以将一张非基本手牌当做任意基本牌使用或打出；当你受到伤害后或每轮结束时，你摸X张牌，然后此技能本轮失效（X为本轮所有角色执行过的回合数且至多为5）。",
   ["#zhendan_vies"] = "镇胆:你可以将一张非基本牌当做一张基本牌使用或打出",
   ["@@longlin-phase"] = "龙临 禁用手牌",
-  ["@@zhendan-round"] = "镇胆 本轮失效",
 }
 
 local caofang = General(extension, "js__caofang", "wei", 3, 4)
@@ -1500,9 +1487,9 @@ Fk:loadTranslationTable{
   "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
   ["js__zunwei"] = "尊位",
   [":js__zunwei"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选项，然后移除该选项："..
-  "1，将手牌补至与其手牌数相同（至多摸五张）；"..
-  "2，将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数；"..
-  "3，将体力值回复至与其相同。",
+  "1.将手牌补至与其手牌数相同（至多摸五张）；"..
+  "2.将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数；"..
+  "3.将体力值回复至与其相同。",
 
   ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
   ["js__zunwei1"] = "将手牌摸至与其相同（最多摸五张）",

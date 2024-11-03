@@ -9,8 +9,8 @@ Fk:loadTranslationTable{
 }
 
 local caocao = General(extension, "js__caocao", "qun", 4)
-local zhenglve = fk.CreateTriggerSkill{
-  name = "zhenglve",
+local zhenglue = fk.CreateTriggerSkill{
+  name = "zhenglue",
   anim_type = "control",
   events = {fk.TurnEnd, fk.Damage},
   can_trigger = function(self, event, target, player, data)
@@ -18,15 +18,15 @@ local zhenglve = fk.CreateTriggerSkill{
       if event == fk.TurnEnd then
         return target.role == "lord"
       elseif event == fk.Damage then
-        return target and target == player and data.to:getMark("@@caocao_lie") > 0 and player:getMark("zhenglve-turn") == 0
+        return target and target == player and data.to:getMark("@@caocao_lie") > 0 and player:getMark("zhenglue-turn") == 0
       end
     end
   end,
   on_cost = function(self, event, target, player, data)
     if event == fk.TurnEnd then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#zhenglve1-trigger")
+      return player.room:askForSkillInvoke(player, self.name, nil, "#zhenglue1-trigger")
     elseif event == fk.Damage then
-      return player.room:askForSkillInvoke(player, self.name, nil, "#zhenglve2-trigger")
+      return player.room:askForSkillInvoke(player, self.name, nil, "#zhenglue2-trigger")
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -38,33 +38,34 @@ local zhenglve = fk.CreateTriggerSkill{
         return p:getMark("@@caocao_lie") == 0
       end), Util.IdMapper)
       if #targets == 0 then return end
-      local tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhenglve-choose", self.name, false)
-      table.removeOne(targets, tos[1])
-      room:setPlayerMark(room:getPlayerById(tos[1]), "@@caocao_lie", 1)
-      if #targets == 0 then return false end
-      if #player.room.logic:getActualDamageEvents(1, function (e)
+      local x = 1
+      if #targets > 1 and #player.room.logic:getActualDamageEvents(1, function (e)
         local damage = e.data[1]
         if target == damage.from then
           return true
         end
-      end, Player.HistoryTurn) > 0 then return end
-      tos = room:askForChoosePlayers(player, targets, 1, 1, "#zhenglve-choose", self.name)
-      room:setPlayerMark(room:getPlayerById(tos[1]), "@@caocao_lie", 1)
+      end, Player.HistoryTurn) == 0 then
+        x = 2
+      end
+      local tos = room:askForChoosePlayers(player, targets, 1, x, "#zhenglue-choose:::" .. tostring(x), self.name, false)
+      for _, to in ipairs(tos) do
+        room:setPlayerMark(room:getPlayerById(to), "@@caocao_lie", 1)
+      end
     elseif event == fk.Damage then
-      room:setPlayerMark(player, "zhenglve-turn", 1)
+      room:setPlayerMark(player, "zhenglue-turn", 1)
       if data.card and room:getCardArea(data.card) == Card.Processing then
         room:moveCardTo(data.card, Card.PlayerHand, player, fk.ReasonJustMove, self.name, nil, true, player.id)
       end
     end
   end,
 }
-local zhenglve_targetmod = fk.CreateTargetModSkill{
-  name = "#zhenglve_targetmod",
+local zhenglue_targetmod = fk.CreateTargetModSkill{
+  name = "#zhenglue_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill("zhenglve") and to and to:getMark("@@caocao_lie") > 0
+    return player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill("zhenglve") and to and to:getMark("@@caocao_lie") > 0
+    return player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
   end,
 }
 local huilie = fk.CreateTriggerSkill{
@@ -90,12 +91,12 @@ local huilie = fk.CreateTriggerSkill{
 local pingrong = fk.CreateTriggerSkill{
   name = "pingrong",
   anim_type = "special",
-  events = {fk.TurnEnd},
+  events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and player:usedSkillTimes(self.name, Player.HistoryRound) == 0 and
-      table.find(player.room.alive_players, function (p)
-        return p:getMark("@@caocao_lie") > 0
-      end)
+    return player:hasSkill(self) and target.phase == Player.Finish and
+    player:usedSkillTimes(self.name, Player.HistoryRound) == 0 and table.find(player.room.alive_players, function (p)
+      return p:getMark("@@caocao_lie") > 0
+    end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
@@ -139,19 +140,20 @@ local pingrong = fk.CreateTriggerSkill{
 local pingrong_delay = fk.CreateTriggerSkill{
   name = "#pingrong_delay",
   anim_type = "negative",
-  events = {fk.TurnEnd},
+  events = {fk.EventPhaseStart},
   mute = true,
   can_trigger = function(self, event, target, player, data)
-    return player == target and player:getMark("@@pingrong_extra") ~= 0 and player:getMark("pingrong_self-turn") == 0
+    return player == target and player.phase == Player.Finish and
+    player:getMark("@@pingrong_extra") ~= 0 and player:getMark("pingrong_self-turn") == 0
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player.room:loseHp(player, 1, self.name)
   end,
 }
-zhenglve:addRelatedSkill(zhenglve_targetmod)
+zhenglue:addRelatedSkill(zhenglue_targetmod)
 pingrong:addRelatedSkill(pingrong_delay)
-caocao:addSkill(zhenglve)
+caocao:addSkill(zhenglue)
 caocao:addSkill(huilie)
 caocao:addRelatedSkill(pingrong)
 caocao:addRelatedSkill("feiying")
@@ -161,27 +163,27 @@ Fk:loadTranslationTable{
   ["cv:js__caocao"] = "樰默",
   ["illustrator:js__caocao"] = "凡果",
 
-  ["zhenglve"] = "政略",
-  [":zhenglve"] = "主公的回合结束时，你可以摸一张牌，然后令一名没有“猎”的角色获得“猎”，若主公本回合未造成过伤害，"..
-  "你可以再令一名没有“猎”的角色获得“猎”标记。<br>你对有“猎”的角色使用牌无距离和次数限制。<br>"..
+  ["zhenglue"] = "政略",
+  [":zhenglue"] = "主公角色的回合结束时，你可以摸一张牌，然后令一名没有“猎”的角色获得“猎”，若主公角色于此回合内未造成过伤害，"..
+  "则改为令至多两名没有“猎”的角色获得“猎”。<br>你对有“猎”的角色使用牌无距离和次数限制。<br>"..
   "每名角色的回合限一次，当你对有“猎”的角色造成伤害后，你可以摸一张牌并获得造成此伤害的牌。",
   ["huilie"] = "会猎",
   [":huilie"] = "觉醒技，准备阶段，若有“猎”的角色数大于2，你减1点体力上限，然后获得〖平戎〗和〖飞影〗。",
   ["pingrong"] = "平戎",
-  [":pingrong"] = "每轮限一次，每名角色的回合结束时，你可以选择一名有“猎”的角色移去其“猎”，然后获得一个额外的回合，"..
-  "该回合结束时，若你于此回合未造成过伤害，你失去1点体力。",
+  [":pingrong"] = "每轮限一次，一名角色的结束阶段，你可以选择一名有“猎”的角色移去其“猎”，然后获得一个额外的回合，"..
+  "此回合的结束阶段，若你于此回合内未造成过伤害，你失去1点体力。",
   ["@@caocao_lie"] = "猎",
-  ["#zhenglve_trigger"] = "政略",
-  ["#zhenglve-choose"] = "政略：令一名角色获得“猎”标记",
-  ["#zhenglve1-trigger"] = "政略：是否摸一张牌并令一名角色获得“猎”？",
-  ["#zhenglve2-trigger"] = "政略：你可以摸一张牌并获得造成伤害的牌",
+  ["#zhenglue_trigger"] = "政略",
+  ["#zhenglue-choose"] = "政略：选择至多%arg名角色，令其获得“猎”标记",
+  ["#zhenglue1-trigger"] = "政略：是否摸一张牌并令角色获得“猎”？",
+  ["#zhenglue2-trigger"] = "政略：你可以摸一张牌并获得造成伤害的牌",
   ["#pingrong_delay"] = "平戎",
   ["@@pingrong_extra"] = "平戎",
   ["#pingrong-choose"] = "平戎：你可以移去一名角色的“猎”标记，然后你执行一个额外回合",
 
   -- CV: 樰默
-  ["$zhenglve1"] = "治政用贤不以德，则四方定。",
-  ["$zhenglve2"] = "秉至公而服天下，孤大略成。",
+  ["$zhenglue1"] = "治政用贤不以德，则四方定。",
+  ["$zhenglue2"] = "秉至公而服天下，孤大略成。",
   ["$huilie1"] = "孤上承天命，会猎于江夏，幸勿观望。",
   ["$huilie2"] = "今雄兵百万，奉词伐罪，敢不归顺？",
   ["$pingrong1"] = "万里平戎，岂曰功名，孤心昭昭鉴日月。",

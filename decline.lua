@@ -1640,6 +1640,9 @@ local qiluan = fk.CreateViewAsSkill{
   anim_type = "offensive",
   pattern = "slash",
   prompt = "#js__qiluan",
+  times = function(self)
+    return 2 - Self:usedSkillTimes(self.name)
+  end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
     if #cards ~= 0 then

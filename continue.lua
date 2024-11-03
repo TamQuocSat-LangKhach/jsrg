@@ -1038,20 +1038,11 @@ local nianen = fk.CreateViewAsSkill{
   mute = true,
   prompt = "#nianen",
   interaction = function()
-    local names = {}
-    local mark = Self:getMark("@$nianen")
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and
-        ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        if mark == 0 or (not table.contains(mark, card.trueName)) then
-          table.insertIfNeed(names, card.name)
-        end
-      end
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, "nianen", all_names)
+    if #names > 0 then
+      return U.CardNameBox { choices = names, all_choices = all_names }
     end
-    if #names == 0 then return end
-    return U.CardNameBox {choices = names}
   end,
   card_filter = function(self, to_select, selected)
     return #selected == 0
@@ -1068,7 +1059,8 @@ local nianen = fk.CreateViewAsSkill{
     room:notifySkillInvoked(player, self.name)
     if use.card.name ~= "slash" or use.card.color ~= Card.Red then
       player:broadcastSkillInvoke(self.name, math.random(3, 4))
-      room:setPlayerMark(player, "@@nianen-turn", 1)
+      room:setPlayerMark(player, "nianen-turn", 1)
+      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
       if not player:hasSkill("mashu", true) then
         room:handleAddLoseSkills(player, "mashu")
         room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
@@ -1080,10 +1072,10 @@ local nianen = fk.CreateViewAsSkill{
     end
   end,
   enabled_at_play = function(self, player)
-    return not player:isNude() and player:getMark("@@nianen-turn") == 0
+    return player:getMark("nianen-turn") == 0
   end,
   enabled_at_response = function(self, player, response)
-    return not player:isNude() and player:getMark("@@nianen-turn") == 0
+    return player:getMark("nianen-turn") == 0
   end,
 }
 guanjue:addRelatedSkill(guanjue_prohibit)
@@ -1100,7 +1092,6 @@ Fk:loadTranslationTable{
   [":nianen"] = "你可以将你的一张牌当任意基本牌使用或打出；若转化后的牌不为红色普【杀】，〖念恩〗失效且你获得〖马术〗直到回合结束。",
   ["#nianen"] = "念恩：将一张牌当任意基本牌使用或打出，若转化后的牌不为红色普【杀】，“念恩”失效且你获得“马术”直到回合结束",
   ["@guanjue-turn"] = "冠绝",
-  ["@@nianen-turn"] = "念恩失效",
 
   ["$guanjue1"] = "河北诸将，以某观之，如土鸡瓦狗！",
   ["$guanjue2"] = "小儿舞刀，不值一哂。",
@@ -1426,6 +1417,9 @@ local zhengbing = fk.CreateActiveSkill{
   card_num = 1,
   target_num = 0,
   prompt = "#zhengbing",
+  times = function(self)
+    return Self.phase ~= Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
+  end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 3
   end,
