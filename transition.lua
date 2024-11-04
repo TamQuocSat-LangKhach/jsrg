@@ -554,7 +554,7 @@ local js__chuanxin = fk.CreateTriggerSkill{
     return player:hasSkill(self) and target.phase == Player.Finish and not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local success, dat = player.room:askForUseActiveSkill(player, "js__chuanxin_viewas", "#js__chuanxin-invoke", true)
+    local success, dat = player.room:askForUseActiveSkill(player, "#js__chuanxin_viewas", "#js__chuanxin-invoke", true)
     if success then
       self.cost_data = dat
       return true
@@ -562,7 +562,7 @@ local js__chuanxin = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local card = Fk.skills["js__chuanxin_viewas"]:viewAs(self.cost_data.cards)
+    local card = Fk.skills["#js__chuanxin_viewas"]:viewAs(self.cost_data.cards)
     local n = 0
     room.logic:getEventsOfScope(GameEvent.Recover, 999, function(e)
       local recover = e.data[1]
@@ -583,7 +583,7 @@ local js__chuanxin = fk.CreateTriggerSkill{
   end,
 }
 local js__chuanxin_viewas = fk.CreateViewAsSkill{
-  name = "js__chuanxin_viewas",
+  name = "#js__chuanxin_viewas",
   card_filter = function(self, to_select, selected)
     return #selected == 0
   end,
@@ -611,7 +611,7 @@ Fk:loadTranslationTable{
   [":js__chuanxin"] = "一名角色结束阶段，你可以将一张牌当伤害值+X的【杀】使用（X为目标角色本回合回复过的体力值）。",
   ["#funi-give"] = "伏匿：令任意名角色获得【影】",
   ["@@funi-turn"] = "伏匿",
-  ["js__chuanxin_viewas"] = "穿心",
+  ["#js__chuanxin_viewas"] = "穿心",
   ["#js__chuanxin-invoke"] = "穿心：你可以将一张牌当【杀】使用，伤害值增加目标本回合回复的体力值",
 }
 
