@@ -151,16 +151,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
       player.phase > 1 and player.phase < 8
   end,
   on_cost = function(self, event, target, player, data)
-    local phase_name_table = {
-      [2] = "phase_start",
-      [3] = "phase_judge",
-      [4] = "phase_draw",
-      [5] = "phase_play",
-      [6] = "phase_discard",
-      [7] = "phase_finish",
-    }
-
-    return player.room:askForSkillInvoke(player, "wentian", data, "#wentian-ask:::" .. phase_name_table[player.phase])
+    return player.room:askForSkillInvoke(player, "wentian", data, "#wentian-ask:::" .. Util.PhaseStrMapper(player.phase))
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
@@ -291,16 +282,11 @@ local yinlue = fk.CreateTriggerSkill{
       [fk.ThunderDamage] = "thunder_damage",
     }
 
-    local phase_name_table = {
-      [3] = "phase_draw",
-      [2] = "phase_discard",
-    }
-
     return player.room:askForSkillInvoke(
       player,
       self.name,
       data,
-      "#yinlue-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. phase_name_table[data.damageType]
+      "#yinlue-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. Util.PhaseStrMapper(data.damageType)
     )
   end,
   on_use = function(self, event, target, player, data)
