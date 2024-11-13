@@ -81,16 +81,12 @@ Fk:loadTranslationTable{
 local demobilizedSkill = fk.CreateActiveSkill{
   name = "demobilized_skill",
   prompt = "#demobilized_skill",
+  can_use = Util.CanUse,
   target_num = 1,
   mod_target_filter = function(self, to_select, selected, user, card)
-    local player = Fk:currentRoom():getPlayerById(to_select)
-    return #player:getCardIds("e") > 0
+    return #Fk:currentRoom():getPlayerById(to_select):getCardIds("e") > 0
   end,
-  target_filter = function(self, to_select, selected, _, card)
-    if #selected < self:getMaxTargetNum(Self, card) then
-      return self:modTargetFilter(to_select, selected, Self.id, card)
-    end
-  end,
+  target_filter = Util.TargetFilter,
   on_effect = function(self, room, effect)
     local to = room:getPlayerById(effect.to)
     if to.dead then return end
