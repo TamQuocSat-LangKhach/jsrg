@@ -1004,7 +1004,7 @@ local fuzhen = fk.CreateTriggerSkill{
     local room = player.room
     local use = self.cost_data
     local targets = room:getUseExtraTargets(use, true)
-    if #targets > 1 then
+    if #targets > 0 then
       local tos = room:askForChoosePlayers(player, targets, 1, 2, "#fuzhen-choose", self.name, true)
       if #tos > 0 then
         for _, id in ipairs(tos) do
@@ -1395,6 +1395,9 @@ local piqi = fk.CreateViewAsSkill{
         end)
       end
     end
+  end,
+  times = function(self)
+    return Self.phase ~= Player.Play and 2 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   enabled_at_play = function (self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2

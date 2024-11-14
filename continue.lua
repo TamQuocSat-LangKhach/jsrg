@@ -1358,7 +1358,10 @@ local chengxian = fk.CreateViewAsSkill{
     end
   end,
   times = function(self)
-    return 2 + Self:getMark("chengxian_extratimes-phase") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    if Self.phase == Player.Play then
+      return  2 + Self:getMark("chengxian_extratimes-phase") - Self:usedSkillTimes(self.name, Player.HistoryPhase)
+    end
+    return -1
   end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2 + player:getMark("chengxian_extratimes-phase")
@@ -1391,10 +1394,11 @@ Fk:loadTranslationTable{
   ["cv:js__zhenji"] = "离瞳鸭",
   ["jixiang"] = "济乡",
   ["#jixiang_delay"] = "济乡",
-  [":jixiang"] = "回合内对每种牌名限一次，当一名其他角色需要使用或打出一张基本牌，你可以弃置一张牌令其视为使用或打出之，然后你摸一张牌并令〖称贤〗"..
-  "于此阶段可发动次数+1。",
+  [":jixiang"] = "回合内对每种牌名限一次，当一名其他角色需要使用或打出一张基本牌，你可以弃置一张牌令其视为使用或打出之，"..
+  "然后你摸一张牌并令〖称贤〗于此阶段可发动次数+1。",
   ["chengxian"] = "称贤",
-  [":chengxian"] = "出牌阶段限两次，你可以将一张手牌当一张本回合未以此法使用过的普通锦囊牌使用，以此法转化后普通锦囊牌须与原牌名的牌合法目标角色数相同。",
+  [":chengxian"] = "出牌阶段限两次，你可以将一张手牌当一张本回合未以此法使用过的普通锦囊牌使用，"..
+  "以此法转化后普通锦囊牌须与原牌名的牌合法目标角色数相同。",
 
   ["#jixiang-invoke"] = "济乡：你可以弃置一张牌，令%dest视为使用或打出所需的基本牌",
   ["#jixiang-name"] = "济乡：选择%dest视为使用或打出的所需的基本牌的牌名",
