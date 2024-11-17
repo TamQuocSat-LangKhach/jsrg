@@ -290,6 +290,7 @@ local yinlue = fk.CreateTriggerSkill{
     )
   end,
   on_use = function(self, event, target, player, data)
+    player.room:setPlayerMark(player, "yinlueUsed".. data.damageType.. "-round", 1)
     local phase = data.damageType == fk.FireDamage and Player.Draw or Player.Discard
     player:gainAnExtraTurn(true, self.name, {phase_table = {phase}})
     return true
