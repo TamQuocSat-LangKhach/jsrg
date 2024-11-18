@@ -1293,12 +1293,11 @@ local yansha = fk.CreateActiveSkill{
   can_use = function(self, player)
     return
       player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and
-      U.canUseCard(Fk:currentRoom(), player, Fk:cloneCard("amazing_grace"))
+      player:canUse(Fk:cloneCard("amazing_grace"))
   end,
   card_filter = Util.FalseFunc,
   target_filter = function(self, to_select, selected)
-    local room = Fk:currentRoom()
-    return U.canUseCardTo(room, Self, room:getPlayerById(to_select), Fk:cloneCard("amazing_grace"))
+    return Self:canUseTo(Fk:cloneCard("amazing_grace"), Fk:currentRoom():getPlayerById(to_select))
   end,
   on_use = function(self, room, effect)
     local amazingGrace = Fk:cloneCard("amazing_grace")
@@ -1795,7 +1794,7 @@ local xiangjia = fk.CreateViewAsSkill{
     local collateral = Fk:cloneCard("collateral")
     for _, pId in ipairs(targets) do
       local p = room:getPlayerById(pId)
-      if p:isAlive() and U.canUseCardTo(room, p, player, collateral) then
+      if p:isAlive() and p:canUseTo(collateral, player) then
         local availableTargets = table.map(
           table.filter(
             room.alive_players,
@@ -1818,7 +1817,7 @@ local xiangjia = fk.CreateViewAsSkill{
     end
   end,
   enabled_at_play = function(self, player)
-    return player:usedSkillTimes(self.name) == 0 and player:getEquipment(Card.SubtypeWeapon)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and player:getEquipment(Card.SubtypeWeapon)
   end,
 }
 Fk:loadTranslationTable{
