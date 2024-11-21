@@ -1397,7 +1397,7 @@ local piqi = fk.CreateViewAsSkill{
     end
   end,
   times = function(self)
-    return Self.phase ~= Player.Play and 2 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
+    return Self.phase == Player.Play and 2 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   enabled_at_play = function (self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 2

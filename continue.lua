@@ -1059,8 +1059,7 @@ local nianen = fk.CreateViewAsSkill{
     room:notifySkillInvoked(player, self.name)
     if use.card.name ~= "slash" or use.card.color ~= Card.Red then
       player:broadcastSkillInvoke(self.name, math.random(3, 4))
-      room:setPlayerMark(player, "nianen-turn", 1)
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-turn", self.name)
+      room:invalidateSkill(player, self.name, "-turn")
       if not player:hasSkill("mashu", true) then
         room:handleAddLoseSkills(player, "mashu")
         room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
@@ -1071,12 +1070,8 @@ local nianen = fk.CreateViewAsSkill{
       player:broadcastSkillInvoke(self.name, math.random(1, 2))
     end
   end,
-  enabled_at_play = function(self, player)
-    return player:getMark("nianen-turn") == 0
-  end,
-  enabled_at_response = function(self, player, response)
-    return player:getMark("nianen-turn") == 0
-  end,
+  enabled_at_play = Util.TrueFunc,
+  enabled_at_response = Util.TrueFunc,
 }
 guanjue:addRelatedSkill(guanjue_prohibit)
 guanyu:addSkill(guanjue)
@@ -1422,7 +1417,7 @@ local zhengbing = fk.CreateActiveSkill{
   target_num = 0,
   prompt = "#zhengbing",
   times = function(self)
-    return Self.phase ~= Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
+    return Self.phase == Player.Play and 3 - Self:usedSkillTimes(self.name, Player.HistoryPhase) or -1
   end,
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) < 3

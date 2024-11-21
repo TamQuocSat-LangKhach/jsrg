@@ -126,15 +126,12 @@ local wentian = fk.CreateViewAsSkill{
       (use.card.name == "nullification" and cardColor ~= Card.Black) or
       (use.card.name == "fire_attack" and cardColor ~= Card.Red)
     then
-      room:addTableMark(player, MarkEnum.InvalidSkills .. "-round", self.name)
-      room:setPlayerMark(player, "wentian_nullified-round", 1)
+      room:invalidateSkill(player, self.name, "-round")
     end
   end,
-  enabled_at_play = function(self, player)
-    return player:getMark("wentian_nullified-round") == 0
-  end,
+  enabled_at_play = Util.TrueFunc,
   enabled_at_response = function(self, player, response)
-    return player:getMark("wentian_nullified-round") == 0 and not response
+    return not response
   end,
 }
 local wentianTrigger = fk.CreateTriggerSkill{
@@ -145,9 +142,8 @@ local wentianTrigger = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return
       target == player and
-      player:hasSkill(self) and
+      player:hasSkill(wentian) and
       player:getMark("wentian_trigger-turn") == 0 and
-      player:getMark("wentian_nullified-round") == 0 and
       player.phase > 1 and player.phase < 8
   end,
   on_cost = function(self, event, target, player, data)
@@ -964,12 +960,8 @@ local zhendan = fk.CreateViewAsSkill{
     card.skillName = self.name
     return card
   end,
-  enabled_at_play = function(self, player)
-    return player:getMark("zhendan-round") == 0
-  end,
-  enabled_at_response = function(self, player)
-    return player:getMark("zhendan-round") == 0
-  end,
+  enabled_at_play = Util.TrueFunc,
+  enabled_at_response = Util.TrueFunc,
 }
 local zhendan_trigger = fk.CreateTriggerSkill{
   name = "#zhendan_trigger",
@@ -978,10 +970,7 @@ local zhendan_trigger = fk.CreateTriggerSkill{
   mute = true,
   events = {fk.Damaged, fk.RoundEnd},
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(zhendan) then
-      if event == fk.Damaged and target ~= player then return false end
-      return player:getMark("zhendan-round") == 0
-    end
+    return player:hasSkill(zhendan) and not (event == fk.Damaged and target ~= player)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -992,8 +981,7 @@ local zhendan_trigger = fk.CreateTriggerSkill{
       return true
     end, Player.HistoryRound)
     player:drawCards(math.min(num, 5), "zhendan")
-    room:addTableMark(player, MarkEnum.InvalidSkills .. "-round", "zhendan")
-    room:setPlayerMark(player, "zhendan-round", 1)
+    room:invalidateSkill(player, "zhendan", "-round")
   end,
 }
 longlin:addRelatedSkill(longlin_prohibit)
