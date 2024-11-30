@@ -724,6 +724,7 @@ local addFangkeSkill = function(player, skillName)
 end
 
 ---@param player ServerPlayer
+---@param skillName string
 local removeFangkeSkill = function(player, skillName)
   local room = player.room
   local skill = Fk.skills[skillName]
@@ -749,6 +750,7 @@ local removeFangkeSkill = function(player, skillName)
   --]]
 
   player:loseFakeSkill(skill)
+  skill:onLose(player)
 end
 
 ---@param player ServerPlayer

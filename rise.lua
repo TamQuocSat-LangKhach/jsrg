@@ -283,12 +283,11 @@ local dangyi = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
   end,
 
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill},
-  can_refresh = function (self, event, target, player, data)
-    return target == player and data == self
+  on_acquire = function (self, player, is_start)
+    player.room:addPlayerMark(player, "@dangyi", player:getLostHp() + 1)
   end,
-  on_refresh = function (self, event, target, player, data)
-    player.room:addPlayerMark(player, "@dangyi", event == fk.EventLoseSkill and 0 or (player:getLostHp() + 1))
+  on_lose = function (self, player, is_death)
+    player.room:setPlayerMark(player, "@dangyi", 0)
   end,
 }
 weisi:addRelatedSkill(weisi_delay)
