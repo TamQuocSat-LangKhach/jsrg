@@ -1569,7 +1569,7 @@ local fushan = fk.CreateTriggerSkill{
         local card = Fk:cloneCard("slash")
         local skill = card.skill
         local n = skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
-        if player:usedCardTimes("slash", Player.HistoryPhase) < n then
+        if not n or player:usedCardTimes("slash", Player.HistoryPhase) < n then
           if table.every(player:getMark("fushan-phase"), function(id) return not player.room:getPlayerById(id).dead end) then
             return true
           end
@@ -1606,7 +1606,7 @@ local fushan = fk.CreateTriggerSkill{
       local card = Fk:cloneCard("slash")
       local skill = card.skill
       local n = skill:getMaxUseTime(player, Player.HistoryPhase, card, nil)
-      if player:usedCardTimes("slash", Player.HistoryPhase) < n then
+      if not n or player:usedCardTimes("slash", Player.HistoryPhase) < n then
         if table.every(player:getMark("fushan-phase"), function(id) return not room:getPlayerById(id).dead end) then
           room:notifySkillInvoked(player, self.name, "negative")
           room:loseHp(player, 2, self.name)
