@@ -1181,9 +1181,11 @@ local yingshi = fk.CreateTriggerSkill{
     local ret = room:askForArrangeCards(player, self.name, {{}, cards, "Top", "Bottom"}, "", true, 0, {num, num}, {0, 0})
     local top, bottom = ret[1], ret[2]
     for i = #top, 1, -1 do
+      table.removeOne(room.draw_pile, top[i])
       table.insert(room.draw_pile, 1, top[i])
     end
     for i = 1, #bottom, 1 do
+      table.removeOne(room.draw_pile, bottom[i])
       table.insert(room.draw_pile, bottom[i])
     end
     room:sendLog{
