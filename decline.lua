@@ -1092,29 +1092,7 @@ Fk:loadTranslationTable{
 
 zhanghuan:addSkill(zhushou)
 
-local yangge = fk.CreateTriggerSkill{
-  name = "yangge",
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    elseif event == fk.BuryVictim then
-      return player:hasSkill(self, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-      if player:hasSkill("yangge&", true, true) then
-        room:handleAddLoseSkills(player, "-yangge&", nil, false, true)
-      end
-    else
-      if not player:hasSkill("yangge&", true, true) then
-        room:handleAddLoseSkills(player, "yangge&", nil, false, true)
-      end
-    end
-  end,
-}
+local yangge = fk.CreateTriggerSkill{ name = "yangge", attached_skill_name = "yangge&", }
 local yanggeActive = fk.CreateActiveSkill{
   name = "yangge&",
   anim_type = "support",

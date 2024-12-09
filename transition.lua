@@ -894,6 +894,7 @@ local guiji_delay = fk.CreateTriggerSkill{
 local jiaohao = fk.CreateTriggerSkill{
   name = "jiaohao",
   anim_type = "control",
+  attached_skill_name = "jiaohao&",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Start then
@@ -912,32 +913,6 @@ local jiaohao = fk.CreateTriggerSkill{
       skillName = self.name,
       moveVisible = true,
     })
-  end,
-
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill(self, true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self and not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self, true) end)
-    else
-      return target == player and player:hasSkill(self, true, true) and
-        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill(self, true) end)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill(self, true) then
-        for _, p in ipairs(room:getOtherPlayers(player)) do
-          room:handleAddLoseSkills(p, "jiaohao&", nil, false, true)
-        end
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        room:handleAddLoseSkills(p, "-jiaohao&", nil, false, true)
-      end
-    end
   end,
 }
 local jiaohao_active = fk.CreateActiveSkill{
@@ -1322,6 +1297,7 @@ Fk:loadTranslationTable{
 local zhangchu = General(extension, "js__zhangchu", "qun", 3, 3, General.Female)
 local huozhong = fk.CreateActiveSkill{
   name = "huozhong",
+  attached_skill_name = "huozhong&",
   anim_type = "drawcard",
   target_num = 0,
   card_num = 1,
@@ -1341,35 +1317,6 @@ local huozhong = fk.CreateActiveSkill{
     room:moveCardTo(card, Card.PlayerJudge, player, fk.ReasonPut, self.name)
     if not player.dead then
       player:drawCards(2, self.name)
-    end
-  end,
-}
-local huozhong_trigger = fk.CreateTriggerSkill{
-  name = "#huozhong_trigger",
-
-  refresh_events = {fk.GameStart, fk.EventAcquireSkill, fk.EventLoseSkill, fk.Deathed},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return player:hasSkill("huozhong", true)
-    elseif event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self and not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("huozhong", true) end)
-    else
-      return target == player and player:hasSkill("huozhong", true, true) and
-        not table.find(player.room:getOtherPlayers(player), function(p) return p:hasSkill("huozhong", true) end)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart or event == fk.EventAcquireSkill then
-      if player:hasSkill("huozhong", true) then
-        for _, p in ipairs(room:getOtherPlayers(player)) do
-          room:handleAddLoseSkills(p, "huozhong&", nil, false, true)
-        end
-      end
-    elseif event == fk.EventLoseSkill or event == fk.Deathed then
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        room:handleAddLoseSkills(p, "-huozhong&", nil, false, true)
-      end
     end
   end,
 }
@@ -1448,7 +1395,6 @@ local js__rihui_trigger = fk.CreateTriggerSkill{
   end,
 }
 Fk:addSkill(huozhong_active)
-huozhong:addRelatedSkill(huozhong_trigger)
 js__rihui:addRelatedSkill(js__rihui_trigger)
 zhangchu:addSkill(huozhong)
 zhangchu:addSkill(js__rihui)

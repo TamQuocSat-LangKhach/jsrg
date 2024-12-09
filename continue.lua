@@ -898,6 +898,7 @@ local guyin = fk.CreateTriggerSkill{
 local zhangdeng = fk.CreateViewAsSkill{
   name = "zhangdeng",
   prompt = "#zhangdeng-active",
+  attached_skill_name = "zhangdeng&",
   pattern = "analeptic",
   card_filter = function() return false end,
   before_use = function(self, player)
@@ -928,27 +929,6 @@ local zhangdeng_trigger = fk.CreateTriggerSkill{
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     player:turnOver()
-  end,
-
-  refresh_events = {fk.EventAcquireSkill, fk.EventLoseSkill, fk.BuryVictim},
-  can_refresh = function(self, event, target, player, data)
-    if event == fk.EventAcquireSkill or event == fk.EventLoseSkill then
-      return data == self
-    elseif event == fk.BuryVictim then
-      return player:hasSkill(self, true, true)
-    end
-  end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    if table.every(room.alive_players, function(p) return not p:hasSkill(self, true) or p == player end) then
-      if player:hasSkill("zhangdeng&", true, true) then
-        room:handleAddLoseSkills(player, "-zhangdeng&", nil, false, true)
-      end
-    else
-      if not player:hasSkill("zhangdeng&", true, true) then
-        room:handleAddLoseSkills(player, "zhangdeng&", nil, false, true)
-      end
-    end
   end,
 }
 local zhangdeng_attached = fk.CreateViewAsSkill{
