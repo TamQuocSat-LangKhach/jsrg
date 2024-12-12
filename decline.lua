@@ -413,9 +413,6 @@ local xuchong = fk.CreateTriggerSkill{
   name = "xuchong",
   anim_type = "drawcard",
   events = {fk.TargetConfirmed},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local choice = room:askForChoice(player, { "xuchong_draw", "xuchong_hand::" .. room.current.id, "Cancel" }, self.name, "#xuchong-choose")

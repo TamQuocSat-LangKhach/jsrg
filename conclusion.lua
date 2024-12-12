@@ -230,7 +230,7 @@ local chushi = fk.CreateActiveSkill{
         room:sortPlayersByAction(drawTargets)
       end
 
-      drawTargets = table.map(drawTargets, function(id) return room:getPlayerById(id) end)
+      drawTargets = table.map(drawTargets, Util.Id2PlayerMapper)
 
       for _, p in ipairs(drawTargets) do
         p:drawCards(1, self.name)
@@ -1169,9 +1169,6 @@ local yingshi = fk.CreateTriggerSkill{
   name = "js__yingshi",
   anim_type = "control",
   events = {fk.TurnedOver},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     local n = #table.filter(room.players, function(p) return p.dead end)
@@ -1200,9 +1197,6 @@ local tuigu = fk.CreateTriggerSkill{
   name = "tuigu",
   mute = true,
   events = {fk.TurnStart},
-  can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(self)
-  end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
     local draw = #room.alive_players // 2

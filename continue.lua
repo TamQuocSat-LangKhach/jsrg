@@ -26,7 +26,7 @@ local duxing = fk.CreateActiveSkill{
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
     for _, p in ipairs(targets) do
       room:setPlayerMark(p, "duxing-phase", 1)
       p:filterHandcards()

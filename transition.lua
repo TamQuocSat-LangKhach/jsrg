@@ -1385,9 +1385,7 @@ local js__rihui_trigger = fk.CreateTriggerSkill{
       return to:getMark("js__rihui-phase") == 0 and #to:getCardIds("j") == 0
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    return true
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:addCardUseHistory(data.card.trueName, -1)

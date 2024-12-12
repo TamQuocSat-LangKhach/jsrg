@@ -17,9 +17,7 @@ local peaceSpellSkill = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.damageType ~= fk.NormalDamage
   end,
-  on_use = function(self, event, target, player, data)
-    return true
-  end,
+  on_use = Util.TrueFunc,
 }
 local js__peace_spell_maxcards = fk.CreateMaxCardsSkill{
   name = "#js__peace_spell_maxcards",

@@ -1066,7 +1066,7 @@ local shanzheng = fk.CreateActiveSkill{
     local player = room:getPlayerById(effect.from)
     table.insert(effect.tos, player.id)
     room:sortPlayersByAction(effect.tos)
-    local targets = table.map(effect.tos, function(id) return room:getPlayerById(id) end)
+    local targets = table.map(effect.tos, Util.Id2PlayerMapper)
     local discussion = U.Discussion(player, targets, self.name)
     if player.dead then return end
     if discussion.color == "red" then
