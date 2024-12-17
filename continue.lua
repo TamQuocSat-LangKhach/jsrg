@@ -243,11 +243,11 @@ local js__biaozhao = fk.CreateTriggerSkill{
 local js__biaozhao_targetmod = fk.CreateTargetModSkill{
   name = "#js__biaozhao_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:getMark("@@js__biaozhao1") ~= 0 and scope == Player.HistoryPhase and to and to:getMark("@@js__biaozhao2") ~= 0 and
+    return card and player:getMark("@@js__biaozhao1") ~= 0 and scope == Player.HistoryPhase and to and to:getMark("@@js__biaozhao2") ~= 0 and
       table.find(to:getMark("@@js__biaozhao2"), function(id) return table.contains(player:getMark("@@js__biaozhao1"), id) end)
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:getMark("@@js__biaozhao1") ~= 0 and to and to:getMark("@@js__biaozhao2") ~= 0 and
+    return card and player:getMark("@@js__biaozhao1") ~= 0 and to and to:getMark("@@js__biaozhao2") ~= 0 and
       table.find(to:getMark("@@js__biaozhao2"), function(id) return table.contains(player:getMark("@@js__biaozhao1"), id) end)
   end,
 }

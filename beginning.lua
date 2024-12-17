@@ -62,10 +62,10 @@ local zhenglue = fk.CreateTriggerSkill{
 local zhenglue_targetmod = fk.CreateTargetModSkill{
   name = "#zhenglue_targetmod",
   bypass_times = function(self, player, skill, scope, card, to)
-    return player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
+    return card and player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
+    return card and player:hasSkill(zhenglue) and to and to:getMark("@@caocao_lie") > 0
   end,
 }
 local huilie = fk.CreateTriggerSkill{
@@ -1962,10 +1962,10 @@ local js__limu_targetmod = fk.CreateTargetModSkill{
   main_skill = js__limu,
   bypass_times = function(self, player, skill, scope, card, to)
     return player:hasSkill(js__limu) and scope == Player.HistoryPhase and
-      #player:getCardIds("j") > 0 and player:inMyAttackRange(to)
+    card and #player:getCardIds("j") > 0 and player:inMyAttackRange(to)
   end,
   bypass_distances = function(self, player, skill, card, to)
-    return player:hasSkill(js__limu) and #player:getCardIds("j") > 0 and player:inMyAttackRange(to)
+    return card and player:hasSkill(js__limu) and #player:getCardIds("j") > 0 and player:inMyAttackRange(to)
   end,
 }
 local tongjue = fk.CreateActiveSkill{
