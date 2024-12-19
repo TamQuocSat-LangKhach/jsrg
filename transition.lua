@@ -55,9 +55,7 @@ local qingzi = fk.CreateTriggerSkill{
         local c = room:askForCardChosen(player, p, "e", self.name)
         room:throwCard(c, self.name, p, player)
         if not p:hasSkill("ol_ex__shensu", true) and not p.dead then
-          local mark = player:getTableMark("qingzi_target")
-          table.insert(mark, p.id)
-          room:setPlayerMark(player, "qingzi_target", mark)
+          room:addTableMark(player, "qingzi_target", p.id)
           room:handleAddLoseSkills(p, "ol_ex__shensu", nil, true, false)
         end
       end

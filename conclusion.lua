@@ -468,10 +468,7 @@ local fumou = fk.CreateTriggerSkill{
     for playerId, result in pairs(diffResults) do
       if result.opinion ~= "nocolor" then
         local to = room:getPlayerById(playerId)
-        local colorsProhibited = to:getTableMark("@js__fumouDebuff-turn")
-        table.insert(colorsProhibited, result.opinion)
-
-        room:setPlayerMark(to, "@js__fumouDebuff-turn", colorsProhibited)
+        room:addTableMark(to, "@js__fumouDebuff-turn", result.opinion)
       end
     end
 

@@ -632,10 +632,7 @@ local zonghai = fk.CreateTriggerSkill{
     )
 
     for _, to in ipairs(tos) do
-      local to = room:getPlayerById(to)
-      local zonghaiSource = to:getTableMark("@@zonghai")
-      table.insertIfNeed(zonghaiSource, player.id)
-      room:setPlayerMark(to, "@@zonghai", zonghaiSource)
+      room:addTableMarkIfNeed(room:getPlayerById(to), "@@zonghai", player.id)
     end
 
     local curDyingEvent = room.logic:getCurrentEvent():findParent(GameEvent.Dying)

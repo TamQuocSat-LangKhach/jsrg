@@ -997,9 +997,7 @@ local guanjue = fk.CreateTriggerSkill{
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
       room:doIndicate(player.id, {p.id})
-      local mark = p:getTableMark("@guanjue-turn")
-      table.insert(mark, data.card:getSuitString(true))
-      room:setPlayerMark(p, "@guanjue-turn", mark)
+      room:addTableMark(p, "@guanjue-turn", data.card:getSuitString(true))
     end
   end,
 }

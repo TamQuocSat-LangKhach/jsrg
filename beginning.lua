@@ -757,9 +757,7 @@ end
 ---@param general General
 local function addFangke(player, general, addSkill)
   local room = player.room
-  local glist = player:getTableMark("@&js_fangke")
-  table.insertIfNeed(glist, general.name)
-  room:setPlayerMark(player, "@&js_fangke", glist)
+  room:addTableMarkIfNeed(player, "@&js_fangke", general.name)
 
   if not addSkill then return end
   for _, s in ipairs(general.skills) do
@@ -2071,9 +2069,7 @@ local jishan = fk.CreateTriggerSkill{
     local room = player.room
     if event == fk.DamageInflicted then
       room:setPlayerMark(player, "jishan_prevent-turn", 1)
-      local mark = player:getTableMark("jishan_record")
-      table.insertIfNeed(mark, target.id)
-      room:setPlayerMark(player, "jishan_record", mark)
+      room:addTableMarkIfNeed(player, "jishan_record", target.id)
       room:loseHp(player, 1, self.name)
       if not player.dead then
         player:drawCards(1, self.name)
