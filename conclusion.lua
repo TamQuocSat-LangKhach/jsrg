@@ -152,7 +152,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "wentian_trigger-turn", 1)
-    local topCardIds = room:getNCards(5)
+    local topCardIds = U.turnOverCardsFromDrawPile(player, 5, self.name, false)
 
     local others = room:getOtherPlayers(player)
     if #others > 0 then
@@ -180,8 +180,39 @@ local wentianTrigger = fk.CreateTriggerSkill{
         player.id
       )
 
-      room:askForGuanxing(player, topCardIds, nil, nil, "wentian")
+      if player.dead then
+        room:cleanProcessingArea(topCardIds, self.name)
+        return false
+      end
     end
+
+    local result = room:askForGuanxing(player, topCardIds, nil, nil, "wentian", true)
+    local moveInfos = {}
+    if #result.top > 0 then
+      table.insert(moveInfos, {
+        ids = table.reverse(result.top),
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        proposer = player.id,
+        moveVisible = false,
+        visiblePlayers = player.id,
+        drawPilePosition = 1
+      })
+    end
+    if #result.bottom > 0 then
+      table.insert(moveInfos, {
+        ids = result.bottom,
+        toArea = Card.DrawPile,
+        moveReason = fk.ReasonJustMove,
+        skillName = self.name,
+        proposer = player.id,
+        moveVisible = false,
+        visiblePlayers = player.id,
+        drawPilePosition = -1
+      })
+    end
+    room:moveCards(table.unpack(moveInfos))
   end,
 }
 local chushi = fk.CreateActiveSkill{
@@ -286,9 +317,12 @@ local yinlue = fk.CreateTriggerSkill{
     )
   end,
   on_use = function(self, event, target, player, data)
-    player.room:setPlayerMark(player, "yinlueUsed".. data.damageType.. "-round", 1)
-    local phase = data.damageType == fk.FireDamage and Player.Draw or Player.Discard
-    player:gainAnExtraTurn(true, self.name, {phase_table = {phase}})
+    local room = player.room
+    room:setPlayerMark(player, "yinlueUsed".. data.damageType.. "-round", 1)
+    if room.logic:getCurrentEvent():findParent(GameEvent.Turn, true) then
+      local phase = data.damageType == fk.FireDamage and Player.Draw or Player.Discard
+      player:gainAnExtraTurn(true, self.name, { phase_table = { phase } })
+    end
     return true
   end,
 }
@@ -310,7 +344,8 @@ Fk:loadTranslationTable{
   [":chushi"] = "出牌阶段限一次，你可以和主公议事，若结果为：红色，你与其各摸一张牌，然后重复此摸牌流程，直到你与其手牌之和不小于7\
   （若此主公为你，则改为你重复摸一张牌直到你的手牌数不小于7）；黑色，当你于本轮内造成属性伤害时，此伤害+1。",
   ["yinlue"] = "隐略",
-  [":yinlue"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后于本回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
+  [":yinlue"] = "每轮每项各限一次，当一名角色受到火焰/雷电伤害时，你可以防止此伤害，然后若此时在一名角色的回合内，\
+  你于此回合结束后执行一个仅有摸牌/弃牌阶段的额外回合。",
   ["#wentian-ask"] = "你是否发动技能“问天”（当前为 %arg ）？",
   ["wentian_give"] = "问天给牌",
   ["#wentian-give"] = "问天：请选择其中一张牌交给一名其他角色",
