@@ -1781,8 +1781,99 @@ Fk:loadTranslationTable{
   "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。"..
   "<br/><font color='grey'>#\"<b>蓄谋</b>\"：将一张手牌扣置于判定区，判定阶段开始时，按置入顺序（后置入的先处理）依次处理“蓄谋”牌：1.使用此牌，"..
   "然后此阶段不能再使用此牌名的牌；2.将所有“蓄谋”牌置入弃牌堆。",
-  ["fangjie"] = "芳潔",
+  ["fangjie"] = "芳洁",
   [":fangjie"] = "准备阶段，若你没有“蓄谋”牌，你回复一点体力并摸一张牌，否则你可以弃置任意张你区域里的“蓄谋”牌并失去此技能。",
+}
+
+local weiwenzhugezhi = General(extension, "js__weiwenzhugezhi", "wu", 4)
+local fuhaiw = fk.CreateActiveSkill{
+  name = "js__fuhaiw",
+  anim_type = "drawcard",
+  prompt = "#js__fuhaiw",
+  card_num = 0,
+  target_num = 0,
+  can_use = function(self, player)
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and #Fk:currentRoom().alive_players > 1
+  end,
+  card_filter = Util.FalseFunc,
+  on_use = function(self, room, effect)
+    local player = room:getPlayerById(effect.from)
+    local targets = room:getOtherPlayers(player)
+    room:doIndicate(player.id, table.map(targets, Util.IdMapper))
+    targets = table.filter(targets, function (p)
+      return not p:isKongcheng()
+    end)
+    if #targets == 0 then
+      player:drawCards(1, self.name)
+      return
+    end
+    local result = U.askForJointCard(targets, 1, 1, false, self.name, false, nil, "#js__fuhaiw-show:"..player.id)
+    if player.dead then return end
+    if #targets == 1 then
+      player:drawCards(1, self.name)
+      return
+    end
+    local numbers = {}
+    for _, p in ipairs(targets) do
+      table.insert(numbers, Fk:getCardById(result[p.id][1]).number)
+      room:showCards(result[p.id], p)
+    end
+    local n1, n2 = 1, 1
+    local tag = ""
+    if numbers[2] > numbers[1] then
+      tag = "increase"
+      n1 = 2
+    elseif numbers[2] < numbers[1] then
+      tag = "decline"
+      n1 = 2
+    end
+    if tag ~= "" then
+      for i = 3, #targets, 1 do
+        local yes = (tag == "increase" and numbers[i] > numbers[i - 1]) or numbers[i] < numbers[i - 1]
+        if yes then
+          n1 = n1 + 1
+        else
+          break
+        end
+      end
+    end
+    if numbers[2] > numbers[1] then
+      tag = "increase"
+      n2 = 2
+    elseif numbers[2] < numbers[1] then
+      tag = "decline"
+      n2 = 2
+    else
+      tag = ""
+    end
+    if tag ~= "" then
+      for i = #targets - 2, 1, -1 do
+        local yes = (tag == "increase" and numbers[i] > numbers[i + 1]) or numbers[i] < numbers[i + 1]
+        if yes then
+          n2 = n2 + 1
+        else
+          break
+        end
+      end
+    end
+    local choice = room:askForChoice(player, {"js__fuhaiw1:::"..n1, "js__fuhaiw2:::"..n2}, self.name)
+    local n = choice[11] == "1" and n1 or n2
+    player:drawCards(n, self.name)
+  end,
+}
+weiwenzhugezhi:addSkill(fuhaiw)
+Fk:loadTranslationTable{
+  ["js__weiwenzhugezhi"] = "卫温诸葛直",
+  ["#js__weiwenzhugezhi"] = "帆至夷洲",
+  ["illustrator:js__weiwenzhugezhi"] = "猎枭",
+
+  ["js__fuhaiw"] = "浮海",
+  [":js__fuhaiw"] = "出牌阶段限一次，你可以令所有其他角色同时展示一张手牌（没有手牌则跳过），然后你选择顺时针或逆时针方向，摸X张牌（X为"..
+  "从你开始该方向上角色展示牌点数严格递增或严格递减的数量，至少为1）。",
+  ["#js__fuhaiw"] = "浮海：令所有其他角色同时展示一张手牌，你根据点数递增递减情况摸牌",
+  ["#js__fuhaiw-show"] = "浮海：展示一张手牌，有可能令 %src 摸牌",
+  ["js__fuhaiw1"] = "逆时针方向（摸%arg张牌）",
+  ["js__fuhaiw2"] = "顺时针方向（摸%arg张牌）",
 }
 
 return extension
