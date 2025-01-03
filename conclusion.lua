@@ -177,6 +177,8 @@ local wentianTrigger = fk.CreateTriggerSkill{
         "wentian",
         nil,
         false,
+        player.id,
+        nil,
         player.id
       )
 
@@ -187,6 +189,12 @@ local wentianTrigger = fk.CreateTriggerSkill{
     end
 
     local result = room:askForGuanxing(player, topCardIds, nil, nil, "wentian", true)
+    room:sendLog{
+      type = "#GuanxingResult",
+      from = player.id,
+      arg = #result.top,
+      arg2 = #result.bottom,
+    }
     local moveInfos = {}
     if #result.top > 0 then
       table.insert(moveInfos, {
