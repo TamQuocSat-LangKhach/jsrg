@@ -1004,7 +1004,7 @@ local fuzhen = fk.CreateTriggerSkill{
     local use = self.cost_data
     local targets = room:getUseExtraTargets(use, true)
     if #targets > 0 then
-      local tos = room:askForChoosePlayers(player, targets, 1, 2, "#fuzhen-choose", self.name, true)
+      local tos = room:askForChoosePlayers(player, targets, 1, 2, "#fuzhen-choose", self.name, true, true)
       if #tos > 0 then
         for _, id in ipairs(tos) do
           table.insert(use.tos, {id})
