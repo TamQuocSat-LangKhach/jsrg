@@ -141,7 +141,7 @@ local bashi = fk.CreateTriggerSkill{
     end
     local name = room:askForChoice(player, choices, self.name, "#bashi-choice")
     for _, p in ipairs(room:getOtherPlayers(player)) do
-      if p.kingdom == "wu" then
+      if p.kingdom == "wu" and p:isAlive() then
         local cardResponded = room:askForResponse(p, name, name, "#bashi-ask:"..player.id.."::"..name, true)
         if cardResponded then
           room:responseCard({
@@ -208,7 +208,7 @@ local js__biaozhao = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 2, 2, "#js__biaozhao-choose", self.name, true)
     if #tos == 2 then
       self.cost_data = {tos = tos}
@@ -276,7 +276,7 @@ local js__yechou = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(room:getOtherPlayers(player), function (p) return p.id end)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#js__yechou-choose", self.name, true)
     if #to > 0 then
       self.cost_data = {tos = to}
@@ -452,7 +452,7 @@ local lipan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeKingdom(player, self.cost_data.choice, true)
-    local tos = table.filter(room:getOtherPlayers(player), function(p) return p.kingdom == player.kingdom end)
+    local tos = table.filter(room:getOtherPlayers(player, false), function(p) return p.kingdom == player.kingdom end)
     if #tos > 0 then
       player:drawCards(#tos, self.name)
     end
@@ -467,7 +467,7 @@ local lipan_trigger = fk.CreateTriggerSkill{
   events = {fk.EventPhaseEnd},
   can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:usedSkillTimes("lipan", Player.HistoryTurn) > 0 and
-      table.find(player.room:getOtherPlayers(player), function(p) return p.kingdom == player.kingdom and not p:isNude() end)
+      table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == player.kingdom and not p:isNude() end)
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
@@ -674,11 +674,11 @@ local chengxu = fk.CreateTriggerSkill{
   frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.type ~= Card.TypeEquip and
-      table.find(player.room:getOtherPlayers(player), function(p) return p.kingdom == player.kingdom end)
+      table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == player.kingdom end)
   end,
   on_use = function(self, event, target, player, data)
     data.disresponsiveList = data.disresponsiveList or {}
-    for _, p in ipairs(player.room:getOtherPlayers(player)) do
+    for _, p in ipairs(player.room:getOtherPlayers(player, false)) do
       if p.kingdom == player.kingdom then
         table.insertIfNeed(data.disresponsiveList, p.id)
       end
@@ -989,13 +989,13 @@ local guanjue = fk.CreateTriggerSkill{
   events = {fk.CardUsing, fk.CardResponding},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card.suit ~= Card.NoSuit and
-      table.find(player.room:getOtherPlayers(player), function (p)
+      table.find(player.room:getOtherPlayers(player, false), function (p)
         return not table.contains(p:getTableMark("@guanjue-turn"), data.card:getSuitString(true))
       end)
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    for _, p in ipairs(room:getOtherPlayers(player)) do
+    for _, p in ipairs(room:getOtherPlayers(player, false)) do
       room:doIndicate(player.id, {p.id})
       room:addTableMark(p, "@guanjue-turn", data.card:getSuitString(true))
     end
@@ -1427,8 +1427,8 @@ local tuwei = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
-      return player:inMyAttackRange(p) and not p:isNude() end), function (p) return p.id end)
+    local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
+      return player:inMyAttackRange(p) and not p:isNude() end), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, #targets, "#tuwei-choose:::"..#targets, self.name, true)
     if #tos > 0 then
       self.cost_data = {tos = tos}

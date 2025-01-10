@@ -856,7 +856,7 @@ local chendu = fk.CreateTriggerSkill{
       if #cards > player.hp and #cards > 0 then
         local turn_event = player.room.logic:getCurrentEvent():findParent(GameEvent.Turn)
         if turn_event == nil or turn_event.data[1].dead then return end
-        if #player.room:getOtherPlayers(player) == 0 then return end
+        if #player.room:getOtherPlayers(player, false) == 0 then return end
         self.cost_data = cards
         return true
       end
@@ -869,7 +869,7 @@ local chendu = fk.CreateTriggerSkill{
     if turn_event == nil or turn_event.data[1].dead then return end
     local to = turn_event.data[1]
     if to == player then
-      room:askForYiji(player, all_cards, room:getOtherPlayers(player), self.name, #all_cards, #all_cards,
+      room:askForYiji(player, all_cards, room:getOtherPlayers(player, false), self.name, #all_cards, #all_cards,
         "#chendu1-give", all_cards)
     else
       local cards = table.simpleClone(all_cards)
@@ -885,7 +885,7 @@ local chendu = fk.CreateTriggerSkill{
         end
         room:moveCardTo(ids, Card.PlayerHand, to, fk.ReasonGive, self.name, nil, true, player.id)
       else
-        local list = room:askForYiji(player, cards, room:getOtherPlayers(player), self.name, #cards, #cards,
+        local list = room:askForYiji(player, cards, room:getOtherPlayers(player, false), self.name, #cards, #cards,
           "#chendu1-give", cards, true)
         for _, id in ipairs(ids) do
           table.insert(list[to.id], id)
@@ -1146,12 +1146,12 @@ local liedu = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and
-      table.find(player.room:getOtherPlayers(player), function(p)
+      table.find(player.room:getOtherPlayers(player, false), function(p)
         return p:isFemale() or p:getHandcardNum() > player:getHandcardNum()
       end)
   end,
   on_use = function(self, event, target, player, data)
-    local targets = table.filter(player.room:getOtherPlayers(player), function(p)
+    local targets = table.filter(player.room:getOtherPlayers(player, false), function(p)
       return p:isFemale() or p:getHandcardNum() > player:getHandcardNum()
     end)
     if #targets > 0 then
@@ -1498,7 +1498,7 @@ local zuozhan = fk.CreateTriggerSkill{
   on_use = function(self, event, target, player, data)
     local room = player.room
     if event == fk.GameStart then
-      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 2,
+      local tos = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 2,
         "#zuozhan-choose", self.name, false)
       table.insert(tos, player.id)
       room:setPlayerMark(player, self.name, tos)

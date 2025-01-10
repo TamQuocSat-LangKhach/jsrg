@@ -208,11 +208,11 @@ local zhuni = fk.CreateActiveSkill{
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
     room:doIndicate(player.id, table.map(room.alive_players, Util.IdMapper))
-    local targets = room:getOtherPlayers(player)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local req = Request:new(targets, "AskForUseActiveSkill")
     req.focus_text = self.name
     local extraData = {
-      targets = table.map(targets, Util.IdMapper),
+      targets = targets,
       num = 1,
       min_num = 1,
       pattern = "",
@@ -221,7 +221,7 @@ local zhuni = fk.CreateActiveSkill{
     local data = { "choose_players_skill", "#zhuni-choose:"..player.id, false, extraData, false }
     for _, p in ipairs(room.alive_players) do
       req:setData(p, data)
-      req:setDefaultReply(p, table.random(targets).id)
+      req:setDefaultReply(p, table.random(targets))
     end
     req:ask()
     local yourTarget
@@ -229,9 +229,10 @@ local zhuni = fk.CreateActiveSkill{
       if type(req:getResult(player)) == "table" then
         yourTarget = req:getResult(player).targets[1]
       else
-        yourTarget = table.random(targets).id
+        yourTarget = table.random(targets)
       end
     end
+    print(room:getPlayerById(yourTarget).general)
 
     local targetsMap = {}
     for _, p in ipairs(room:getAlivePlayers()) do
@@ -804,7 +805,7 @@ local js__xiangru = fk.CreateTriggerSkill{
       end
     else
       for _, p in ipairs(room:getOtherPlayers(player)) do
-        if #p:getCardIds("he") > 1 and p:isWounded() and p ~= data.from then
+        if #p:getCardIds("he") > 1 and p:isWounded() and p ~= data.from and p:isAlive() then
           local cards = room:askForCard(p, 2, 2, true, self.name, true, ".", "#xiangru-give:" .. target.id .. ":" .. data.from.id)
           if #cards > 1 then
             self.cost_data = cards
@@ -1119,7 +1120,7 @@ local yanggeActive = fk.CreateActiveSkill{
     target:addSkillUseHistory(yangge.name, 1)
     room:obtainCard(target.id, player:getCardIds("h"), false, fk.ReasonGive, player.id, yangge.name)
     if player.dead or target.dead then return end
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function(p)
       return target:canPindian(p) and p ~= target
     end)
     if #targets == 0 then return end

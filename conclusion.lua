@@ -154,7 +154,7 @@ local wentianTrigger = fk.CreateTriggerSkill{
     room:setPlayerMark(player, "wentian_trigger-turn", 1)
     local topCardIds = room:getNCards(5)
 
-    local others = room:getOtherPlayers(player)
+    local others = room:getOtherPlayers(player, false)
     if #others > 0 then
       local _, ret = room:askForUseActiveSkill(player, "ex__choose_skill", "#wentian-give", false, {
         targets = table.map(others, Util.IdMapper),
@@ -654,7 +654,7 @@ local js__fengxiang = fk.CreateTriggerSkill{
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local tos = player.room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, 1, "#js__fengxiang-choose", self.name, false)
+    local tos = player.room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, 1, "#js__fengxiang-choose", self.name, false)
     if #tos > 0 then
       local to = room:getPlayerById(tos[1])
       local num = 0
@@ -1086,7 +1086,7 @@ local jingju = fk.CreateViewAsSkill{
   end,
   before_use = function(self, player)
     local room = player.room
-    local targets = table.map(table.filter(player.room:getOtherPlayers(player), function(p)
+    local targets = table.map(table.filter(player.room:getOtherPlayers(player, false), function(p)
       return p:canMoveCardsInBoardTo(player, "j") end), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 1, "#jingju-choose", self.name, false)
     local to = room:getPlayerById(tos[1])
@@ -1624,7 +1624,7 @@ local yaoyan = fk.CreateTriggerSkill{
     local room = player.room
 
     room:setPlayerMark(player, "yaoyan_owner-turn", 1)
-    room:doIndicate(player.id, table.map(room:getOtherPlayers(player), Util.IdMapper))
+    room:doIndicate(player.id, table.map(room:getOtherPlayers(player, false), Util.IdMapper))
     for _, p in ipairs(room:getAlivePlayers()) do
       if room:askForSkillInvoke(p, self.name, data, "#yaoyan-ask") then
         room:setPlayerMark(p, "@@yaoyan-turn", 1)

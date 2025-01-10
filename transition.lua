@@ -33,11 +33,11 @@ local qingzi = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Start and
-      table.find(player.room:getOtherPlayers(player), function(p) return #p:getCardIds("e") > 0 end)
+      table.find(player.room:getOtherPlayers(player, false), function(p) return #p:getCardIds("e") > 0 end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.map(table.filter(room:getOtherPlayers(player), function(p)
+    local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
       return #p:getCardIds("e") > 0 end), Util.IdMapper)
     local tos = room:askForChoosePlayers(player, targets, 1, 999, "#qingzi-choose", self.name, true)
     if #tos > 0 then
@@ -1357,7 +1357,7 @@ local js__rihui = fk.CreateTriggerSkill{
   events = {fk.Damage},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and data.card and data.card.trueName == "slash" and not data.chain and
-      table.find(player.room:getOtherPlayers(player), function(p) return #p:getCardIds("j") > 0 end)
+      table.find(player.room:getOtherPlayers(player, false), function(p) return #p:getCardIds("j") > 0 end)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#js__rihui-invoke")
@@ -1505,7 +1505,7 @@ local fushan = fk.CreateTriggerSkill{
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(self) and player.phase == Player.Play then
       if event == fk.EventPhaseStart then
-        return not table.every(player.room:getOtherPlayers(player), function(p) return p:isNude() end)
+        return not table.every(player.room:getOtherPlayers(player, false), function(p) return p:isNude() end)
       else
         if player:getMark("@fushan-phase") == 0 then return end
         local card = Fk:cloneCard("slash")
@@ -1526,7 +1526,7 @@ local fushan = fk.CreateTriggerSkill{
     player:broadcastSkillInvoke(self.name)
     if event == fk.EventPhaseStart then
       room:notifySkillInvoked(player, self.name, "special")
-      local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isNude() end)
+      local targets = table.filter(room:getOtherPlayers(player, false), function(p) return not p:isNude() end)
       if #targets == 0 then return end
       room:doIndicate(player.id, table.map(targets, Util.IdMapper))
       local mark = {}

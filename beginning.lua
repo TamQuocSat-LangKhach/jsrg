@@ -295,14 +295,14 @@ local chaozheng = fk.CreateTriggerSkill{
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self) and player.phase == Player.Start and
-      not table.every(player.room:getOtherPlayers(player), function(p) return p:isKongcheng() end)
+      not table.every(player.room:getOtherPlayers(player, false), function(p) return p:isKongcheng() end)
   end,
   on_cost = function(self, event, target, player, data)
     return player.room:askForSkillInvoke(player, self.name, nil, "#chaozheng-invoke")
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p) return not p:isKongcheng() end)
+    local targets = table.filter(room:getOtherPlayers(player, false), function(p) return not p:isKongcheng() end)
     if #targets == 0 then return end
     room:doIndicate(player.id, table.map(targets, Util.IdMapper))
     local discussion = U.Discussion(player, targets, self.name)
@@ -391,7 +391,7 @@ local julian = fk.CreateTriggerSkill{
           end
         end
       elseif event == fk.EventPhaseStart and player.phase == Player.Finish then
-        return table.find(player.room:getOtherPlayers(player), function(p) return p.kingdom == "qun" and not p:isKongcheng() end)
+        return table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == "qun" and not p:isKongcheng() end)
       end
     end
   end,
@@ -937,7 +937,7 @@ local zhaobing = fk.CreateTriggerSkill{
     local n = player:getHandcardNum()
     player:throwAllCards("h")
     if player.dead then return end
-    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player), Util.IdMapper), 1, n,
+    local targets = room:askForChoosePlayers(player, table.map(room:getOtherPlayers(player, false), Util.IdMapper), 1, n,
       "#zhaobing-choose:::"..n, self.name, true)
     if #targets == 0 then return end
     room:sortPlayersByAction(targets)
@@ -982,7 +982,7 @@ local zhuhuanh = fk.CreateTriggerSkill{
     local n = #cards
     room:throwCard(cards, self.name, player, player)
     if player.dead then return end
-    local targets = table.map(room:getOtherPlayers(player), Util.IdMapper)
+    local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     if #targets == 0 then return end
     local to = room:askForChoosePlayers(player, targets, 1, 1, "#zhuhuanh-choose:::"..n, self.name, false)
     to = room:getPlayerById(to[1])
@@ -1583,13 +1583,13 @@ local fusong = fk.CreateTriggerSkill{
   events = {fk.Death},
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(self, false, true) and
-      table.find(player.room:getOtherPlayers(player), function(p)
+      table.find(player.room:getOtherPlayers(player, false), function(p)
         return p.maxHp > player.maxHp and not (p:hasSkill("fengzi", true) and p:hasSkill("jizhan", true))
       end)
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(room:getOtherPlayers(player), function(p)
+    local targets = table.filter(room:getOtherPlayers(player, false), function(p)
       return p.maxHp > player.maxHp and not (p:hasSkill("fengzi", true) and p:hasSkill("jizhan", true))
     end)
     local to = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper), 1, 1, "#fusong-choose", self.name, true)
