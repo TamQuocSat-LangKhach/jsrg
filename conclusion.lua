@@ -316,12 +316,13 @@ local yinlue = fk.CreateTriggerSkill{
       [fk.FireDamage] = "fire_damage",
       [fk.ThunderDamage] = "thunder_damage",
     }
+    local phase =  data.damageType == fk.FireDamage and "phase_draw" or "phase_discard"
 
     return player.room:askForSkillInvoke(
       player,
       self.name,
       data,
-      "#yinlue-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. Util.PhaseStrMapper(data.damageType)
+      "#yinlue-ask::" .. data.to.id .. ":" .. damageTypeTable[data.damageType] .. ":" .. phase
     )
   end,
   on_use = function(self, event, target, player, data)
