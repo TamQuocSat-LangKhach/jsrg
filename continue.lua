@@ -638,6 +638,7 @@ local qingjiaol = fk.CreateViewAsSkill{
     end
     return U.CardNameBox {choices = names}
   end,
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0
   end,
@@ -762,6 +763,7 @@ local js__xianzhu = fk.CreateViewAsSkill{
   anim_type = "offensive",
   pattern = "slash",
   prompt = "#js__xianzhu",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select):isCommonTrick()
   end,

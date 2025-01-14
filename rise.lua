@@ -376,6 +376,7 @@ local kuangjian = fk.CreateViewAsSkill{
       return U.CardNameBox { choices = names, all_choices = all_names }
     end
   end,
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
@@ -751,6 +752,7 @@ local ciying = fk.CreateViewAsSkill{
       return U.CardNameBox { choices = names, all_choices = all_names }
     end
   end,
+  handly_pile = true,
   card_filter = Util.TrueFunc,
   view_as = function(self, cards)
     if #cards == 0 or #cards < (4 - #Self:getTableMark("@ciying-turn")) or not self.interaction.data then return end
@@ -1203,6 +1205,7 @@ local qinrao = fk.CreateTriggerSkill{
 }
 local qinrao_viewas = fk.CreateViewAsSkill{
   name = "qinrao_viewas",
+  handly_pile = true,
   card_filter = function (self, to_select, selected)
     return #selected == 0
   end,
@@ -1419,8 +1422,9 @@ local piqi_viewas = fk.CreateViewAsSkill{
   anim_type = "control",
   pattern = "nullification",
   prompt = "#piqi&",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
-    return #selected == 0 and Fk:getCardById(to_select).trueName == "jink" and table.contains(Self:getHandlyIds(true), to_select)
+    return #selected == 0 and Fk:getCardById(to_select).trueName == "jink"
   end,
   view_as = function(self, cards)
     if #cards ~= 1 then return end

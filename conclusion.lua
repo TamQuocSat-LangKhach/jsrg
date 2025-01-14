@@ -461,6 +461,7 @@ jiangwei:addSkill(jinfa)
 
 local fumouViewas = fk.CreateViewAsSkill{
   name = "#js__fumou_viewas",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).name == "shade"
   end,
@@ -559,6 +560,7 @@ local xuanfeng = fk.CreateViewAsSkill{
   anim_type = "offensive",
   pattern = "stab__slash",
   prompt = "#js__xuanfeng-viewas",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).name == "shade"
   end,
@@ -1109,18 +1111,10 @@ zhaotu:addRelatedSkill(zhaotu_trigger)
 local jingju = fk.CreateViewAsSkill{
   name = "jingju",
   pattern = ".|.|.|.|.|basic",
-  interaction = function()
-    local names = {}
-    for _, id in ipairs(Fk:getAllCardIds()) do
-      local card = Fk:getCardById(id)
-      if card.type == Card.TypeBasic and not card.is_derived and
-        ((Fk.currentResponsePattern == nil and card.skill:canUse(Self, card)) or
-        (Fk.currentResponsePattern and Exppattern:Parse(Fk.currentResponsePattern):match(card))) then
-        table.insertIfNeed(names, card.name)
-      end
-    end
-    if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+  interaction = function(self)
+    local all_names = U.getAllCardNames("b")
+    local names = U.getViewAsCardNames(Self, self.name, all_names)
+    return U.CardNameBox {choices = names, all_choices = all_names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)

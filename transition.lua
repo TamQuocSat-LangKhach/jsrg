@@ -582,6 +582,7 @@ local js__chuanxin = fk.CreateTriggerSkill{
 }
 local js__chuanxin_viewas = fk.CreateViewAsSkill{
   name = "#js__chuanxin_viewas",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0
   end,
@@ -628,7 +629,7 @@ local cuifeng = fk.CreateViewAsSkill{
         table.insertIfNeed(names, card.name)
       end
     end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -690,7 +691,7 @@ local dengnan = fk.CreateViewAsSkill{
         table.insertIfNeed(names, card.name)
       end
     end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -776,7 +777,7 @@ local fenjian = fk.CreateViewAsSkill{
       end
     end
     if #names == 0 then return end
-    return UI.ComboBox {choices = names}
+    return U.CardNameBox {choices = names}
   end,
   card_filter = Util.FalseFunc,
   view_as = function(self, cards)
@@ -993,9 +994,7 @@ local js__manjuan = fk.CreateViewAsSkill{
     return Fk:getCardById(cards[1])
   end,
   before_use = function (self, player, use)
-    local mark = player:getTableMark("js__manjuan_used-turn")
-    table.insert(mark, use.card.number)
-    player.room:setPlayerMark(player, "js__manjuan_used-turn", mark)
+    player.room:addTableMark(player, "js__manjuan_used-turn", use.card.number)
   end,
   enabled_at_play = function(self, player)
     return player:isKongcheng()
@@ -1003,67 +1002,64 @@ local js__manjuan = fk.CreateViewAsSkill{
   enabled_at_response = function(self, player, response)
     return player:isKongcheng()
   end,
+
+  on_acquire = function (self, player, is_start)
+    local room = player.room
+    local ids = {}
+    room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
+      for _, move in ipairs(e.data) do
+        if move.toArea == Card.DiscardPile then
+          for _, info in ipairs(move.moveInfo) do
+            if table.contains(room.discard_pile, info.cardId) then
+              table.insertIfNeed(ids, info.cardId)
+            end
+          end
+        end
+      end
+    end, Player.HistoryTurn)
+    room:setPlayerMark(player, "js__manjuan-turn", ids)
+  end,
 }
 local js__manjuan_trigger = fk.CreateTriggerSkill{
   name = "#js__manjuan_trigger",
 
-  refresh_events = {fk.AfterCardsMove, fk.EventAcquireSkill},
+  refresh_events = {fk.AfterCardsMove},
   can_refresh = function(self, event, target, player, data)
     if player:hasSkill(self, true) then
-      if event == fk.AfterCardsMove then
-        for _, move in ipairs(data) do
-          if move.toArea == Card.DiscardPile then
-            for _, info in ipairs(move.moveInfo) do
-              if player.room:getCardArea(info.cardId) == Card.DiscardPile then
-                return true
-              end
-            end
-          end
+      for _, move in ipairs(data) do
+        if move.toArea == Card.DiscardPile then
           for _, info in ipairs(move.moveInfo) do
-            if info.fromArea == Card.DiscardPile and player.room:getCardArea(info.cardId) ~= Card.DiscardPile  then
+            if table.contains(player.room.discard_pile, info.cardId) then
               return true
             end
           end
         end
-      else
-        return data == self and player == target and player.room:getTag("RoundCount")
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea == Card.DiscardPile and not table.contains(player.room.discard_pile, info.cardId) then
+            return true
+          end
+        end
       end
     end
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.AfterCardsMove then
-      local ids = player:getTableMark("js__manjuan-turn")
-      for _, move in ipairs(data) do
-        if move.toArea == Card.DiscardPile then
-          for _, info in ipairs(move.moveInfo) do
-            if room:getCardArea(info.cardId) == Card.DiscardPile then
-              table.insertIfNeed(ids, info.cardId)
-            end
-          end
-        end
+    local ids = player:getTableMark("js__manjuan-turn")
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
         for _, info in ipairs(move.moveInfo) do
-          if info.fromArea == Card.DiscardPile and room:getCardArea(info.cardId) ~= Card.DiscardPile then
-            table.removeOne(ids, info.cardId)
+          if table.contains(room.discard_pile, info.cardId) then
+            table.insertIfNeed(ids, info.cardId)
           end
         end
       end
-      room:setPlayerMark(player, "js__manjuan-turn", ids)
-    else
-      local ids = {}
-      room.logic:getEventsOfScope(GameEvent.MoveCards, 999, function(e)
-        for _, move in ipairs(e.data) do
-          if move.toArea == Card.DiscardPile then
-            for _, info in ipairs(move.moveInfo) do
-              if room:getCardArea(info.cardId) == Card.DiscardPile then
-                table.insertIfNeed(ids, info.cardId)
-              end
-            end
-          end
+      for _, info in ipairs(move.moveInfo) do
+        if info.fromArea == Card.DiscardPile and not table.contains(room.discard_pile, info.cardId) then
+          table.removeOne(ids, info.cardId)
         end
-      end, Player.HistoryTurn)
-      room:setPlayerMark(player, "js__manjuan-turn", ids)
+      end
     end
+    room:setPlayerMark(player, "js__manjuan-turn", ids)
   end,
 }
 local yangming = fk.CreateActiveSkill{
@@ -1123,7 +1119,7 @@ Fk:loadTranslationTable{
   ["js__pangtong"] = "庞统",
   ["#js__pangtong"] = "荊楚之高俊",
   ["js__manjuan"] = "漫卷",
-  [":js__manjuan"] = "若你没有手牌，你可以如手牌般使用或打出本回合进入弃牌堆的牌（每种点数每回合限一次）（无法转化）。",
+  [":js__manjuan"] = "若你没有手牌，你可以如手牌般使用或打出本回合进入弃牌堆的牌（每种点数每回合限一次）。",
   ["yangming"] = "养名",
   [":yangming"] = "出牌阶段限一次，你可以与一名角色拼点：若其没赢，你可以与其重复此流程；若其赢，其摸等同于其本阶段拼点没赢次数的牌，你回复1点体力。",
   ["js__manjuan&"] = "漫卷",

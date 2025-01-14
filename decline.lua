@@ -1315,6 +1315,7 @@ local yansha = fk.CreateActiveSkill{
 local yanshaViewas = fk.CreateViewAsSkill{
   name = "yanshaViewas",
   pattern = "slash",
+  handly_pile = true,
   card_filter = function(self, to_select, selected)
     return #selected == 0 and Fk:getCardById(to_select).type == Card.TypeEquip
   end,
