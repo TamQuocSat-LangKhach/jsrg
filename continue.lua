@@ -22,7 +22,7 @@ local duxing = fk.CreateActiveSkill{
   target_filter = function(self, to_select, selected)
     local card = Fk:cloneCard("duel")
     card.skillName = self.name
-    return card.skill:modTargetFilter(to_select, selected, Self.id,card)
+    return card.skill:modTargetFilter(to_select, selected, Self, card)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
@@ -793,7 +793,7 @@ local js__xianzhu_trigger = fk.CreateTriggerSkill{
       local card = Fk:getCardById(data.card.subcards[1])
       local to_use = Fk:cloneCard(card.name)
       if card:isCommonTrick() and not player:prohibitUse(to_use) and not player:isProhibited(data.to, to_use) and
-          card.skill:modTargetFilter(data.to.id, {}, player.id, card, true) then
+          card.skill:modTargetFilter(data.to.id, {}, player, card, true) then
         local room = player.room
         local e = room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
         if e then
@@ -1228,7 +1228,7 @@ local jixiang = fk.CreateTriggerSkill{
             return false
           end
         end
-        return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target.id, card, true)
+        return not target:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, target, card, true)
       end
       local findCardTarget = function(card)
         local tos = {}
@@ -1305,7 +1305,7 @@ local function getTargetsNum(player, card)
   else
     local x = 0
     for _, p in ipairs(Fk:currentRoom().alive_players) do
-      if not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, true) then
+      if not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player, card, true) then
         x = x + 1
       end
     end

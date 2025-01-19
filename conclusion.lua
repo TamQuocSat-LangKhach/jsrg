@@ -1580,7 +1580,7 @@ local js__dailao = fk.CreateActiveSkill{
       local card = Fk:getCardById(id)
       return player:prohibitUse(card) or not player:canUse(card)
       or not table.find(Fk:currentRoom().alive_players, function (p)
-        return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player.id, card, true)
+        return not player:isProhibited(p, card) and card.skill:modTargetFilter(p.id, {}, player, card, true)
       end)
     end)
   end,

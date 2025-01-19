@@ -1137,16 +1137,15 @@ local js__niluan = fk.CreateTriggerSkill{
   end,
   on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askForUseActiveSkill(player, "js__niluan_active", "#js__niluan-invoke", true)
-    if success then
-      self.cost_data = dat
+    if success and dat then
+      self.cost_data = {tos = dat.targets, cards = dat.cards}
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local to = room:getPlayerById(self.cost_data.targets[1])
+    local to = room:getPlayerById(self.cost_data.tos[1])
     player:broadcastSkillInvoke(self.name)
-    room:doIndicate(player.id, {to.id})
     if #self.cost_data.cards > 0 then
       room:notifySkillInvoked(player, self.name, "offensive")
       room:throwCard(self.cost_data.cards, self.name, player, player)
@@ -1163,35 +1162,25 @@ local js__niluan = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.Damaged, fk.EventAcquireSkill},
+  refresh_events = {fk.Damaged},
   can_refresh = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.Damaged then
-        return player:hasSkill(self, true) and data.from and
-          (player:getMark(self.name) == 0 or not table.contains(player:getMark(self.name), data.from.id))
-      elseif event == fk.EventAcquireSkill then
-        return data == self and player.room:getTag("RoundCount")
-      end
-    end
+    return target == player and player:hasSkill(self, true) and data.from and
+      not table.contains(player:getTableMark(self.name), data.from.id)
   end,
   on_refresh = function(self, event, target, player, data)
+    player.room:addTableMark(player, self.name, data.from.id)
+  end,
+
+  on_acquire = function (self, player, is_start)
     local room = player.room
-    if event == fk.Damaged then
-      local mark = player:getMark(self.name)
-      if mark == 0 then mark = {} end
-      table.insertIfNeed(mark, data.from.id)
-      room:setPlayerMark(player, self.name, mark)
-    elseif event == fk.EventAcquireSkill then
-      local mark = {}
-      local events = room.logic.event_recorder[GameEvent.ChangeHp] or {}
-      for i = 1, #events, 1 do
-        local damage = events[i].data[5]
-        if damage and damage.to == player and damage.from then
-          table.insertIfNeed(mark, damage.from.id)
-        end
+    local mark = {}
+    room.logic:getActualDamageEvents(1, function (e)
+      local damage = e.data[1]
+      if damage.to == player and damage.from then
+        table.insertIfNeed(mark, damage.from.id)
       end
-      room:setPlayerMark(player, self.name, mark)
-    end
+    end, Player.HistoryGame)
+    room:setPlayerMark(player, self.name, mark)
   end,
 }
 local js__niluan_active = fk.CreateActiveSkill{
@@ -1228,31 +1217,26 @@ local huchou = fk.CreateTriggerSkill{
 
   refresh_events = {fk.TargetConfirmed, fk.EventAcquireSkill},
   can_refresh = function(self, event, target, player, data)
-    if target == player then
-      if event == fk.TargetConfirmed then
-        return player:hasSkill(self, true) and
-          data.card.is_damage_card and data.from ~= player.id and player:getMark(self.name) ~= data.from
-      elseif event == fk.EventAcquireSkill then
-        return data == self and player.room:getTag("RoundCount")
-      end
-    end
+    return target == player and player:hasSkill(self, true) and
+      data.card.is_damage_card and data.from ~= player.id and player:getMark(self.name) ~= data.from
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    if event == fk.TargetConfirmed then
-      room:setPlayerMark(player, self.name, data.from)
-      room:setPlayerMark(player, "@huchou", room:getPlayerById(data.from).general)
-    elseif event == fk.EventAcquireSkill then
-      local events = room.logic.event_recorder[GameEvent.UseCard] or {}
-      for i = #events, 1, -1 do
-        local use = events[i].data[1]
-        if table.contains(TargetGroup:getRealTargets(use.tos), player.id) and use.card.is_damage_card and use.from ~= player.id then
-          room:setPlayerMark(player, self.name, use.from)
-          room:setPlayerMark(player, "@huchou", room:getPlayerById(use.from).general)
-          return
-        end
+    room:setPlayerMark(player, self.name, data.from)
+    room:setPlayerMark(player, "@huchou", room:getPlayerById(data.from).general)
+  end,
+
+  on_acquire = function (self, player, is_start)
+    local room = player.room
+    room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+      local use = e.data[1]
+      if use.tos and table.contains(TargetGroup:getRealTargets(use.tos), player.id) and
+        use.card.is_damage_card and use.from ~= player.id then
+        room:setPlayerMark(player, self.name, use.from)
+        room:setPlayerMark(player, "@huchou", room:getPlayerById(use.from).general)
+        return true
       end
-    end
+    end, Player.HistoryGame)
   end,
 }
 local jiemeng = fk.CreateDistanceSkill{

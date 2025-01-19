@@ -1220,12 +1220,12 @@ local qinrao_viewas = fk.CreateViewAsSkill{
 local qinraoDuelSkill = fk.CreateActiveSkill{
   name = "qinrao__duel_skill",
   prompt = "#duel_skill",
-  mod_target_filter = function(self, to_select, selected, user, card)
-    return user ~= to_select
+  mod_target_filter = function(self, to_select, selected, player, card)
+    return to_select ~= player.id
   end,
   target_filter = function(self, to_select, selected, _, card)
     if #selected < self:getMaxTargetNum(Self, card) then
-      return self:modTargetFilter(to_select, selected, Self.id, card)
+      return self:modTargetFilter(to_select, selected, Self, card)
     end
   end,
   target_num = 1,
