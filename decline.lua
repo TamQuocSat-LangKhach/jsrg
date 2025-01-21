@@ -1770,9 +1770,8 @@ local xiangjia = fk.CreateViewAsSkill{
       local p = room:getPlayerById(pId)
       if p:isAlive() and p:canUseTo(collateral, player) then
         local availableTargets = table.map(
-          table.filter(
-            room.alive_players,
-            function(to) return collateral.skill:targetFilter(to.id, { player.id }, nil, collateral) end
+          table.filter(room.alive_players, function(to)
+            return to ~= player and collateral.skill:targetFilter(to.id, { player.id }, {}, collateral, nil, p) end
           ),
           Util.IdMapper
         )

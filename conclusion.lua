@@ -600,21 +600,21 @@ local js__danxinn = fk.CreateActiveSkill{
   can_use = function(self, player)
     return not player:isNude()
   end,
-  card_filter = function(self, to_select, selected)
+  card_filter = function(self, to_select, selected, player)
     if #selected == 0 then
       local c = Fk:cloneCard("sincere_treat")
       c.skillName = self.name
       c:addSubcard(to_select)
-      return Self:canUse(c) and not Self:prohibitUse(c)
+      return player:canUse(c) and not player:prohibitUse(c)
     end
   end,
-  target_filter = function(self, to_select, selected, selected_cards)
+  target_filter = function(self, to_select, selected, selected_cards, _, _, player)
     if #selected_cards ~= 1 then return false end
     local c = Fk:cloneCard("sincere_treat")
     c.skillName = self.name
     c:addSubcards(selected_cards)
-    return c.skill:targetFilter(to_select, selected, selected_cards, c) and
-    not Self:isProhibited(Fk:currentRoom():getPlayerById(to_select), c)
+    return c.skill:targetFilter(to_select, selected, selected_cards, c, nil, player) and
+    not player:isProhibited(Fk:currentRoom():getPlayerById(to_select), c)
   end,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)

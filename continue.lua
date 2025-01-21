@@ -814,12 +814,11 @@ local js__xianzhu_trigger = fk.CreateTriggerSkill{
       return false
     elseif card.skill:getMinTargetNum() == 2 then
       local targets = table.filter(room.alive_players, function (p)
-        return card.skill:targetFilter(p.id, tos, {}, to_use)
+        return not table.contains(tos, p.id) and card.skill:targetFilter(p.id, tos, {}, to_use, nil, player)
       end)
       if #targets > 0 then
-        local to_slash = room:askForChoosePlayers(player, table.map(targets, function (p)
-          return p.id
-        end), 1, 1, "#js__xianzhu-choose::"..data.to.id..":"..card.name, self.name, false)
+        local to_slash = room:askForChoosePlayers(player, table.map(targets, Util.IdMapper),
+        1, 1, "#js__xianzhu-choose::"..data.to.id..":"..card.name, self.name, false)
         if #to_slash > 0 then
           table.insert(tos, to_slash[1])
         end
