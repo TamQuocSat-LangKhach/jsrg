@@ -349,7 +349,7 @@ local zhongzen = fk.CreateTriggerSkill{
     local room = player.room
     local targets = table.filter(
       room:getAlivePlayers(),
-      function(p) return p:getHandcardNum() < player:getHandcardNum() and not p:isKongcheng() end
+      function(p) return p:getHandcardNum() < player:getHandcardNum() end
     )
 
     if #targets > 0 then
@@ -400,7 +400,7 @@ local zhongzenDebuff = fk.CreateTriggerSkill{
 }
 Fk:loadTranslationTable{
   ["zhongzen"] = "众谮",
-  [":zhongzen"] = "锁定技，弃牌阶段开始时，你令所有手牌数小于你的角色须各交给你一张手牌。若如此做，此阶段结束时，" ..
+  [":zhongzen"] = "锁定技，弃牌阶段开始时，你令所有手牌数小于你的角色各交给你一张手牌。若如此做，此阶段结束时，" ..
   "若你本阶段弃置的♠牌数大于体力值，你弃置所有牌。",
   ["@@zhongzen-phase"] = "众谮",
   ["#zhongzhen"] = "众谮：请交给 %dest 一张手牌",
