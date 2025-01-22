@@ -721,6 +721,7 @@ local addFangkeSkill = function(player, skillName)
 
   player:addFakeSkill(skill)
   player:prelightSkill(skill.name, true)
+  skill:onAcquire(player)
 end
 
 ---@param player ServerPlayer
@@ -820,9 +821,7 @@ local yingmen = fk.CreateTriggerSkill{
     local room = player.room
     for _, s in ipairs(data.related_skills) do
       if s:isInstanceOf(StatusSkill) then
-        room.status_skills[s.class] = room.status_skills[s.class] or {}
-        table.insertIfNeed(room.status_skills[s.class], s)
-        room:doBroadcastNotify("AddSkill", json.encode{player.id, s.name})
+        room:addSkill(s)
       end
     end
   end,
@@ -883,13 +882,11 @@ local pingjian = fk.CreateTriggerSkill{
     end
   end,
 
-  refresh_events = {fk.EventLoseSkill},
-  can_refresh = function (self, event, target, player, data)
-    return target == player and data == self and player:getMark("@&js_fangke") ~= 0
-  end,
-  on_refresh = function (self, event, target, player, data)
-    for _, g in ipairs(player:getMark("@&js_fangke")) do
-      removeFangke(player, g)
+  on_lose = function (self, player)
+    if player:getMark("@&js_fangke") ~= 0 then
+      for _, g in ipairs(player:getMark("@&js_fangke")) do
+        removeFangke(player, g)
+      end
     end
   end,
 }
