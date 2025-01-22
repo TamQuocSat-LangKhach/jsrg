@@ -1427,6 +1427,17 @@ local js__zunwei = fk.CreateActiveSkill{
   name = "js__zunwei",
   anim_type = "control",
   prompt = "#js__zunwei-active",
+  dynamic_desc = function(self, player)
+    local texts = {"js__zunwei_inner", "", "js__zunwei_choice1", "", "js__zunwei_choice2", "", "js__zunwei_choice3"}
+    local x = 0
+    for i = 1, 3, 1 do
+      if player:getMark(self.name .. tostring(i)) > 0 then
+        texts[2 * i] = "js__zunwei_color"
+        x = x + 1
+      end
+    end
+    return (x == 3) and "dummyskill" or table.concat(texts, ":")
+  end,
   card_num = 0,
   target_num = 1,
   interaction = function()
@@ -1481,6 +1492,13 @@ local js__zunwei = fk.CreateActiveSkill{
     end
     room:setPlayerMark(player, choice, 1)
   end,
+
+  on_lose = function (self, player, is_death)
+    local room = player.room
+    room:setPlayerMark(player, "js__zunwei1", 0)
+    room:setPlayerMark(player, "js__zunwei2", 0)
+    room:setPlayerMark(player, "js__zunwei3", 0)
+  end,
 }
 guozhao:addSkill(js__pianchong)
 guozhao:addSkill(js__zunwei)
@@ -1496,6 +1514,14 @@ Fk:loadTranslationTable{
   "1.将手牌补至与其手牌数相同（至多摸五张）；"..
   "2.将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数；"..
   "3.将体力值回复至与其相同。",
+
+  [":js__zunwei_inner"] = "出牌阶段限一次，你可以选择一名其他角色，并选择执行以下一个选项，然后移除该选项：{1}{2}{3}{4}{5}{6}。",
+  ["js__zunwei_choice1"] = "1.将手牌补至与其手牌数相同（至多摸五张）；</font>",
+  ["js__zunwei_choice2"] = "2.将其装备里的牌移至你的装备区，直到你装备区里的牌数不小于其装备区里的牌数；</font>",
+  ["js__zunwei_choice3"] = "3.将体力值回复至与其相同</font>",
+
+  [":dummyskill"] = "无效果。",
+  ["js__zunwei_color"] = "<font color='gray'>",
 
   ["#js__zunwei-active"] = "发动 尊位，选择一名其他角色并执行一项效果",
   ["js__zunwei1"] = "将手牌摸至与其相同（最多摸五张）",
