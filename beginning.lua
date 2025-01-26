@@ -391,7 +391,8 @@ local julian = fk.CreateTriggerSkill{
           end
         end
       elseif event == fk.EventPhaseStart and player.phase == Player.Finish then
-        return table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == "qun" and not p:isKongcheng() end)
+        return table.find(player.room.alive_players, function(p)
+          return p ~= player and p.kingdom == "qun" and not p:isKongcheng() end)
       end
     end
   end,
@@ -413,9 +414,17 @@ local julian = fk.CreateTriggerSkill{
   on_cost = function(self, event, target, player, data)
     local room = player.room
     if event == fk.AfterCardsMove then
-      return room:askForSkillInvoke(data.to, self.name, nil, "#julian-draw")
+      if room:askForSkillInvoke(data.to, self.name, nil, "#julian-draw") then
+        self.cost_data = nil
+        return true
+      end
     else
-      return room:askForSkillInvoke(player, self.name, nil, "#julian-invoke")
+      if room:askForSkillInvoke(player, self.name, nil, "#julian-invoke") then
+        self.cost_data = { tos = table.map(table.filter(room:getAlivePlayers(), function(p)
+          return p ~= player and p.kingdom == "qun"
+        end), Util.IdMapper) }
+        return true
+      end
     end
   end,
   on_use = function(self, event, target, player, data)
@@ -424,10 +433,12 @@ local julian = fk.CreateTriggerSkill{
       room:addPlayerMark(data.to, "julian-turn", 1)
       data.to:drawCards(1, self.name)
     else
-      for _, p in ipairs(room:getOtherPlayers(player)) do
-        if p.kingdom == "qun" and not p:isKongcheng() then
+      local tos = table.map(self.cost_data.tos, Util.Id2PlayerMapper)
+      for _, p in ipairs(tos) do
+        if not p:isKongcheng() then
           local id = room:askForCardChosen(player, p, "h", self.name)
-          room:moveCardTo(Fk:getCardById(id), Card.PlayerHand, player, fk.ReasonPrey, self.name, nil, true, player.id)
+          room:obtainCard(player, id, false, fk.ReasonPrey, player.id, self.name)
+          if player.dead then break end
         end
       end
     end
@@ -1966,34 +1977,50 @@ local js__limu_targetmod = fk.CreateTargetModSkill{
 local tongjue = fk.CreateActiveSkill{
   name = "tongjue$",
   anim_type = "support",
-  min_card_num = 1,
-  target_num = 1,
+  card_num = 0,
+  target_num = 0,
   prompt = "#tongjue-invoke",
   can_use = function(self, player)
-    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng()
+    return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0 and not player:isKongcheng() and
+      table.find(Fk:currentRoom().alive_players, function(p) return p ~= player and p.kingdom == "qun" end)
   end,
-  card_filter = function(self, to_select, selected)
-    return #selected == 0 and table.contains(Self:getCardIds("h"), to_select)
-  end,
-  target_filter = function(self, to_select, selected)
-    local target = Fk:currentRoom():getPlayerById(to_select)
-    return #selected == 0 and to_select ~= Self.id and target.kingdom == "qun" and
-      not table.contains(Self:getTableMark("tongjue-turn"), to_select)
-  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
-    room:addTableMark(player, "tongjue-turn", target.id)
-    room:moveCardTo(effect.cards, Card.PlayerHand, target, fk.ReasonGive, self.name, nil, false, player.id)
-    if not player:isKongcheng() and not player.dead then
-      room:askForUseActiveSkill(player, self.name, "#tongjue-invoke", true)
+    local list = room:askForYiji(
+      player,
+      player:getCardIds(Player.Hand),
+      table.filter(
+        room.alive_players,
+        function(p)
+          return
+            p ~= player and
+            p.kingdom == "qun"
+        end
+      ),
+      self.name,
+      1,
+      999,
+      "#tongjue-invoke",
+      nil,
+      false,
+      1
+    )
+    if player.dead then return end
+    local mark = player:getTableMark("tongjue-turn")
+    for key, value in pairs(list) do
+      if #value > 0 then
+        table.insert(mark, key)
+      end
     end
+    room:setPlayerMark(player, "tongjue-turn", mark)
   end,
 }
 local tongjue_prohibit = fk.CreateProhibitSkill{
   name = "#tongjue_prohibit",
   is_prohibited = function(self, from, to, card)
-    if from:usedSkillTimes("tongjue", Player.HistoryTurn) > 0 and card then
+    if from and card then
       return table.contains(from:getTableMark("tongjue-turn"), to.id)
     end
   end,
@@ -2016,7 +2043,7 @@ Fk:loadTranslationTable{
   [":tongjue"] = "主公技，出牌阶段限一次，你可以将任意张手牌交给等量的其他群势力角色各一张，若如此做，于此回合内不能选择这些角色为你使用牌的目标。",
   ["#js__limu"] = "立牧：你可以将一张<font color='red'>♦</font>牌当【乐不思蜀】对你使用，然后你回复1点体力",
   ["#js__tushe-invoke"] = "图射：你可以展示所有手牌，若其中没有基本牌，则摸%arg张牌",
-  ["#tongjue-invoke"] = "通绝：你可以将一张手牌交给一名其他群势力角色",
+  ["#tongjue-invoke"] = "通绝：你可以将手牌分配其他群势力角色（每名角色至多1张）",
 
   ["$js__limu1"] = "米贼作乱，吾必为益州自保。",
   ["$js__limu2"] = "废史立牧，可得一方安定。",

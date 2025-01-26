@@ -259,45 +259,37 @@ local baohe = fk.CreateTriggerSkill{
 local xushiz = fk.CreateActiveSkill{
   name = "xushiz",
   anim_type = "offensive",
+  prompt = "#xushiz-invoke",
   can_use = function(self, player)
     return player:usedSkillTimes(self.name, Player.HistoryPhase) == 0
   end,
-  card_filter = function(self, to_select, selected)
-    return #selected < #Fk:currentRoom().alive_players
-  end,
-  target_filter = function(self, to_select, selected, selected_cards)
-    return #selected < #selected_cards and to_select ~= Self.id
-  end,
-  min_card_num = 1,
-  min_target_num = 1,
-  feasible = function (self, selected, selected_cards)
-    return #selected > 0 and #selected == #selected_cards
-  end,
+  card_filter = Util.FalseFunc,
+  target_filter = Util.FalseFunc,
+  card_num = 0,
+  target_num = 0,
   on_use = function(self, room, effect)
     local player = room:getPlayerById(effect.from)
-    local moveInfos = {}
-    local num = 1
-    table.forEach(effect.tos, function(p)
-      local to = room:getPlayerById(p)
-      local card = Fk:getCardById(effect.cards[num])
-      table.insert(moveInfos, {
-        ids = {card.id},
-        from = player.id,
-        to = to.id,
-        toArea = Card.PlayerHand,
-        moveReason = fk.ReasonPrey,
-        proposer = player.id,
-        skillName = self.name,
-        moveVisible = false,
-      })
-      num = num + 1
-    end)
-    if #moveInfos > 0 then
-      room:moveCards(table.unpack(moveInfos))
+    local list = room:askForYiji(
+      player,
+      player:getCardIds("he"),
+      room:getOtherPlayers(player, false),
+      self.name,
+      1,
+      999,
+      "#xushiz-invoke",
+      nil,
+      false,
+      1
+    )
+    if player.dead then return end
+    local x = 0
+    for _, value in pairs(list) do
+      if #value > 0 then
+        x = x + 2
+      end
     end
-
     room:moveCards({
-      ids = getShade(room, #effect.tos * 2),
+      ids = getShade(room, x),
       to = player.id,
       toArea = Card.PlayerHand,
       moveReason = fk.ReasonPrey,
@@ -319,6 +311,7 @@ Fk:loadTranslationTable{
   ["xushiz"] = "虚势",
   [":xushiz"] = "出牌阶段限一次，你可以交给任意名角色各一张牌，然后你获得两倍数量的【影】。",
   ["#baohe-discard"] = "暴喝：你可以弃置两张牌，视为对所有攻击范围内包含 %dest 的角色使用【杀】",
+  ["#xushiz-invoke"] = "虚势：交给任意名角色各一张牌，获得两倍数量的【影】",
 }
 
 local machao = General(extension, "js__machao", "qun", 4)
@@ -495,8 +488,7 @@ local funi = fk.CreateTriggerSkill{
     elseif event == fk.AfterCardsMove then
       if player:hasSkill(self) and player:getMark("@@funi-turn") == 0 then
         for _, move in ipairs(data) do
-          if move.toArea == Card.Void and move.moveReason ~= fk.ReasonExchange then
-            --FIXME:由于目前交换卡牌实现方式为经过Card.Void，故暂且需要排除此种情况
+          if move.toArea == Card.Void then
             for _, info in ipairs(move.moveInfo) do
               if Fk:getCardById(info.cardId, true).trueName == "shade" then
                 return true
@@ -549,7 +541,7 @@ local js__chuanxin = fk.CreateTriggerSkill{
   anim_type = "offensive",
   events = {fk.EventPhaseStart},
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(self) and target.phase == Player.Finish and not player:isNude()
+    return player:hasSkill(self) and target.phase == Player.Finish and not (player:isNude() and #player:getHandlyIds(false) == 0)
   end,
   on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askForUseActiveSkill(player, "#js__chuanxin_viewas", "#js__chuanxin-invoke", true)

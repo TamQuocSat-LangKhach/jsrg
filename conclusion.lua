@@ -1505,7 +1505,7 @@ guozhao:addSkill(js__zunwei)
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["#js__guozhao"] = "碧海青天",
-  ["illustrator:js__guozhao"] = "杨杨和夏季",
+  ["illustrator:js__guozhao"] = "君桓文化", -- 传说皮：烟缈媚眸
   ["js__pianchong"] = "偏宠",
   [":js__pianchong"] = "一名角色的结束阶段，若你于此回合内失去过牌，你可以判定，"..
   "你摸X张牌（X为弃牌堆里于此回合内移至此区域的与判定结果颜色相同的牌数）。",
