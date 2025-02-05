@@ -1207,7 +1207,7 @@ local huchou = fk.CreateTriggerSkill{
     data.damage = data.damage + 1
   end,
 
-  refresh_events = {fk.TargetConfirmed, fk.EventAcquireSkill},
+  refresh_events = {fk.TargetConfirmed},
   can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(self, true) and
       data.card.is_damage_card and data.from ~= player.id and player:getMark(self.name) ~= data.from
