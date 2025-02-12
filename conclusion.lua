@@ -63,9 +63,12 @@ local premeditate_rule = fk.CreateTriggerSkill{
         if player.dead then return end
         local xumou = player:getVirualEquip(cards[i])
         if xumou and xumou.name == "premeditate" then
-          local use = U.askForUseRealCard(room, player, {cards[i]}, ".", "premeditate",
+          local use = room:askForUseRealCard(player, {cards[i]}, "premeditate",
             "#premeditate-use:::"..Fk:getCardById(cards[i], true):toLogString(),
-            {expand_pile = {cards[i]}, extra_use = true}, true, true)
+            {
+              expand_pile = {cards[i]},
+              extra_use = true,
+            }, true, true)
           if use then
             room:setPlayerMark(player, "premeditate_"..use.card.trueName.."-phase", 1)
             use.extra_data = use.extra_data or {}

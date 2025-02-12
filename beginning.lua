@@ -655,10 +655,12 @@ local jizhaoq = fk.CreateTriggerSkill{
     local to = room:getPlayerById(self.cost_data.tos[1])
     local use = nil
     if not to:isKongcheng() then
-      use = U.askForUseRealCard(room, to, to:getCardIds("h"), ".", self.name, "#jizhaoq-use:"..player.id, {bypass_times = true}, true, true)
+      use = room:askForUseRealCard(to, to:getCardIds("h"), self.name, "#jizhaoq-use:"..player.id, {
+        bypass_times = true,
+        extraUse = true,
+      }, true, true)
     end
     if use then
-      use.extraUse = true
       room:useCard(use)
     else
       local choices = {}
