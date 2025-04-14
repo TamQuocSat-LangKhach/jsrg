@@ -45,7 +45,7 @@ fuhaiw:addEffect("active", {
     local numbers = {}
     for _, p in ipairs(targets) do
       table.insert(numbers, Fk:getCardById(result[p][1]).number)
-      room:showCards(result[p], p)
+      p:showCards(result[p])
     end
     if player.dead then return end
     if #targets == 1 then
