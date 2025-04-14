@@ -13,7 +13,7 @@ Fk:loadTranslationTable{
 }
 
 zonghai:addEffect(fk.EnterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target ~= player and
       player:hasSkill(zonghai.name) and
@@ -21,13 +21,13 @@ zonghai:addEffect(fk.EnterDying, {
       target:isAlive() and
       target.hp < 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return player.room:askToSkillInvoke(player, {
       skill_name = zonghai.name,
       prompt = "#zonghai-invoke::" .. target.id
     })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local victim = room:getPlayerById(target.id)
     room:doIndicate(player.id, { victim.id })
@@ -64,7 +64,7 @@ zonghai:addEffect(fk.EnterDying, {
 })
 
 zonghai:addEffect(fk.AfterDying, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       ((target.extra_data or {}).zonghaiUsed or {})[player.id] and
       player:isAlive() and
@@ -74,7 +74,7 @@ zonghai:addEffect(fk.AfterDying, {
       )
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(
       target.extra_data.zonghaiUsed[player.id],

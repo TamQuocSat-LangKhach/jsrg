@@ -10,12 +10,12 @@ Fk:loadTranslationTable{
 zuwang:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zuwang.name) and
       (player.phase == Player.Start or player.phase == Player.Finish) and
       player:getHandcardNum() < player.maxHp
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:drawCards(player.maxHp - player:getHandcardNum(), zuwang.name)
   end,
 })

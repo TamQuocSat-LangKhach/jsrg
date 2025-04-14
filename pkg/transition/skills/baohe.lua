@@ -9,10 +9,10 @@ Fk:loadTranslationTable{
 }
 
 baohe:addEffect(fk.EventPhaseEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(baohe.name) and target.phase == Player.Play and #player:getCardIds("he") > 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local cards = player.room:askToDiscard(player, {
       min_num = 2,
       max_num = 2,
@@ -27,7 +27,7 @@ baohe:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:throwCard(event:getCostData(self), baohe.name, player, player)
     local targets = {}
@@ -41,10 +41,10 @@ baohe:addEffect(fk.EventPhaseEnd, {
 })
 
 baohe:addEffect(fk.DamageCaused, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return player:hasSkill(baohe.name) and player:getMark("baohe_adddamage-phase") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     local num = player:getMark("baohe_adddamage-phase")
     data.damage = data.damage + num
@@ -55,7 +55,7 @@ baohe:addEffect(fk.CardUseFinished, {
   can_refresh = function(self, event, target, player, data)
     return player:hasSkill(baohe.name) and data.card.name == "jink" and data.toCard and data.toCard.trueName == "slash" and table.contains(data.toCard.skillNames, "baohe") and data.responseToEvent.from == player.id
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     room:addPlayerMark(player, "baohe_adddamage-phase", 1)
   end,

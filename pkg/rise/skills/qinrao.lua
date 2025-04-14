@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 qinrao:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target ~= player and player:hasSkill(qinrao) and target.phase == Player.Play and not player:isNude()
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "qinrao_viewas",
       prompt = "#qinrao-use::" .. target.id,
@@ -26,7 +26,7 @@ qinrao:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player.room:useVirtualCard("duel", event:getCostData(self).cards, player, target, qinrao.name)
   end,
 })

@@ -12,13 +12,13 @@ Fk:loadTranslationTable{
 
 zuozhan:addEffect(fk.GameStart, {
   anim_type = "special",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zuozhan) then
       return #player.room.alive_players > 1
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper),
@@ -39,13 +39,13 @@ zuozhan:addEffect(fk.GameStart, {
 
 zuozhan:addEffect(fk.Deathed, {
   anim_type = "special",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(zuozhan) then
       return table.contains(player:getTableMark(zuozhan.name), target.id)
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local nums = {0}
     for _, id in ipairs(player:getTableMark(zuozhan.name)) do

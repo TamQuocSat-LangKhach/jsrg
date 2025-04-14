@@ -10,11 +10,11 @@ Fk:loadTranslationTable{
 
 tuwei:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(tuwei.name) and player.phase == Player.Play and
       table.find(player.room.alive_players, function(p) return player:inMyAttackRange(p) and not p:isNude() end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
       return player:inMyAttackRange(p) and not p:isNude()
@@ -31,7 +31,7 @@ tuwei:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:sortPlayersByAction(event:getCostData(self).tos)
     local mark = player:getTableMark("tuwei-turn")
@@ -55,11 +55,11 @@ tuwei:addEffect(fk.EventPhaseStart, {
 tuwei:addEffect(fk.TurnEnd, {
   name = "#tuwei_trigger",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("tuwei-turn") ~= 0 and not player:isNude()
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local mark = player:getMark("tuwei-turn")
     room:sortPlayersByAction(mark)

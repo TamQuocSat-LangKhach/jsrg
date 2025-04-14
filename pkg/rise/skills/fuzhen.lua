@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 }
 
 fuzhen:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(fuzhen.name) and player.phase == Player.Start and #player.room.alive_players > 1
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local use = U.askForUseVirtualCard(player.room, player, "thunder__slash", nil, fuzhen.name,
       "#fuzhen-invoke", true, true, true, true, nil, true)
     if use then
@@ -22,7 +22,7 @@ fuzhen:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local use = event:getCostData(self)
     local targets = room:getUseExtraTargets(use, true)

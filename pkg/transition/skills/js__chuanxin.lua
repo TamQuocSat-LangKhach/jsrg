@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 js__chuanxin:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(js__chuanxin.name) and target.phase == Player.Finish and not (player:isNude() and #player:getHandlyIds(false) == 0)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "#js__chuanxin_viewas",
       prompt = "#js__chuanxin-invoke",
@@ -25,7 +25,7 @@ js__chuanxin:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = Fk.skills["#js__chuanxin_viewas"]:viewAs(event:getCostData(skill.name).cards)
     local n = 0

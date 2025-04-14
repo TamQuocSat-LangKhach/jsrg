@@ -13,12 +13,12 @@ Fk:loadTranslationTable{
 jiaohao:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   attached_skill_name = "jiaohao&",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(jiaohao.name) and player.phase == Player.Start then
       return #player:getCardIds("e") < #player:getAvailableEquipSlots()
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local num = (#player:getAvailableEquipSlots() - #player:getCardIds("e") + 1) // 2
     room:moveCards({

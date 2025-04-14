@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 js__yechou:addEffect(fk.Death, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(js__yechou.name, false, true)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local to = room:askToChoosePlayers(player, {
@@ -30,7 +30,7 @@ js__yechou:addEffect(fk.Death, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill).tos[1])
     room:addPlayerMark(to, "@@js__yechou", 1)
@@ -40,11 +40,11 @@ js__yechou:addEffect(fk.Death, {
 js__yechou:addEffect(fk.DamageInflicted, {
   name = "#js__yechou_trigger",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@js__yechou") > 0 and data.damage >= player.hp
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(js__yechou.name)
     room:notifySkillInvoked(player, js__yechou.name, "negative")

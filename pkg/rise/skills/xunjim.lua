@@ -9,7 +9,7 @@ Fk:loadTranslationTable{
 }
 
 xunjim:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(xunjim.name) and player.phase == Player.Finish then
       local room = player.room
       local targets = {}
@@ -47,7 +47,7 @@ xunjim:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:askToYiji(player, {
       targets = room.alive_players,

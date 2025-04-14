@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 
 fushan:addEffect(fk.EventPhaseStart, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(skill.name) and player.phase == Player.Play then
       return not table.every(player.room:getOtherPlayers(player, false), function(p) return p:isNude() end)
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(fushan.name)
     room:notifySkillInvoked(player, fushan.name, "special")
@@ -51,7 +51,7 @@ fushan:addEffect(fk.EventPhaseStart, {
 
 fushan:addEffect(fk.EventPhaseEnd, {
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(skill.name) and player.phase == Player.Play then
       if player:getMark("@fushan-phase") == 0 then return end
       local card = Fk:cloneCard("slash")
@@ -65,7 +65,7 @@ fushan:addEffect(fk.EventPhaseEnd, {
     end
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(fushan.name)
     local card = Fk:cloneCard("slash")

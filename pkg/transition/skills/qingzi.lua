@@ -9,11 +9,11 @@ Fk:loadTranslationTable{
 }
 
 qingzi:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(qingzi.name) and player.phase == Player.Start and
       table.find(player.room:getOtherPlayers(player, false), function(p) return #p:getCardIds("e") > 0 end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(table.filter(room:getOtherPlayers(player, false), function(p)
       return #p:getCardIds("e") > 0 end), Util.IdMapper)
@@ -30,7 +30,7 @@ qingzi:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(event:getCostData(self).tos) do
       if player.dead then return end
@@ -52,10 +52,10 @@ qingzi:addEffect(fk.EventPhaseStart, {
 })
 
 qingzi:addEffect(fk.TurnStart, {
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and player:getMark("qingzi_target") ~= 0
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, id in ipairs(player:getMark("qingzi_target")) do
       local p = room:getPlayerById(id)

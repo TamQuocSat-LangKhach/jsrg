@@ -14,7 +14,7 @@ Fk:loadTranslationTable{
 zhongzen:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       player:hasSkill(zhongzen.name) and
@@ -25,7 +25,7 @@ zhongzen:addEffect(fk.EventPhaseStart, {
         function(p) return p:getHandcardNum() < player:getHandcardNum() and not p:isKongcheng() end
       )
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(
       room:getAlivePlayers(),
@@ -57,7 +57,7 @@ zhongzen:addEffect(fk.EventPhaseStart, {
 zhongzen:addEffect(fk.EventPhaseEnd, {
   name = "#zhongzen_debuff",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not (target == player and player:getMark("@@zhongzen-phase") > 0 and not player:isNude()) then
       return false
     end
@@ -81,7 +81,7 @@ zhongzen:addEffect(fk.EventPhaseEnd, {
     return #spadeDiscarded > player.hp
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:throwAllCards("he")
   end,
 })

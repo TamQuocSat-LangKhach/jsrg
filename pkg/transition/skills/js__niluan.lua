@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 js__niluan:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(js__niluan) and player.phase == Player.Start
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "js__niluan_active",
       prompt = "#js__niluan-invoke",
@@ -24,7 +24,7 @@ js__niluan:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(self).tos[1])
     player:broadcastSkillInvoke(js__niluan.name)

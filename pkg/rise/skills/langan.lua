@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 langan:addEffect(fk.Deathed, {
   anim_type = "support",
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(lanagan.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     if player:isWounded() then
       room:recover({

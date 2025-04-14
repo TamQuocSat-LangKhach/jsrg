@@ -8,7 +8,7 @@ Fk:loadTranslationTable{
 }
 
 qingping:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return
       target == player and
       player:hasSkill(qingping.name) and
@@ -25,7 +25,7 @@ qingping:addEffect(fk.EventPhaseStart, {
         end
       )
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local targetNum = #table.filter(
       player.room.alive_players,
       function(p)

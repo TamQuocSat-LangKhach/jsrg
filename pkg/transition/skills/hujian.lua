@@ -9,13 +9,13 @@ Fk:loadTranslationTable{
 }
 
 hujian:addEffect(fk.GameStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(hujian.name)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     return true
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local card = room:printCard("blood_sword", Card.Spade, 6)
     room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonJustMove, hujian.name, nil, true, player.id)
@@ -23,12 +23,12 @@ hujian:addEffect(fk.GameStart, {
 })
 
 hujian:addEffect(fk.TurnEnd, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not player:hasSkill(hujian.name) then return false end
     local room = player.room
     return table.find(room.discard_pile, function(id) return Fk:getCardById(id).trueName == "blood_sword" end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local id = event:getCostData(hujian.name)
     if id ~= 0 and not room:getPlayerById(id).dead then
@@ -36,7 +36,7 @@ hujian:addEffect(fk.TurnEnd, {
     end
     return false
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local id = event:getCostData(hujian.name)
     if id ~= 0 and not room:getPlayerById(id).dead then

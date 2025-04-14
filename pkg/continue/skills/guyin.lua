@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 }
 
 guyin:addEffect(fk.EventPhaseStart, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(guyin.name) and player.phase == Player.Start
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     player:turnOver()
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do

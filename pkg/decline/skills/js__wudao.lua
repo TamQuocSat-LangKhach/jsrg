@@ -10,13 +10,13 @@ Fk:loadTranslationTable{
 
 js__wudao:addEffect(fk.EnterDying, {
   frequency = Skill.Wake,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name) and player:usedSkillTimes(skill.name, Player.HistoryGame) == 0
   end,
-  can_wake = function(self, event, target, player)
+  can_wake = function(self, event, target, player, data)
     return player:isKongcheng()
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeMaxHp(player, 1)
     if player:isWounded() and not player.dead then

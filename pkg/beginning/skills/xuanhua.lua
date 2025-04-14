@@ -1,33 +1,40 @@
 local xuanhua = fk.CreateSkill {
-  name = "xuanhua"
+  name = "xuanhua",
 }
 
 Fk:loadTranslationTable{
-  ['xuanhua'] = '宣化',
-  ['#xuanhua1-invoke'] = '宣化：你可以进行【闪电】判定，若未受到伤害，你可以令一名角色回复1点体力',
-  ['#xuanhua2-invoke'] = '宣化：你可以进行反转的【闪电】判定，若未受到伤害，你可以对一名角色造成1点雷电伤害',
-  ['#xuanhua1-choose'] = '宣化：你可以令一名角色回复1点体力',
-  ['#xuanhua2-choose'] = '宣化：你可以对一名角色造成1点雷电伤害',
-  [':xuanhua'] = '准备阶段，你可以进行一次【闪电】判定，若你未受到伤害，你可以令一名角色回复1点体力；结束阶段，你可以进行一次条件反转的【闪电】判定，若你未受到伤害，你可以对一名角色造成1点雷电伤害。',
+  ["xuanhua"] = "宣化",
+  [":xuanhua"] = "准备阶段，你可以进行一次【闪电】判定，若你未受到伤害，你可以令一名角色回复1点体力；结束阶段，你可以进行一次"..
+  "条件反转的【闪电】判定，若你未受到伤害，你可以对一名角色造成1点雷电伤害。",
+
+  ["#xuanhua1-invoke"] = "宣化：你可以进行【闪电】判定，若未受到伤害，你可以令一名角色回复1点体力",
+  ["#xuanhua2-invoke"] = "宣化：你可以进行反转的【闪电】判定，若未受到伤害，你可以对一名角色造成1点雷电伤害",
+
+  ["#xuanhua1-choose"] = "宣化：你可以令一名角色回复1点体力",
+  ["#xuanhua2-choose"] = "宣化：你可以对一名角色造成1点雷电伤害",
 }
 
 xuanhua:addEffect(fk.EventPhaseStart, {
-  global = false,
-  can_trigger = function(self, event, target, player)
-    return target == player and player:hasSkill(xuanhua.name) and (player.phase == Player.Start or player.phase == Player.Finish)
+  anim_type = "special",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(xuanhua.name) and
+      (player.phase == Player.Start or player.phase == Player.Finish)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local prompt = "#xuanhua1-invoke"
     if player.phase == Player.Finish then
       prompt = "#xuanhua2-invoke"
     end
-    return player.room:askToSkillInvoke(player, {skill_name = xuanhua.name, prompt = prompt})
+    return player.room:askToSkillInvoke(player, {
+      skill_name = xuanhua.name,
+      prompt = prompt,
+    })
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local pattern = ".|2~9|spade"
     if player.phase == Player.Finish then
-      pattern = ".|.|^spade;.|1,10~13|spade"
+      pattern = ".|.|^spade;.|0~1,10~13|spade"
     end
     local judge = {
       who = player,
@@ -40,20 +47,31 @@ xuanhua:addEffect(fk.EventPhaseStart, {
         to = player,
         damage = 3,
         damageType = fk.ThunderDamage,
-        skillName = xuanhua.name,
+        skillName = "lightning_skill",
+        extra_data = {
+          xuanhua = player,
+        }
       }
     end
     if not player.dead and player:getMark("xuanhua-phase") == 0 then
-      local targets = table.map(table.filter(room.alive_players, function(p) return p:isWounded() end), Util.IdMapper)
+      local targets = table.filter(room.alive_players, function(p)
+        return p:isWounded()
+      end)
       local prompt = "#xuanhua1-choose"
       if player.phase == Player.Finish then
-        targets = table.map(room.alive_players, Util.IdMapper)
+        targets = room.alive_players
         prompt = "#xuanhua2-choose"
       end
       if #targets == 0 then return end
-      local to = room:askToChoosePlayers(player, {targets = targets, min_num = 1, max_num = 1, skill_name = xuanhua.name, prompt = prompt})
+      local to = room:askToChoosePlayers(player, {
+        targets = targets,
+        min_num = 1,
+        max_num = 1,
+        skill_name = xuanhua.name,
+        prompt = prompt,
+      })
       if #to > 0 then
-        to = room:getPlayerById(to[1])
+        to = to[1]
         if player.phase == Player.Start then
           room:recover{
             who = to,
@@ -73,11 +91,13 @@ xuanhua:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
+})
 
-  can_refresh = function(self, event, target, player)
-    return target == player and data.skillName == xuanhua.name
+xuanhua:addEffect(fk.Damaged, {
+  can_refresh = function(self, event, target, player, data)
+    return target == player and data.extra_data and data.extra_data.xuanhua == player and not player.dead
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "xuanhua-phase", 1)
   end,
 })

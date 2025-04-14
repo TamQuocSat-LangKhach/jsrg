@@ -11,10 +11,10 @@ Fk:loadTranslationTable{
 
 lipan:addEffect(fk.EventPhaseEnd, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(lipan.name) and player.phase == Player.Finish
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local kingdoms = {"Cancel", "wei", "shu", "wu", "qun", "jin"}
     local choices = table.simpleClone(kingdoms)
     table.removeOne(choices, player.kingdom)
@@ -28,7 +28,7 @@ lipan:addEffect(fk.EventPhaseEnd, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:changeKingdom(player, event:getCostData(skill).choice, true)
     local tos = table.filter(room:getOtherPlayers(player, false), function(p) return p.kingdom == player.kingdom end)
@@ -44,12 +44,12 @@ lipan:addEffect(fk.EventPhaseEnd, {
 lipan:addEffect(fk.EventPhaseEnd, {
   name = "#lipan_trigger",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player.phase == Player.Play and player:usedSkillTimes(lipan.name, Player.HistoryTurn) > 0 and
       table.find(player.room:getOtherPlayers(player, false), function(p) return p.kingdom == player.kingdom and not p:isNude() end)
   end,
   on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room:getOtherPlayers(player)) do
       if player.dead then return end

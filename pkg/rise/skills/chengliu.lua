@@ -11,13 +11,13 @@ Fk:loadTranslationTable{
 
 chengliu:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(chengliu.name) and player.phase == Player.Start and
       table.find(player.room.alive_players, function (p)
         return #player:getCardIds("e") > #p:getCardIds("e")
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room.alive_players, function (p)
       return #player:getCardIds("e") > #p:getCardIds("e")
@@ -35,7 +35,7 @@ chengliu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local data = event:getCostData(self)
     local to = room:getPlayerById(data.tos[1])

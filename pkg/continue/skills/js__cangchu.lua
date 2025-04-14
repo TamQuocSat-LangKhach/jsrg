@@ -12,7 +12,7 @@ Fk:loadTranslationTable{
 
 js__cangchu:addEffect(fk.EventPhaseStart, {
   anim_type = "support",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if player:hasSkill(skill.name) and target.phase == Player.Finish and player:getMark("@js__cangchu") == 0 then
       local n = 0
       local max_num = #player.room.alive_players
@@ -30,7 +30,7 @@ js__cangchu:addEffect(fk.EventPhaseStart, {
       end
     end
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local x = event:getCostData(skill)
     local targets = table.map(room.alive_players, Util.IdMapper)
@@ -52,7 +52,7 @@ js__cangchu:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local num = event:getCostData(skill).num
     for _, id in ipairs(event:getCostData(skill).tos) do

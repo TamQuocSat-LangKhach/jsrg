@@ -11,7 +11,7 @@ Fk:loadTranslationTable{
 
 jueyin:addEffect(fk.Damaged, {
   anim_type = "drawcard",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     if not (target == player and player:hasSkill(jueyin.name)) then
       return false
     end
@@ -29,7 +29,7 @@ jueyin:addEffect(fk.Damaged, {
     end
     return room.logic:getCurrentEvent().id == record_id
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(3, jueyin.name)
     for _, p in ipairs(room.alive_players) do
@@ -41,7 +41,7 @@ jueyin:addEffect(fk.Damaged, {
 jueyin:addEffect(fk.DamageInflicted, {
   name = "#jueyin_debuff",
   mute = true,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@jueyin_debuff-turn") > 0
   end,
   on_cost = Util.TrueFunc,

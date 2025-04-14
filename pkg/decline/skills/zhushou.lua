@@ -10,7 +10,7 @@ Fk:loadTranslationTable{
 
 zhushou:addEffect(fk.TurnEnd, {
   anim_type = "offensive",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     local room = player.room
     if not (
       player:hasSkill(skill.name) and

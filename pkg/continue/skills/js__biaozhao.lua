@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 
 js__biaozhao:addEffect(fk.EventPhaseStart, {
   anim_type = "control",
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(js__biaozhao.name) and player.phase == Player.Start and #player.room.alive_players > 2
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.map(room:getOtherPlayers(player, false), Util.IdMapper)
     local tos = room:askToChoosePlayers(player, {
@@ -31,19 +31,19 @@ js__biaozhao:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local target1, target2 = room:getPlayerById(event:getCostData(self).tos[1]), room:getPlayerById(event:getCostData(self).tos[2])
     room:addTableMark(target1, "@@js__biaozhao1", player.id)
     room:addTableMark(target2, "@@js__biaozhao2", player.id)
   end,
 
-  can_refresh = function(self, event, target, player)
+  can_refresh = function(self, event, target, player, data)
     return target == player and table.find(player.room.alive_players, function(p)
       return table.contains(p:getTableMark("@@js__biaozhao1"), player.id) or table.contains(p:getTableMark("@@js__biaozhao2"), player.id)
     end)
   end,
-  on_refresh = function(self, event, target, player)
+  on_refresh = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(room.alive_players) do
       if p:getMark("@@js__biaozhao1") ~= 0 then

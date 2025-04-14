@@ -12,10 +12,10 @@ Fk:loadTranslationTable{
 funi:addEffect(fk.RoundStart, {
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return player:hasSkill(skill.name)
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     player:broadcastSkillInvoke(funi.name)
     room:notifySkillInvoked(player, funi.name, "control")
@@ -49,7 +49,7 @@ funi:addEffect(fk.AfterCardsMove, {
       end
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     room:setPlayerMark(player, "@@funi-turn", 1)
   end,
@@ -58,7 +58,7 @@ funi:addEffect(fk.AfterCardsMove, {
 funi:addEffect(fk.CardUsing, {
   mute = true,
   frequency = Skill.Compulsory,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:getMark("@@funi-turn") > 0
   end,
   on_use = function(self, event, target, player, data)

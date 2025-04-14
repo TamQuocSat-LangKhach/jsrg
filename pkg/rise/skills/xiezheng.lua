@@ -12,13 +12,13 @@ Fk:loadTranslationTable{
 
 xiezheng:addEffect(fk.EventPhaseStart, {
   global = false,
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(xiezheng) and player.phase == Player.Finish and
       table.find(player.room.alive_players, function (p)
         return not p:isKongcheng()
       end)
   end,
-  on_cost = function(self, event, target, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local targets = table.filter(room.alive_players, function (p)
       return not p:isKongcheng()
@@ -37,7 +37,7 @@ xiezheng:addEffect(fk.EventPhaseStart, {
       return true
     end
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     for _, p in ipairs(event:getCostData(self).tos) do
       if not p.dead and not p:isKongcheng() then
@@ -68,11 +68,11 @@ xiezheng:addEffect(fk.EventPhaseStart, {
 })
 
 xiezheng:addEffect(fk.Damage, {
-  can_trigger = function(self, event, target, player)
+  can_trigger = function(self, event, target, player, data)
     return target == player and data.card and data.card.trueName == "slash" and
       table.contains(data.card.skillNames, "enemy_at_the_gates_skill")
   end,
-  on_use = function(self, event, target, player)
+  on_use = function(self, event, target, player, data)
     local e = player.room.logic:getCurrentEvent().parent
     while e do
       if e.event == GameEvent.UseCard then
