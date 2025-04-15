@@ -1356,8 +1356,6 @@ local js__zunwei = fk.CreateActiveSkill{
     room:setPlayerMark(player, "js__zunwei3", 0)
   end,
 }
-guozhao:addSkill(js__pianchong)
-guozhao:addSkill(js__zunwei)
 Fk:loadTranslationTable{
   ["js__guozhao"] = "郭照",
   ["#js__guozhao"] = "碧海青天",
@@ -1519,9 +1517,6 @@ local js__zhubei_targetmod = fk.CreateTargetModSkill{
 js__zhubei:addRelatedSkill(js__zhubei_targetmod)
 luxun:addSkill(js__zhubei)
 Fk:loadTranslationTable{
-  ["js__luxun"] = "陆逊",
-  ["#js__luxun"] = "却敌安疆",
-  ["illustrator:js__luxun"] = "鬼画府",
   ["js__youjin"] = "诱进",
   [":js__youjin"] = "出牌阶段开始时，你可以与一名角色拼点，双方本回合不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对没赢的角色使用一张【杀】。",
   ["#js__youjin-choose"] = "诱进：可以拼点，双方不能使用或打出点数小于各自拼点牌的手牌，赢的角色视为对对方使用【杀】",
@@ -1635,10 +1630,6 @@ local bazheng = fk.CreateTriggerSkill{
   end,
 }
 Fk:loadTranslationTable{
-  ["js__sunjun"] = "孙峻",
-  ["#js__sunjun"] = "朋党执虎",
-  ["illustrator:js__sunjun"] = "鬼画府",
-
   ["yaoyan"] = "邀宴",
   ["#yaoyan_discussion"] = "邀宴",
   [":yaoyan"] = "准备阶段开始时，你可以令所有角色依次选择是否于本回合结束时参与议事，若此议事结果为：红色，你获得至少一名未参与议事的角色各一张手牌" ..
@@ -1650,19 +1641,4 @@ Fk:loadTranslationTable{
   ["#yaoyan-prey"] = "邀宴；你可以选择其中至少一名角色，获得他们的各一张手牌",
   ["#yaoyan-damage"] = "邀宴：你可以对其中一名角色造成2点伤害",
   ["#LogChangeOpinion"] = "%to 的意见被视为 %arg",
-}
-
---local sunlubansunluyu = General(extension, "js__sunlubansunluyu", "wu", 3, 3, General.Female)
-Fk:loadTranslationTable{
-  ["js__sunlubansunluyu"] = "孙鲁班孙鲁育",
-  ["#js__sunlubansunluyu"] = "恶紫夺朱",
-  ["illustrator:js__sunlubansunluyu"] = "鬼画府",
-
-  ["daimou"] = "殆谋",
-  [":daimou"] = "每回合各限一次，当一名角色使用【杀】指定其他角色/你为目标时，你可以用牌堆顶的牌“蓄谋”/你须弃置你区域里的一张“蓄谋”牌。"..
-  "当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。"..
-  "<br/><font color='grey'>#\"<b>蓄谋</b>\"：将一张手牌扣置于判定区，判定阶段开始时，按置入顺序（后置入的先处理）依次处理“蓄谋”牌：1.使用此牌，"..
-  "然后此阶段不能再使用此牌名的牌；2.将所有“蓄谋”牌置入弃牌堆。",
-  ["fangjie"] = "芳洁",
-  [":fangjie"] = "准备阶段，若你没有“蓄谋”牌，你回复一点体力并摸一张牌，否则你可以弃置任意张你区域里的“蓄谋”牌并失去此技能。",
 }

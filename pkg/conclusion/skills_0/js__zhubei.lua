@@ -20,7 +20,7 @@ js__zhubei:addEffect(fk.DamageCaused, {
     data.damage = data.damage + 1
   end,
 
-  can_refresh = function (skill, event, target, player, data)
+  can_refresh = function (self, event, target, player, data)
     if player:getMark(js__zhubei.name .. "_lost-turn") == 0 and player:isKongcheng() then
       for _, move in ipairs(data) do
         if move.from == player.id then
@@ -33,7 +33,7 @@ js__zhubei:addEffect(fk.DamageCaused, {
       end
     end
   end,
-  on_refresh = function (skill, event, target, player, data)
+  on_refresh = function (self, event, target, player, data)
     player.room:setPlayerMark(player, js__zhubei.name .. "_lost-turn", 1)
   end,
 })

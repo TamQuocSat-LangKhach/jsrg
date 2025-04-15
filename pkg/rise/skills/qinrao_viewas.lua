@@ -1,13 +1,12 @@
-local qinrao = fk.CreateSkill {
-  name = "qinrao"
+local qinrao_viewas = fk.CreateSkill {
+  name = "qinrao_viewas"
 }
 
 Fk:loadTranslationTable{
-  ['qinrao_viewas'] = '侵扰',
-  ['qinrao'] = '侵扰',
+  ["qinrao_viewas"] = "侵扰",
 }
 
-qinrao:addEffect('viewas', {
+qinrao_viewas:addEffect("viewas", {
   handly_pile = true,
   card_filter = function (skill, player, to_select, selected)
     return #selected == 0
@@ -21,4 +20,4 @@ qinrao:addEffect('viewas', {
   end,
 })
 
-return qinrao
+return qinrao_viewas

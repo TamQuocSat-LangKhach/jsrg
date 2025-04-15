@@ -3,7 +3,7 @@ local beginning = require "packages/jsrg/pkg/beginning"
 --local transition = require "packages/jsrg/pkg/transition"
 local conclusion = require "packages/jsrg/pkg/conclusion"
 --local decline = require "packages/jsrg/pkg/decline"
---local rise = require "packages/jsrg/pkg/rise"
+local rise = require "packages/jsrg/pkg/rise"
 
 local jsrg_token = require "packages/jsrg/pkg/jsrg_token"
 
@@ -15,7 +15,7 @@ return {
   --transition,
   conclusion,
   --decline,
-  --rise,
+  rise,
 
   jsrg_token,
 }

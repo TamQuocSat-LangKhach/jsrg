@@ -1,22 +1,24 @@
 local fennan = fk.CreateSkill {
-  name = "fennan"
+  name = "fennan",
 }
 
 Fk:loadTranslationTable{
-  ['fennan'] = '奋难',
-  ['#fennan'] = '奋难：令一名角色选择：你翻面，然后移动其场上一张牌；你观看并重铸其手牌',
-  ['fennan1'] = '%src翻面，然后其移动场上一张牌',
-  ['fennan2'] = '%src观看并重铸你的手牌',
-  ['#fennan-move'] = '奋难：请将 %dest 场上一张牌移动给另一名角色',
-  ['#fennan-recast'] = '奋难：你可以选择 %dest 至多%arg张手牌，令其重铸',
-  [':fennan'] = '出牌阶段限X次，你可以令一名角色选择一项：1.令你翻面，然后你移动其场上一张本回合未移动过的牌；2.你观看并重铸其至多X张手牌（X为你装备区内牌的数量）。',
+  ["fennan"] = "奋难",
+  [":fennan"] = "出牌阶段限X次，你可以令一名角色选择一项：1.令你翻面，然后你移动其场上一张本回合未移动过的牌；2.你观看并重铸其至多X张手牌"..
+  "（X为你装备区内牌的数量）。",
+
+  ["#fennan"] = "奋难：令一名角色选择：你翻面，然后移动其场上一张牌；你观看并重铸其手牌",
+  ["fennan1"] = "%src翻面，然后其移动场上一张牌",
+  ["fennan2"] = "%src观看并重铸你的手牌",
+  ["#fennan-move"] = "奋难：请将 %dest 场上一张牌移动给另一名角色",
+  ["#fennan-recast"] = "奋难：选择 %dest 至多%arg张手牌令其重铸",
 }
 
-fennan:addEffect('active', {
+fennan:addEffect("active", {
   anim_type = "control",
+  prompt = "#fennan",
   card_num = 0,
   target_num = 1,
-  prompt = "#fennan",
   can_use = function(self, player)
     return player:usedSkillTimes(fennan.name, Player.HistoryPhase) < #player:getCardIds("e")
   end,
@@ -25,8 +27,8 @@ fennan:addEffect('active', {
     return #selected == 0
   end,
   on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    local target = room:getPlayerById(effect.tos[1])
+    local player = effect.from
+    local target = effect.tos[1]
     local choices = {"fennan1:"..player.id}
     if not target:isKongcheng() then
       table.insert(choices, "fennan2:"..player.id)
@@ -35,7 +37,7 @@ fennan:addEffect('active', {
       choices = choices,
       skill_name = fennan.name,
     })
-    if choice[7] == "1" then
+    if choice:startsWith("fennan1") then
       player:turnOver()
       if player.dead then return end
       local cards = {}
@@ -48,10 +50,10 @@ fennan:addEffect('active', {
           end
         end
       end, Player.HistoryTurn)
-      local targets = table.filter(room:getOtherPlayers(target), function (p)
+      local targets = table.filter(room:getOtherPlayers(target, false), function (p)
         return table.find(target:getCardIds("ej"), function (id)
           return not table.contains(cards, id) and target:canMoveCardInBoardTo(p, id)
-        end)
+        end) ~= nil
       end)
       if #targets == 0 then return end
       local to = room:askToChoosePlayers(player, {
@@ -61,8 +63,7 @@ fennan:addEffect('active', {
         prompt = "#fennan-move::"..target.id,
         skill_name = fennan.name,
         cancelable = false,
-      })
-      to = room:getPlayerById(to[1])
+      })[1]
       room:askToMoveCardInBoard(player, {
         target_one = target,
         target_two = to,
@@ -72,8 +73,14 @@ fennan:addEffect('active', {
       })
     else
       local n = #player:getCardIds("e")
-      local cards = U.askforChooseCardsAndChoice(player, target:getCardIds("h"), {"OK"}, fennan.name,
-        "#fennan-recast::"..target.id..":"..n, {"Cancel"}, 0, n)
+      local cards = room:askToChooseCards(player, {
+        target = target,
+        min = 0,
+        max = n,
+        flag = { card_data = {{ target.general, target:getCardIds("h") }} },
+        skill_name = fennan.name,
+        prompt = "#fennan-recast::"..target.id..":"..n,
+      })
       if #cards > 0 then
         room:recastCard(cards, target, fennan.name)
       end

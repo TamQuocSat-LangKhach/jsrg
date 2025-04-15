@@ -77,7 +77,7 @@ Fk:loadTranslationTable{
   --["illustrator:js_re__qiaoxuan"] = "",
 }
 
---General:new(extension, "js__xushao", "qun", 3):addSkills { "yingmen", "js__pingjian" }
+General:new(extension, "js__xushao", "qun", 3):addSkills { "yingmen", "js__pingjian" }
 Fk:loadTranslationTable{
   ["js__xushao"] = "许劭",
   ["#js__xushao"] = "识人读心",
@@ -87,13 +87,13 @@ Fk:loadTranslationTable{
   ["~js__xushao"] = "运去朋友散，满屋余风雨……",
 }
 
---General:new(extension, "js_re__xushao", "qun", 3):addSkills { "re__yingmen", "re__pingjian" }
+General:new(extension, "js_re__xushao", "qun", 3):addSkills { "re__yingmen", "re__pingjian" }
 Fk:loadTranslationTable{
   ["js_re__xushao"] = "许劭",
   ["#js_re__xushao"] = "识人读心",
-  --["illustrator:js_re__xushao"] = "",
+  ["illustrator:js_re__xushao"] = "凡果_Make",
 
-  --["~js_re__xushao"] = "",
+  ["~js_re__xushao"] = "乱世评荐难再续，唯有荷香夜夜长。",
 }
 
 General:new(extension, "js__hejin", "qun", 4):addSkills { "zhaobing", "zhuhuanh", "ty__yanhuo" }
@@ -134,7 +134,7 @@ Fk:loadTranslationTable{
   ["illustrator:js__kongrong"] = "凝聚永恒",
 }
 
---General:new(extension, "js__duanwei", "qun", 4):addSkills { "langmie" }
+General:new(extension, "js__duanwei", "qun", 4):addSkills { "langmie" }
 Fk:loadTranslationTable{
   ["js__duanwei"] = "段煨",
   ["#js__duanwei"] = "凉国之英",
@@ -143,7 +143,7 @@ Fk:loadTranslationTable{
   ["~js__duanwei"] = "狼伴其侧，终不胜防。",
 }
 
---General:new(extension, "js__zhujun", "qun", 4):addSkills { "fendi", "jvxiang" }
+General:new(extension, "js__zhujun", "qun", 4):addSkills { "fendi", "jvxiang" }
 Fk:loadTranslationTable{
   ["js__zhujun"] = "朱儁",
   ["#js__zhujun"] = "征无遗虑",

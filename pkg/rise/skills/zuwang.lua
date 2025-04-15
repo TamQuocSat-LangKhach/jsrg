@@ -1,15 +1,15 @@
 local zuwang = fk.CreateSkill {
-  name = "zuwang"
+  name = "zuwang",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
-  ['zuwang'] = '族望',
-  [':zuwang'] = '锁定技，准备阶段和结束阶段，你将手牌摸至体力上限。',
+  ["zuwang"] = "族望",
+  [":zuwang"] = "锁定技，准备阶段和结束阶段，你将手牌摸至体力上限。",
 }
 
 zuwang:addEffect(fk.EventPhaseStart, {
   anim_type = "drawcard",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(zuwang.name) and
       (player.phase == Player.Start or player.phase == Player.Finish) and

@@ -1,15 +1,16 @@
-local piqi = fk.CreateSkill {
-  name = "piqi"
+local piqi_viewas = fk.CreateSkill {
+  name = "piqi&",
 }
 
 Fk:loadTranslationTable{
-  ['piqi&'] = '辟奇',
-  ['#piqi&'] = '辟奇：你可以将【闪】当【无懈可击】使用',
-  [':piqi&'] = '你可以将【闪】当【无懈可击】使用。',
+  ["piqi&"] = "辟奇",
+  [":piqi&"] = "你可以将【闪】当【无懈可击】使用。",
+
+  ["#piqi&"] = "辟奇：你可以将【闪】当【无懈可击】使用",
 }
 
-piqi:addEffect('viewas', {
-  anim_type = "control",
+piqi_viewas:addEffect("viewas", {
+  mute = true,
   pattern = "nullification",
   prompt = "#piqi&",
   handly_pile = true,
@@ -19,7 +20,7 @@ piqi:addEffect('viewas', {
   view_as = function(self, player, cards)
     if #cards ~= 1 then return end
     local card = Fk:cloneCard("nullification")
-    card.skillName = piqi.name
+    card.skillName = "piqi"
     card:addSubcard(cards[1])
     return card
   end,
@@ -28,4 +29,4 @@ piqi:addEffect('viewas', {
   end,
 })
 
-return piqi
+return piqi_viewas

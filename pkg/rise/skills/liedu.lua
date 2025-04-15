@@ -1,15 +1,15 @@
 local liedu = fk.CreateSkill {
-  name = "liedu"
+  name = "liedu",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
-  ['liedu'] = '烈妒',
-  [':liedu'] = '锁定技，其他女性角色和手牌数大于你的角色不能响应你使用的牌。',
+  ["liedu"] = "烈妒",
+  [":liedu"] = "锁定技，其他女性角色和手牌数大于你的角色不能响应你使用的牌。",
 }
 
 liedu:addEffect(fk.CardUsing, {
   anim_type = "offensive",
-  frequency = Skill.Compulsory,
   can_trigger = function(self, event, target, player, data)
     return target == player and player:hasSkill(liedu.name) and
       (data.card.trueName == "slash" or data.card:isCommonTrick()) and
@@ -24,7 +24,7 @@ liedu:addEffect(fk.CardUsing, {
     if #targets > 0 then
       data.disresponsiveList = data.disresponsiveList or {}
       for _, p in ipairs(targets) do
-        table.insertIfNeed(data.disresponsiveList, p.id)
+        table.insertIfNeed(data.disresponsiveList, p)
       end
     end
   end,

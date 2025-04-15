@@ -1,28 +1,31 @@
 local qinrao = fk.CreateSkill {
-  name = "qinrao"
+  name = "qinrao",
 }
 
 Fk:loadTranslationTable{
-  ['qinrao'] = '侵扰',
-  ['qinrao_viewas'] = '侵扰',
-  ['#qinrao-use'] = '侵扰：你可以将一张牌当【决斗】对 %dest 使用',
-  [':qinrao'] = '其他角色出牌阶段开始时，你可以将一张牌当【决斗】对其使用，若其手牌中有可以打出的【杀】，其必须打出响应，否则其展示所有手牌。',
+  ["qinrao"] = "侵扰",
+  [":qinrao"] = "其他角色出牌阶段开始时，你可以将一张牌当【决斗】对其使用，若其手牌中有可以打出的【杀】，其必须打出响应，否则其展示所有手牌。",
+
+  ["#qinrao-use"] = "侵扰：你可以将一张牌当【决斗】对 %dest 使用",
 }
 
 qinrao:addEffect(fk.EventPhaseStart, {
   anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return target ~= player and player:hasSkill(qinrao) and target.phase == Player.Play and not player:isNude()
+    return target ~= player and player:hasSkill(qinrao.name) and target.phase == Player.Play and
+      not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
     local success, dat = player.room:askToUseActiveSkill(player, {
       skill_name = "qinrao_viewas",
       prompt = "#qinrao-use::" .. target.id,
       cancelable = true,
-      extra_data = { must_targets = {target.id} }
+      extra_data = {
+        must_targets = {target.id},
+      },
     })
-    if success then
-      event:setCostData(self, dat)
+    if success and dat then
+      event:setCostData(self, {cards = dat.cards})
       return true
     end
   end,
@@ -33,7 +36,7 @@ qinrao:addEffect(fk.EventPhaseStart, {
 
 qinrao:addEffect(fk.PreCardEffect, {
   can_refresh = function(self, event, target, player, data)
-    return data.from == player.id and data.card.trueName == "duel" and table.contains(data.card.skillNames, "qinrao")
+    return data.from == player and data.card.trueName == "duel" and table.contains(data.card.skillNames, qinrao.name)
   end,
   on_refresh = function(self, event, target, player, data)
     local card = data.card:clone()
@@ -41,7 +44,7 @@ qinrao:addEffect(fk.PreCardEffect, {
     for k, v in pairs(c) do
       card[k] = v
     end
-    card.skill = qinraoDuelSkill
+    card.skill = Fk.skills["qinrao__duel_skill"]
     data.card = card
   end,
 })
