@@ -1,28 +1,33 @@
 local nianen = fk.CreateSkill {
-  name = "nianen"
+  name = "nianen",
 }
 
 Fk:loadTranslationTable{
-  ['nianen'] = '念恩',
-  ['#nianen'] = '念恩：将一张牌当任意基本牌使用或打出，若转化后的牌不为红色普【杀】，“念恩”失效且你获得“马术”直到回合结束',
-  [':nianen'] = '你可以将你的一张牌当任意基本牌使用或打出；若转化后的牌不为红色普【杀】，〖念恩〗失效且你获得〖马术〗直到回合结束。',
-  ['$nianen1'] = '丞相厚恩，今斩将以报。',
-  ['$nianen2'] = '丈夫信义为先，恩信岂可负之？',
-  ['$nianen3'] = '桃园之谊，殷殷在怀，不敢或忘。',
-  ['$nianen4'] = '解印封金离许都，惟思恩义走长途。',
+  ["nianen"] = "念恩",
+  [":nianen"] = "你可以将一张牌当任意基本牌使用或打出；若转化后的牌不为红色普【杀】，〖念恩〗失效且你获得〖马术〗直到回合结束。",
+
+  ["#nianen"] = "念恩：将一张牌当任意基本牌使用或打出，若转化后的牌不为红色普【杀】，“念恩”失效且本回合获得“马术”",
+
+  ["$nianen1"] = "丞相厚恩，今斩将以报。",
+  ["$nianen2"] = "丈夫信义为先，恩信岂可负之？",
+  ["$nianen3"] = "桃园之谊，殷殷在怀，不敢或忘。",
+  ["$nianen4"] = "解印封金离许都，惟思恩义走长途。",
 }
 
-nianen:addEffect('viewas', {
+local U = require "packages/utility/utility"
+
+nianen:addEffect("viewas", {
   pattern = ".|.|.|.|.|basic",
   mute = true,
   prompt = "#nianen",
-  interaction = function()
-    local all_names = U.getAllCardNames("b")
-    local names = U.getViewAsCardNames(Self, "nianen", all_names)
+  interaction = function(self, player)
+    local all_names = Fk:getAllCardNames("b")
+    local names = player:getViewAsCardNames(nianen.name, all_names)
     if #names > 0 then
       return U.CardNameBox { choices = names, all_choices = all_names }
     end
   end,
+  handly_pile = true,
   card_filter = function(self, player, to_select, selected)
     return #selected == 0
   end,
@@ -49,8 +54,6 @@ nianen:addEffect('viewas', {
       player:broadcastSkillInvoke(nianen.name, math.random(1, 2))
     end
   end,
-  enabled_at_play = Util.TrueFunc,
-  enabled_at_response = Util.TrueFunc,
 })
 
 return nianen

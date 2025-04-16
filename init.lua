@@ -1,5 +1,5 @@
 local beginning = require "packages/jsrg/pkg/beginning"
---local continue = require "packages/jsrg/pkg/continue"
+local continue = require "packages/jsrg/pkg/continue"
 --local transition = require "packages/jsrg/pkg/transition"
 local conclusion = require "packages/jsrg/pkg/conclusion"
 --local decline = require "packages/jsrg/pkg/decline"
@@ -11,7 +11,7 @@ Fk:loadTranslationTable{ ["jsrg"] = "江山如故" }
 
 return {
   beginning,
-  --continue,
+  continue,
   --transition,
   conclusion,
   --decline,

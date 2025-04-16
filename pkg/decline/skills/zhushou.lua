@@ -93,7 +93,7 @@ zhushou:addEffect(fk.TurnEnd, {
 
     return false
   end,
-  on_cost = function(self, event, player)
+  on_cost = function(self, event, target, player, data)
     local room = player.room
     local tos = room:askToChoosePlayers(player, {
       targets = event:getCostData(skill),
@@ -110,7 +110,7 @@ zhushou:addEffect(fk.TurnEnd, {
 
     return false
   end,
-  on_use = function(self, event, player)
+  on_use = function(self, event, target, player, data)
     local room = player.room
     local to = room:getPlayerById(event:getCostData(skill))
     if to:isAlive() then

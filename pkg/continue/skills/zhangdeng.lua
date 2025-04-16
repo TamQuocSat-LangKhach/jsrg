@@ -1,48 +1,76 @@
 local zhangdeng = fk.CreateSkill {
-  name = "zhangdeng"
+  name = "zhangdeng",
+  attached_skill_name = "zhangdeng&"
 }
 
 Fk:loadTranslationTable{
-  ['zhangdeng'] = '帐灯',
-  ['#zhangdeng-active'] = '发动帐灯，视为使用一张【酒】',
-  ['zhangdeng&'] = '帐灯',
-  ['#zhangdeng_trigger'] = '帐灯',
-  [':zhangdeng'] = '当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次及以上发动时，你翻面至正面朝上。',
+  ["zhangdeng"] = "帐灯",
+  [":zhangdeng"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次发动时，\
+  你翻面至正面朝上。",
+
+  ["#zhangdeng"] = "帐灯：你可以视为使用【酒】",
+  ["#zhangdeng-choose"] = "帐灯：要发动哪位角色的“帐灯”？若为第二次发动，其翻面至正面朝上",
+  ["#zhangdeng_tip"] = "翻至正面",
+}
+
+Fk:addTargetTip{
+  name = "zhangdeng",
+  target_tip = function(self, player, to_select, selected, selected_cards, card, selectable)
+    if not selectable then return end
+    if to_select:getMark("zhangdeng-turn") == 1 then
+      return "#zhangdeng_tip"
+    end
+  end,
 }
 
 zhangdeng:addEffect("viewas", {
-  prompt = "#zhangdeng-active",
-  attached_skill_name = "zhangdeng&",
+  mute = true,
   pattern = "analeptic",
-  card_filter = function(self, player, to_select, selected) return false end,
-  before_use = function(self, player)
-    local room = player.room
-    for _, p in ipairs(room.alive_players) do
-      room:addPlayerMark(p, "zhangdeng_used-turn")
-    end
-  end,
+  prompt = "#zhangdeng",
+  card_filter = Util.FalseFunc,
   view_as = function(self, player, cards)
     local c = Fk:cloneCard("analeptic")
     c.skillName = zhangdeng.name
     return c
   end,
+  before_use = function(self, player, use)
+    local room = player.room
+    local src = table.filter(room.alive_players, function (p)
+      return p:hasSkill(zhangdeng.name) and not p.faceup
+    end)
+    if #src > 1 then
+      src = room:askToChoosePlayers(player, {
+        min_num = 1,
+        max_num = 1,
+        targets = src,
+        skill_name = zhangdeng.name,
+        prompt = "#zhangdeng-choose",
+        cancelable = false,
+        target_tip_name = zhangdeng.name,
+      })
+    end
+    src = src[1]
+    src:broadcastSkillInvoke(zhangdeng.name)
+    room:notifySkillInvoked(src, zhangdeng.name, "support", {player})
+    room:addPlayerMark(src, "zhangdeng-turn", 1)
+    if src:getMark("zhangdeng-turn") == 2 and not src.faceup then
+      src:turnOver()
+    end
+  end,
   enabled_at_play = function (self, player)
-    return not player.faceup
+    return table.find(Fk:currentRoom().alive_players, function (p)
+      return p:hasSkill(zhangdeng.name) and not p.faceup
+    end)
   end,
   enabled_at_response = function (self, player, response)
-    return not response and not player.faceup
+    return not response and table.find(Fk:currentRoom().alive_players, function (p)
+      return p:hasSkill(zhangdeng.name) and not p.faceup
+    end)
   end,
 })
 
-zhangdeng:addEffect(fk.CardUsing, {
-  can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(zhangdeng.name) and not player.faceup and table.contains(data.card.skillNames, zhangdeng.name) and
-      player:getMark("zhangdeng_used-turn") > 1
-  end,
-  on_cost = Util.TrueFunc,
-  on_use = function(self, event, target, player, data)
-    player:turnOver()
-  end,
-})
+zhangdeng:addLoseEffect(function (self, player, is_death)
+  player.room:setPlayerMark(player, "zhangdeng-turn", 0)
+end)
 
 return zhangdeng

@@ -89,7 +89,7 @@ xundao:addEffect(fk.AskForRetrial, {
       cancelable = false,
       expand_pile = ids,
     })
-    room:ChangeJudge{
+    room:changeJudge{
       card = Fk:getCardById(cards[1]),
       player = player,
       data = data,

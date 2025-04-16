@@ -10,10 +10,10 @@ Fk:loadTranslationTable{
 
 yangge:addEffect("PhaseStart", {
   attached_skill_name = "yangge&",
-  can_trigger = function(self, event, player, data)
+  can_trigger = function(self, event, target, player, data)
     return player:getPhase() == .phasePlay
   end,
-  on_refresh = function(self, event, player, data)
+  on_refresh = function(self, event, target, player, data)
     local minHpPlayer = nil
     local minHp = 999
     for _, p in sgs.PlayerListIterator(player:getRoom():getOtherPlayers(player)) do
