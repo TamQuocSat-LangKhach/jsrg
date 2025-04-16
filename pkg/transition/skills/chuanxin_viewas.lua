@@ -1,13 +1,12 @@
-local js__chuanxin = fk.CreateSkill {
-  name = "js__chuanxin"
+local chuanxin_viewas = fk.CreateSkill {
+  name = "js__chuanxin_viewas",
 }
 
 Fk:loadTranslationTable{
-  ['#js__chuanxin_viewas'] = '穿心',
-  ['js__chuanxin'] = '穿心',
+  ["js__chuanxin_viewas"] = "穿心",
 }
 
-js__chuanxin:addEffect('viewas', {
+chuanxin_viewas:addEffect("viewas", {
   handly_pile = true,
   card_filter = function(self, player, to_select, selected)
     return #selected == 0
@@ -21,4 +20,4 @@ js__chuanxin:addEffect('viewas', {
   end,
 })
 
-return js__chuanxin
+return chuanxin_viewas

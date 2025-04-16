@@ -1,64 +1,90 @@
 local shacheng = fk.CreateSkill {
-  name = "shacheng"
+  name = "shacheng",
 }
 
 Fk:loadTranslationTable{
-  ['shacheng'] = '沙城',
-  ['shacheng_active'] = '沙城',
-  ['#shacheng-invoke'] = '沙城：你可以移去一张“沙城”，令其中一名目标摸其本回合失去牌数的牌',
-  [':shacheng'] = '游戏开始时，你将牌堆顶的两张牌置于你的武将牌上；当一名角色使用一张【杀】结算后，你可以移去武将牌上的一张牌，令其中一名目标角色摸X张牌（X为该目标本回合失去的牌数且至多为5）。',
+  ["shacheng"] = "沙城",
+  [":shacheng"] = "游戏开始时，你将牌堆顶的两张牌置于你的武将牌上；当一名角色使用一张【杀】结算后，你可以移去武将牌上的一张牌，\
+  令其中一名目标角色摸X张牌（X为该目标本回合失去的牌数且至多为5）。",
+
+  ["#shacheng-choose"] = "沙城：你可以移去一张“沙城”，令其中一名目标摸其本回合失去牌数的牌",
+  ["#shacheng_tip"] = "摸%arg张牌",
 }
 
-shacheng:addEffect({fk.GameStart, fk.CardUseFinished}, {
+shacheng:addEffect(fk.GameStart, {
   derived_piles = "shacheng",
-  expand_pile = "shacheng",
   can_trigger = function(self, event, target, player, data)
-    if player:hasSkill(shacheng) then
-      return event == fk.GameStart or (data.card.trueName == "slash" and #player:getPile(shacheng.name) > 0 and data.tos and
-        table.find(TargetGroup:getRealTargets(data.tos), function(id) return not player.room:getPlayerById(id).dead end))
-    end
+    return player:hasSkill(shacheng.name)
   end,
-  on_cost = function(self, event, target, player, data)
-    if event == fk.GameStart then
-      return true
-    else
-      local room = player.room
-      room:setPlayerMark(player, "shacheng-tmp", table.filter(TargetGroup:getRealTargets(data.tos),
-        function(id) return not room:getPlayerById(id).dead end))
-      local success, dat = room:askToUseActiveSkill(player, {
-        skill_name = "shacheng_active",
-        prompt = "#shacheng-invoke",
-        cancelable = true
-      })
-      room:setPlayerMark(player, "shacheng-tmp", 0)
-      if success then
-        event:setCostData(self, dat)
-        return true
-      end
-    end
-  end,
+  on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    local room = player.room
-    if event == fk.GameStart then
-      player:addToPile(shacheng.name, room:getNCards(2), true, shacheng.name)
-    else
-      room:moveCardTo(event:getCostData(self).cards, Card.DiscardPile, player, fk.ReasonJustMove, shacheng.name, shacheng.name, true, player.id)
-      local to = room:getPlayerById(event:getCostData(self).targets[1])
-      local n = 0
+    player:addToPile(shacheng.name, player.room:getNCards(2), true, shacheng.name)
+  end,
+})
+
+Fk:addTargetTip{
+  name = "shacheng",
+  target_tip = function(self, player, to_select, selected, selected_cards, card, selectable, extra_data)
+    if not selectable then return end
+    return "#shacheng_tip:::"..extra_data.extra_data[tostring(to_select.id)]
+  end,
+}
+
+shacheng:addEffect(fk.CardUseFinished, {
+  anim_type = "support",
+  can_trigger = function(self, event, target, player, data)
+    if player:hasSkill(shacheng.name) and data.card.trueName == "slash" and #player:getPile(shacheng.name) > 0 then
+      local dat = {}
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function(e)
         for _, move in ipairs(e.data) do
-          if move.from == to.id then
+          if move.from and table.contains(data.tos, move.from) and not move.from.dead then
             for _, info in ipairs(move.moveInfo) do
               if info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip then
-                n = n + 1
+                dat[tostring(move.from.id)] = (dat[tostring(move.from.id)] or 0) + 1
               end
             end
           end
         end
       end, Player.HistoryTurn)
-      if n == 0 or to.dead then return end
-      to:drawCards(n, shacheng.name)
+      if next(dat) then
+        event:setCostData(self, {extra_data = dat})
+        return true
+      end
     end
+  end,
+  on_cost = function(self, event, target, player, data)
+    local room = player.room
+    local dat = event:getCostData(self).extra_data
+    local targets = {}
+    for id, _ in pairs(dat) do
+      table.insert(targets, room:getPlayerById(tonumber(id)))
+    end
+    local to, cards = room:askToChooseCardsAndPlayers(player, {
+      min_card_num = 1,
+      max_card_num = 1,
+      min_num = 1,
+      max_num = 1,
+      targets = targets,
+      pattern = ".|.|.|shacheng",
+      skill_name = shacheng.name,
+      prompt = "#shacheng-choose",
+      cancelable = true,
+      expand_pile = shacheng.name,
+      target_tip_name = shacheng.name,
+      extra_data = dat,
+    })
+    if #to > 0 and #cards > 0 then
+      event:setCostData(self, {tos = to, cards = cards, choice = dat[tostring(to[1].id)]})
+      return true
+    end
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    local to = event:getCostData(self).tos[1]
+    room:moveCardTo(event:getCostData(self).cards, Card.DiscardPile, player, fk.ReasonJustMove, shacheng.name, shacheng.name, true, player)
+    if to.dead then return end
+    local n = math.min(event:getCostData(self).choice, 5)
+    to:drawCards(n, shacheng.name)
   end,
 })
 

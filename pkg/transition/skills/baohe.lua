@@ -1,63 +1,78 @@
 local baohe = fk.CreateSkill {
-  name = "baohe"
+  name = "baohe",
 }
 
 Fk:loadTranslationTable{
-  ['baohe'] = '暴喝',
-  ['#baohe-discard'] = '暴喝：你可以弃置两张牌，视为对所有攻击范围内包含 %dest 的角色使用【杀】',
-  [':baohe'] = '一名角色出牌阶段结束时，你可以弃置两张牌，然后视为你对攻击范围内包含其的所有角色使用一张无距离限制的【杀】，当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。',
+  ["baohe"] = "暴喝",
+  [":baohe"] = "一名角色出牌阶段结束时，你可以弃置两张牌，然后视为你对攻击范围内包含其的所有角色使用一张无距离限制的【杀】，\
+  当其中一名目标响应此【杀】后，此【杀】对剩余目标造成的伤害+1。",
+
+  ["#baohe-discard"] = "暴喝：你可以弃置两张牌，视为对所有攻击范围内包含 %dest 的角色使用【杀】",
 }
 
 baohe:addEffect(fk.EventPhaseEnd, {
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return player:hasSkill(baohe.name) and target.phase == Player.Play and #player:getCardIds("he") > 1
+    return player:hasSkill(baohe.name) and target.phase == Player.Play and
+      #player:getCardIds("he") > 1 and not target.dead
   end,
   on_cost = function(self, event, target, player, data)
-    local cards = player.room:askToDiscard(player, {
+    local room = player.room
+    local cards = room:askToDiscard(player, {
       min_num = 2,
       max_num = 2,
       include_equip = true,
       skill_name = baohe.name,
       cancelable = true,
-      pattern = ".",
       prompt = "#baohe-discard::" .. target.id,
     })
     if #cards > 1 then
-      event:setCostData(self, cards)
+      event:setCostData(self, {cards = cards})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    room:throwCard(event:getCostData(self), baohe.name, player, player)
-    local targets = {}
-    for _, p in ipairs(player.room:getOtherPlayers(target)) do
-      if Fk:currentRoom():getPlayerById(p.id):inMyAttackRange(target) and p ~= player then
-        table.insert(targets, p)
+    room:throwCard(event:getCostData(self).cards, baohe.name, player, player)
+    if player.dead then return end
+    local targets = table.filter(room:getOtherPlayers(player, false), function (p)
+      return p:inMyAttackRange(target)
+    end)
+    if #targets > 0 then
+      room:useVirtualCard("slash", nil, player, targets, baohe.name, true)
+      for _, p in ipairs(room.players) do
+        room:setPlayerMark(p, "baohe-tmp", 0)
       end
     end
-    room:useVirtualCard("slash", nil, player, targets, baohe.name, true)
   end,
 })
 
-baohe:addEffect(fk.DamageCaused, {
-  can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(baohe.name) and player:getMark("baohe_adddamage-phase") ~= 0
+baohe:addEffect(fk.DamageInflicted, {
+  mute = true,
+  is_delay_effect = true,
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player.room.logic:damageByCardEffect() and
+      table.contains(data.card.skillNames, baohe.name) and player:getMark("baohe-tmp") > 0
   end,
-  on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    local num = player:getMark("baohe_adddamage-phase")
-    data.damage = data.damage + num
+  on_use = function (self, event, target, player, data)
+    data:changeDamage(player:getMark("baohe-tmp"))
   end,
 })
 
-baohe:addEffect(fk.CardUseFinished, {
+baohe:addEffect(fk.CardEffectCancelledOut, {
   can_refresh = function(self, event, target, player, data)
-    return player:hasSkill(baohe.name) and data.card.name == "jink" and data.toCard and data.toCard.trueName == "slash" and table.contains(data.toCard.skillNames, "baohe") and data.responseToEvent.from == player.id
+    return target == player and table.contains(data.card.skillNames, baohe.name)
   end,
   on_refresh = function(self, event, target, player, data)
-    local room = player.room
-    room:addPlayerMark(player, "baohe_adddamage-phase", 1)
+    local use_event = player.room.logic:getCurrentEvent():findParent(GameEvent.UseCard)
+    if use_event then
+      local use = use_event.data
+      for _, p in ipairs(use.tos) do
+        if p ~= data.to and not p.dead then
+          player.room:addPlayerMark(p, "baohe-tmp", 1)
+        end
+      end
+    end
   end,
 })
 

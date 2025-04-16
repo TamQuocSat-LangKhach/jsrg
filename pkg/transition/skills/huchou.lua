@@ -1,47 +1,53 @@
 local huchou = fk.CreateSkill {
-  name = "huchou"
+  name = "huchou",
+  tags = { Skill.Compulsory },
 }
 
 Fk:loadTranslationTable{
-  ['huchou'] = '互雠',
-  ['@huchou'] = '互雠',
-  [':huchou'] = '锁定技，上一名对你使用伤害类牌的其他角色受到你造成的伤害时，此伤害+1。',
+  ["huchou"] = "互雠",
+  [":huchou"] = "锁定技，上一名对你使用伤害类牌的其他角色受到你造成的伤害时，此伤害+1。",
+
+  ["@huchou"] = "互雠",
 }
 
 huchou:addEffect(fk.DamageInflicted, {
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return data.from and data.from == player and player:getMark(huchou.name) == target.id
+    return player:hasSkill(huchou.name) and data.from and data.from == player and player:getMark(huchou.name) == target.id
   end,
   on_use = function(self, event, target, player, data)
-    data.damage = data.damage + 1
+    data:changeDamage(1)
   end,
 })
 
 huchou:addEffect(fk.TargetConfirmed, {
   can_refresh = function(self, event, target, player, data)
     return target == player and player:hasSkill(huchou.name, true) and
-      data.card.is_damage_card and data.from ~= player.id and player:getMark(huchou.name) ~= data.from
+      data.card.is_damage_card and data.from ~= player
   end,
   on_refresh = function(self, event, target, player, data)
     local room = player.room
-    room:setPlayerMark(player, huchou.name, data.from)
-    room:setPlayerMark(player, "@huchou", room:getPlayerById(data.from).general)
+    room:setPlayerMark(player, huchou.name, data.from.id)
+    room:setPlayerMark(player, "@huchou", data.from.general)
   end,
 })
 
-huchou:addEffect(fk.AcquireSkill, {
-  on_acquire = function (self, player, is_start)
-    local room = player.room
-    room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
-      local use = e.data[1]
-      if use.tos and table.contains(TargetGroup:getRealTargets(use.tos), player.id) and
-        use.card.is_damage_card and use.from ~= player.id then
-        room:setPlayerMark(player, huchou.name, use.from)
-        room:setPlayerMark(player, "@huchou", room:getPlayerById(use.from).general)
-        return true
-      end
-    end, Player.HistoryGame)
-  end,
-})
+huchou:addAcquireEffect(function (self, player, is_start)
+  local room = player.room
+  room.logic:getEventsByRule(GameEvent.UseCard, 1, function (e)
+    local use = e.data
+    if use.card.is_damage_card and table.contains(use.tos, player) and use.from ~= player then
+      room:setPlayerMark(player, huchou.name, use.from.id)
+      room:setPlayerMark(player, "@huchou", use.from.general)
+      return true
+    end
+  end, Player.HistoryGame)
+end)
+
+huchou:addLoseEffect(function (self, player, is_death)
+  local room = player.room
+  room:setPlayerMark(player, huchou.name, 0)
+  room:setPlayerMark(player, "@huchou", 0)
+end)
 
 return huchou
