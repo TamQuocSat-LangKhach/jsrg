@@ -17,37 +17,37 @@ chuanxin:addEffect(fk.EventPhaseStart, {
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "js__chuanxin_viewas",
+    local use = room:askToUseVirtualCard(player, {
+      name = "slash",
+      skill_name = chuanxin.name,
       prompt = "#js__chuanxin-invoke",
-      cancelable = true
+      cancelable = true,
+      extra_data = {
+        extraUse = true,
+      },
+      card_filter = {
+        n = 1,
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {extra_data = dat})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local dat = event:getCostData(self).extra_data
-    local card = Fk:cloneCard("slash")
-    card:addSubcards(dat.cards)
+    local use = event:getCostData(self).extra_data
     local n = 0
     room.logic:getEventsOfScope(GameEvent.Recover, 999, function(e)
       local recover = e.data
-      for _, p in ipairs(dat.targets) do
+      for _, p in ipairs(use.tos) do
         if recover.who == p then
           n = n + recover.num
         end
       end
     end, Player.HistoryTurn)
-    local use = {
-      from = player,
-      tos = dat.targets,
-      card = card,
-      extraUse = true,
-      additionalDamage = n,
-    }
+    use.additionalDamage = n
     room:useCard(use)
   end,
 })

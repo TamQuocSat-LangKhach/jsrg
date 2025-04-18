@@ -21,21 +21,27 @@ weizhui:addEffect(fk.EventPhaseStart, {
   end,
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local success, dat = room:askToUseActiveSkill(target, {
-      skill_name = "weizhui_viewas",
+    local use = room:askToUseVirtualCard(target, {
+      name = "dismantlement",
+      skill_name = weizhui.name,
       prompt = "#weizhui-use:"..player.id,
       cancelable = true,
       extra_data = {
         exclusive_targets = {player.id},
       },
+      card_filter = {
+        n = 1,
+        pattern = ".|.|spade,club",
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {cards = dat.cards})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:useVirtualCard("dismantlement", event:getCostData(self).cards, target, player, weizhui.name, true)
+    player.room:useCard(event:getCostData(self).extra_data)
   end,
 })
 

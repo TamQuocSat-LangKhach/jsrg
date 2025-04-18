@@ -1,27 +1,22 @@
-local jinglei = fk.CreateSkill {
-  name = "jinglei"
+local jinglei_active = fk.CreateSkill {
+  name = "js__jinglei_active",
 }
 
 Fk:loadTranslationTable{
-  ['jinglei_active'] = '惊雷',
-  ['js__jinglei'] = '惊雷',
+  ["js__jinglei_active"] = "惊雷",
 }
 
-jinglei:addEffect('active', {
+jinglei_active:addEffect("active", {
   card_num = 0,
-  card_filter = Util.FalseFunc,
   min_target_num = 1,
+  card_filter = Util.FalseFunc,
   target_filter = function(self, player, to_select, selected)
-    local n = Fk:currentRoom():getPlayerById(to_select):getHandcardNum()
+    local n = to_select:getHandcardNum()
     for _, p in ipairs(selected) do
-      n = n + Fk:currentRoom():getPlayerById(p):getHandcardNum()
+      n = n + p:getHandcardNum()
     end
-    return n < player:getMark("js__jinglei")
-  end,
-  on_use = function(self, room, effect)
-    local player = room:getPlayerById(effect.from)
-    room:setPlayerMark(player, "jinglei", 0)
+    return n < self.js__jinglei_num
   end,
 })
 
-return jinglei
+return jinglei_active

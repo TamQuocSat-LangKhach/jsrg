@@ -16,21 +16,27 @@ qinrao:addEffect(fk.EventPhaseStart, {
       not player:isNude()
   end,
   on_cost = function(self, event, target, player, data)
-    local success, dat = player.room:askToUseActiveSkill(player, {
-      skill_name = "qinrao_viewas",
+    local room = player.room
+    local use = room:askToUseVirtualCard(player, {
+      name = "duel",
+      skill_name = qinrao.name,
       prompt = "#qinrao-use::" .. target.id,
       cancelable = true,
       extra_data = {
-        must_targets = {target.id},
+        exclusive_targets = {target.id},
       },
+      card_filter = {
+        n = 1,
+      },
+      skip = true,
     })
-    if success and dat then
-      event:setCostData(self, {cards = dat.cards})
+    if use then
+      event:setCostData(self, {extra_data = use})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:useVirtualCard("duel", event:getCostData(self).cards, player, target, qinrao.name)
+    player.room:useCard(event:getCostData(self).extra_data)
   end,
 })
 

@@ -1,95 +1,87 @@
 local zonghai = fk.CreateSkill {
-  name = "zonghai"
+  name = "zonghai",
 }
 
 Fk:loadTranslationTable{
-  ['zonghai'] = '纵害',
-  ['#zonghai-invoke'] = '纵害：是否对 %dest 发动本技能？',
-  ['#zonghai-choose'] = '纵害：请选择至多两名角色，未被选择的角色在本次濒死中不能使用牌，濒死结算后所选角色受到伤害',
-  ['@@zonghai'] = '纵害',
-  ['#zonghai_damage'] = '纵害',
-  ['#zonghai_prohibit'] = '纵害',
-  [':zonghai'] = '每轮限一次，当其他角色进入濒死状态时，你可以令其选择至多两名角色，未被选择的角色于此次濒死结算中不能使用牌。此濒死结算结束后，你对其选择的角色各造成1点伤害。',
+  ["zonghai"] = "纵害",
+  [":zonghai"] = "每轮限一次，当其他角色进入濒死状态时，你可以令其选择至多两名角色，未被选择的角色于此次濒死结算中不能使用牌。\
+  此濒死结算结束后，你对其选择的角色各造成1点伤害。",
+
+  ["#zonghai-invoke"] = "纵害：是否对 %dest 发动“纵害”，只有指定的角色才能在濒死结算中使用牌？",
+  ["#zonghai-choose"] = "纵害：请选择至多两名角色，只有选择的角色能在本次濒死中使用牌，濒死结算后受到伤害",
+  ["@@zonghai"] = "纵害",
 }
 
 zonghai:addEffect(fk.EnterDying, {
+  anim_type = "offensive",
   can_trigger = function(self, event, target, player, data)
-    return
-      target ~= player and
-      player:hasSkill(zonghai.name) and
+    return target ~= player and player:hasSkill(zonghai.name) and
       player:usedSkillTimes(zonghai.name, Player.HistoryRound) == 0 and
-      target:isAlive() and
-      target.hp < 1
+      target.dying and not target.dead
   end,
   on_cost = function(self, event, target, player, data)
-    return player.room:askToSkillInvoke(player, {
+    local room = player.room
+    if room:askToSkillInvoke(player, {
       skill_name = zonghai.name,
-      prompt = "#zonghai-invoke::" .. target.id
-    })
+      prompt = "#zonghai-invoke::" .. target.id,
+    }) then
+      event:setCostData(self, {tos = {target}})
+      return true
+    end
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local victim = room:getPlayerById(target.id)
-    room:doIndicate(player.id, { victim.id })
-    local tos = room:askToChoosePlayers(victim, {
-      targets = table.map(room.alive_players, Util.IdMapper),
+    local tos = room:askToChoosePlayers(target, {
+      targets = room.alive_players, Util.IdMapper,
       min_num = 1,
       max_num = 2,
       prompt = "#zonghai-choose",
       skill_name = zonghai.name,
-      cancelable = false
+      cancelable = false,
     })
-
     for _, to in ipairs(tos) do
-      room:addTableMarkIfNeed(room:getPlayerById(to), "@@zonghai", player.id)
+      room:addTableMarkIfNeed(to, "@@zonghai", player.id)
     end
 
-    local curDyingEvent = room.logic:getCurrentEvent():findParent(GameEvent.Dying)
-    if curDyingEvent then
-      curDyingEvent:addCleaner(function()
+    local dying_event = room.logic:getCurrentEvent():findParent(GameEvent.Dying)
+    if dying_event then
+      dying_event:addCleaner(function()
         for _, p in ipairs(tos) do
-          local to = room:getPlayerById(p)
-          local zonghaiSource = to:getTableMark("@@zonghai")
-          table.removeOne(zonghaiSource, player.id)
-          room:setPlayerMark(to, "@@zonghai", #zonghaiSource > 0 and zonghaiSource or 0)
+          room:removeTableMark(p, "@@zonghai", player.id)
         end
       end)
     end
 
-    local extra_data = (target.extra_data or {})
-    extra_data.zonghaiUsed = extra_data.zonghaiUsed or {}
-    extra_data.zonghaiUsed[player.id] = extra_data.zonghaiUsed[player.id] or {}
-    table.insertTableIfNeed(extra_data.zonghaiUsed[player.id], tos)
+    data.extra_data = data.extra_data or {}
+    data.extra_data.zonghaiUsed = data.extra_data.zonghaiUsed or {}
+    data.extra_data.zonghaiUsed[player.id] = data.extra_data.zonghaiUsed[player.id] or {}
+    table.insertTable(data.extra_data.zonghaiUsed[player.id], table.map(tos, Util.IdMapper))
   end,
 })
 
 zonghai:addEffect(fk.AfterDying, {
+  anim_type = "offensive",
+  is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
-    return
-      ((target.extra_data or {}).zonghaiUsed or {})[player.id] and
-      player:isAlive() and
-      table.find(
-        ((target.extra_data or {}).zonghaiUsed or {})[player.id],
-        function(p) return room:getPlayerById(p):isAlive() end
-      )
+    return data.extra_data and data.extra_data.zonghaiUsed[player.id] and not player.dead and
+      table.find(data.extra_data.zonghaiUsed[player.id], function(id)
+        return not player.room:getPlayerById(id).dead
+      end)
   end,
-  on_cost = Util.TrueFunc,
+  on_cost = function (self, event, target, player, data)
+    local room = player.room
+    local targets = table.filter(data.extra_data.zonghaiUsed[player.id], function(id)
+      return not room:getPlayerById(id).dead
+    end)
+    targets = table.map(targets, Util.Id2PlayerMapper)
+    room:sortByAction(targets)
+    event:setCostData(self, {tos = targets})
+    return true
+  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local targets = table.filter(
-      target.extra_data.zonghaiUsed[player.id],
-      function(p) return room:getPlayerById(p):isAlive() end
-    )
-
-    if #targets == 0 then
-      return false
-    end
-
-    room:sortPlayersByAction(targets)
-    for _, pId in ipairs(targets) do
-      local p = room:getPlayerById(pId)
-      if p:isAlive() and player:isAlive() then
-        room:doIndicate(player.id, { p.id })
+    for _, p in ipairs(event:getCostData(self).tos) do
+      if not p.dead then
         room:damage{
           from = player,
           to = p,
@@ -101,11 +93,12 @@ zonghai:addEffect(fk.AfterDying, {
   end,
 })
 
-zonghai:addEffect('prohibit', {
+zonghai:addEffect("prohibit", {
   prohibit_use = function(self, player, card)
-    return
-      player:getMark("@@zonghai") == 0 and
-      table.find(Fk:currentRoom().alive_players, function(p) return p:getMark("@@zonghai") ~= 0 end)
+    return player:getMark("@@zonghai") == 0 and
+      table.find(Fk:currentRoom().alive_players, function(p)
+        return p:getMark("@@zonghai") ~= 0
+      end)
   end,
 })
 

@@ -38,18 +38,19 @@ fumou:addEffect(U.DiscussionFinished, {
       end
     end
     room:doIndicate(player, targets)
-
-    local success, dat = room:askToUseActiveSkill(player, {
-      skill_name = "js__fumou_viewas",
+    room:askToUseVirtualCard(player, {
+      name = "unexpectation",
+      skill_name = fumou.name,
       prompt = "#js__fumou-use",
       cancelable = true,
       extra_data = {
         exclusive_targets = table.map(targets, Util.IdMapper),
+      },
+      card_filter = {
+        n = 1,
+        pattern = "shade",
       }
     })
-    if success and dat then
-      room:useVirtualCard("unexpectation", dat.cards, player, dat.targets, fumou.name)
-    end
   end,
 })
 

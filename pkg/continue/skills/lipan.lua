@@ -71,17 +71,18 @@ lipan:addEffect(fk.EventPhaseEnd, {
     for _, p in ipairs(event:getCostData(self).tos) do
       if player.dead then return end
       if not p.dead and p.kingdom == player.kingdom and (not p:isNude() or #p:getHandlyIds() > 0) then
-        local success, dat = room:askToUseActiveSkill(p, {
-          skill_name = "lipan_viewas",
+        room:askToUseVirtualCard(p, {
+          name = "duel",
+          skill_name = lipan.name,
           prompt = "#lipan-duel::"..player.id,
           cancelable = true,
           extra_data = {
             exclusive_targets = {player.id},
           },
+          card_filter = {
+            n = 1,
+          }
         })
-        if success and dat then
-          room:useVirtualCard("duel", dat.cards, p, player, lipan.name)
-        end
       end
     end
   end,

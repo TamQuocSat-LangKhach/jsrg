@@ -3,34 +3,46 @@ local xuchong = fk.CreateSkill {
 }
 
 Fk:loadTranslationTable{
-  ['xuchong'] = '虚宠',
-  ['xuchong_draw'] = '摸一张牌',
-  ['xuchong_hand'] = '令%dest本回合手牌上限+2',
-  ['#xuchong-choose'] = '虚宠：选择项执行完成后你获得一张【影】',
-  [':xuchong'] = '当你成为牌的目标后，你可以选择一项：1.摸一张牌；2.令当前回合角色本回合手牌上限+2。选择项执行完成后，你获得一张【影】。',
+  ["xuchong"] = "虚宠",
+  [":xuchong"] = "当你成为牌的目标后，你可以选择一项：1.摸一张牌；2.令当前回合角色本回合手牌上限+2。然后你获得一张【影】。",
+
+  ["xuchong_max"] = "%dest本回合手牌上限+2",
+  ["#xuchong-invoke"] = "虚宠：选择执行一项并获得一张【影】",
 }
 
+local jsUtil = require "packages/jsrg/js_util"
+
 xuchong:addEffect(fk.TargetConfirmed, {
+  anim_type = "drawcard",
   on_cost = function(self, event, target, player, data)
     local room = player.room
-    local choice = room:askToChoice(player, { choices = { "xuchong_draw", "xuchong_hand::" .. room.current.id }, skill_name = xuchong.name, prompt = "#xuchong-choose"})
+    local choice = room:askToChoice(player, {
+      choices = { "draw1", "xuchong_max::"..room.current.id, "Cancel" },
+      skill_name = xuchong.name,
+      prompt = "#xuchong-invoke",
+    })
     if choice ~= "Cancel" then
-      event:setCostData(self, choice)
+      event:setCostData(self, {tos = choice == "draw1" and {} or {room.current}, choice = choice})
       return true
     end
-
-    return false
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    if event:getCostData(self) == "xuchong_draw" then
+    if event:getCostData(self).choice == "draw1" then
       player:drawCards(1, xuchong.name)
+      if player.dead then return end
     else
       room:addPlayerMark(room.current, MarkEnum.AddMaxCardsInTurn, 2)
     end
-
-    local shades = getShade(room, 1)
-    room:obtainCard(player, shades, true, fk.ReasonPrey, player.id, xuchong.name)
+    room:moveCards({
+      ids = jsUtil.getShade(room, 1),
+      to = player,
+      toArea = Card.PlayerHand,
+      moveReason = fk.ReasonJustMove,
+      proposer = player,
+      skill_name = xuchong.name,
+      moveVisible = true,
+    })
   end,
 })
 

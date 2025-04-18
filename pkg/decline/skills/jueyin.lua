@@ -1,52 +1,40 @@
 local jueyin = fk.CreateSkill {
-  name = "jueyin"
+  name = "jueyin",
 }
 
 Fk:loadTranslationTable{
-  ['jueyin'] = '绝禋',
-  ['@jueyin_debuff-turn'] = '绝禋+',
-  ['#jueyin_debuff'] = '绝禋',
-  [':jueyin'] = '当你每回合首次受到伤害后，你可以摸三张牌，然后本回合所有角色受到的伤害+1。',
+  ["jueyin"] = "绝禋",
+  [":jueyin"] = "当你每回合首次受到伤害后，你可以摸三张牌，然后本回合所有角色受到的伤害+1。",
 }
 
 jueyin:addEffect(fk.Damaged, {
-  anim_type = "drawcard",
+  anim_type = "masochism",
   can_trigger = function(self, event, target, player, data)
-    if not (target == player and player:hasSkill(jueyin.name)) then
-      return false
+    if target == player and player:hasSkill(jueyin.name) then
+      local damage_events = player.room.logic:getActualDamageEvents(1, function(e)
+        return e.data.to == player
+      end, Player.HistoryTurn)
+      return #damage_events == 1 and damage_events[1].data == data
     end
-
-    local room = player.room
-    local record_id = player:getMark("jueyin_damage-turn")
-    if record_id == 0 then
-      room.logic:getActualDamageEvents(1, function(e)
-        if e.data[1].to == player then
-          record_id = e.id
-          room:setPlayerMark(player, "jueyin_damage-turn", record_id)
-          return true
-        end
-      end)
-    end
-    return room.logic:getCurrentEvent().id == record_id
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
     player:drawCards(3, jueyin.name)
-    for _, p in ipairs(room.alive_players) do
-      room:addPlayerMark(p, "@jueyin_debuff-turn")
-    end
+    local banner = room:getBanner("jueyin-turn") or 0
+    banner = banner + 1
+    room:setBanner("jueyin-turn", banner)
   end,
 })
 
 jueyin:addEffect(fk.DamageInflicted, {
-  name = "#jueyin_debuff",
   mute = true,
+  is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:getMark("@jueyin_debuff-turn") > 0
+    return target == player and player.room:getBanner("jueyin-turn")
   end,
   on_cost = Util.TrueFunc,
   on_use = function(self, event, target, player, data)
-    data.damage = data.damage + 1
+    data:changeDamage(player.room:getBanner("jueyin-turn"))
   end,
 })
 

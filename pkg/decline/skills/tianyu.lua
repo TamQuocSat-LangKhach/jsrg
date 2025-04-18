@@ -1,88 +1,65 @@
 local tianyu = fk.CreateSkill {
-  name = "js__tianyu"
+  name = "js__tianyu",
 }
 
 Fk:loadTranslationTable{
-  ['js__tianyu'] = '天予',
-  ['#js__tianyu-choose'] = '天予：选择要获得的牌',
-  [':js__tianyu'] = '当一张伤害牌或装备牌进入弃牌堆后，若此牌于本回合内未属于过任何角色，则你可以获得之。',
+  ["js__tianyu"] = "天予",
+  [":js__tianyu"] = "当一张伤害牌或装备牌进入弃牌堆后，若此牌于本回合内未属于过任何角色，则你可以获得之。",
+
+  ["#js__tianyu-prey"] = "天予：选择要获得的牌",
 }
 
 tianyu:addEffect(fk.AfterCardsMove, {
   anim_type = "drawcard",
   can_trigger = function(self, event, target, player, data)
-    if not player:hasSkill(tianyu) then
-      return false
-    end
-
-    local toObtain = {}
-    for _, info in ipairs(data) do
-      if info.toArea == Card.DiscardPile then
-        for _, moveInfo in ipairs(info.moveInfo) do
-          if moveInfo.fromArea ~= Player.Hand and moveInfo.fromArea ~= Player.Equip then
-            local cardMoved = Fk:getCardById(moveInfo.cardId)
-            if cardMoved.is_damage_card or cardMoved.type == Card.TypeEquip then
-              table.insert(toObtain, moveInfo.cardId)
+    if not player:hasSkill(tianyu.name) then return end
+    local ids = {}
+    for _, move in ipairs(data) do
+      if move.toArea == Card.DiscardPile then
+        for _, info in ipairs(move.moveInfo) do
+          if info.fromArea ~= Player.Hand and info.fromArea ~= Player.Equip then
+            local card = Fk:getCardById(info.cardId)
+            if (card.is_damage_card or card.type == Card.TypeEquip) and
+              table.contains(player.room.discard_pile, info.cardId) then
+              table.insertIfNeed(ids, info.cardId)
             end
           end
         end
       end
     end
+    if #ids == 0 then return end
 
-    local room = player.room
-    toObtain = table.filter(toObtain, function(id) return room:getCardArea(id) == Card.DiscardPile end)
-
-    if #toObtain == 0 then
-      return false
-    end
-
-    room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
-      for _, info in ipairs(e.data) do
-        if info.from then
-          local infosFound = table.filter(
-            info.moveInfo,
-            function(moveInfo) return table.contains({ Card.PlayerHand, Card.PlayerEquip }, moveInfo.fromArea) end
-          )
-          for _, moveInfo in ipairs(infosFound) do
-            table.removeOne(toObtain, moveInfo.cardId)
+    player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
+      for _, move in ipairs(e.data) do
+        if move.from then
+          local infos = table.filter(move.moveInfo, function(info) return
+            table.contains({ Card.PlayerHand, Card.PlayerEquip }, info.fromArea)
+          end)
+          for _, info in ipairs(infos) do
+            table.removeOne(ids, info.cardId)
           end
         end
       end
-      return #toObtain == 0
+      return #ids == 0
     end, Player.HistoryTurn)
-
-    if #toObtain > 0 then
-      event:setCostData(self, toObtain)
+    if #ids > 0 then
+      event:setCostData(self, {cards = ids})
       return true
     end
   end,
-  on_cost = function(self, event, target, player, data)
-    local cards, choice = player.room:askToChoices(
-      player,
-      {
-        choices = { "OK" },
-        skill_name = tianyu.name,
-        prompt = "#js__tianyu-choose",
-        all_choices = { "get_all", "Cancel" },
-        cancelable = true
-      }
-    )
-
-    if choice == "Cancel" then
-      return false
-    end
-
-    if choice == "OK" then
-      event:setCostData(self, cards)
-    end
-
-    return true
-  end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local toObtain = table.filter(event:getCostData(self), function(id) return room:getCardArea(id) == Card.DiscardPile end)
-    if #toObtain > 0 then
-      room:obtainCard(player, toObtain, true, fk.ReasonPrey, player.id, tianyu.name)
+    local all_cards = event:getCostData(self).ids
+    local cards = room:askToChooseCards(player, {
+      target = player,
+      min = 1,
+      max = #all_cards,
+      flag = { card_data = {{ tianyu.name, all_cards }} },
+      skill_name = tianyu.name,
+      prompt = "#js__tianyu-prey",
+    })
+    if #cards > 0 then
+      room:obtainCard(player, cards, true, fk.ReasonJustMove, player, tianyu.name)
     end
   end,
 })
