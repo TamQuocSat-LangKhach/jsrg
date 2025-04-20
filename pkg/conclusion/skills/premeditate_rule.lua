@@ -38,6 +38,7 @@ premeditate_rule:addEffect(fk.EventPhaseStart, {
             room:addTableMark(player, "premeditate-phase", use.card.trueName)
             use.extra_data = use.extra_data or {}
             use.extra_data.premeditate = true
+            player:removeVirtualEquip(use.card.id)
             room:useCard(use)
           else
             break
