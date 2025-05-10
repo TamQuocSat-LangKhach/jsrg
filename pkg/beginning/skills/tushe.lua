@@ -32,8 +32,8 @@ tushe:addEffect(fk.TargetSpecified, {
     end
     if not table.find(cards, function (id)
       return Fk:getCardById(id).type == Card.TypeBasic
-    end) and #data.tos > 0 then
-      player:drawCards(#data.tos, tushe.name)
+    end) and #data.use.tos > 0 then
+      player:drawCards(#data.use.tos, tushe.name)
     end
   end,
 })

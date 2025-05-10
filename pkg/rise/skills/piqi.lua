@@ -22,7 +22,7 @@ piqi:addEffect("viewas", {
     card.skillName = piqi.name
     return card
   end,
-  before_use = function (skill, player, use)
+  before_use = function (self, player, use)
     local room = player.room
     local to = use.tos[1]
     room:addTableMark(player, "piqi-phase", to.id)
@@ -35,7 +35,7 @@ piqi:addEffect("viewas", {
       end
     end
   end,
-  enabled_at_play = function (skill, player)
+  enabled_at_play = function (self, player)
     return player:usedSkillTimes(piqi.name, Player.HistoryPhase) < 2
   end,
 })
