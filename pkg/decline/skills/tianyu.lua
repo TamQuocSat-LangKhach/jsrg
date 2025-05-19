@@ -32,11 +32,10 @@ tianyu:addEffect(fk.AfterCardsMove, {
     player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
         if move.from then
-          local infos = table.filter(move.moveInfo, function(info) return
-            table.contains({ Card.PlayerHand, Card.PlayerEquip }, info.fromArea)
-          end)
-          for _, info in ipairs(infos) do
-            table.removeOne(ids, info.cardId)
+          for _, info in ipairs(move.moveInfo) do
+            if info.fromArea == Player.Hand or info.fromArea == Player.Equip then
+              table.removeOne(ids, info.cardId)
+            end
           end
         end
       end
@@ -49,7 +48,7 @@ tianyu:addEffect(fk.AfterCardsMove, {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local all_cards = event:getCostData(self).ids
+    local all_cards = event:getCostData(self).cards
     local cards = room:askToChooseCards(player, {
       target = player,
       min = 1,

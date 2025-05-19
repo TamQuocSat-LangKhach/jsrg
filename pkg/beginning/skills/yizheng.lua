@@ -55,7 +55,7 @@ yizheng:addEffect("active", {
 
 yizheng:addEffect(fk.EventPhaseChanging, {
   can_refresh = function(self, event, target, player, data)
-    return target == player and target:getMark("@@js__yizheng") > 0 and data.phase == Player.Draw and
+    return target == player and player:getMark("@@js__yizheng") > 0 and data.phase == Player.Draw and
       not data.skipped
   end,
   on_use = function(self, event, target, player, data)

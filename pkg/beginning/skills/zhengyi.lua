@@ -34,10 +34,18 @@ zhengyi:addEffect(fk.DamageInflicted, {
   end,
   on_use = function(self, event, target, player, data)
     local room = player.room
-    local new_data = table.simpleClone(data)
-    new_data.to = room:getPlayerById(player:getMark("js__lirang-round"))
+    local n = data.damage
     data:preventDamage()
-    room:damage(new_data)
+    local to = room:getPlayerById(player:getMark("js__lirang-round"))
+    room:damage{
+      from = data.from,
+      to = to,
+      damage = n,
+      damageType = data.damageType,
+      skillName = data.skillName,
+      chain = data.chain,
+      card = data.card,
+    }
   end,
 })
 
