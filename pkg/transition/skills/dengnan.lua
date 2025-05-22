@@ -5,9 +5,9 @@ local dengnan = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["dengnan"] = "登难",
-  [":dengnan"] = "限定技，出牌阶段，你可以视为使用一张非伤害类普通锦囊牌，此回合结束时，若此牌的目标均于此回合受到过伤害，你重置〖登难〗。",
+  [":dengnan"] = "限定技，出牌阶段，你可以视为使用一张非伤害类普通锦囊牌，此回合结束时，若此牌的目标均于此回合受到过伤害，你重置你的所有技能。",
 
-  ["#dengnan"] = "登难：视为使用一种非伤害普通锦囊牌！若目标本回合均受到伤害则回合结束时重置！",
+  ["#dengnan"] = "登难：视为使用一种非伤害普通锦囊牌！若目标本回合均受到伤害则回合结束时重置所有技能！",
   ["@@dengnan-turn"] = "登难",
 }
 
@@ -33,28 +33,40 @@ dengnan:addEffect("viewas", {
     card.skillName = dengnan.name
     return card
   end,
-  before_use = function (self, player, use)
-    local mark = player:getTableMark("dengnan-turn")
-    table.insertTableIfNeed(mark, table.map(use.tos, Util.IdMapper))
-    player.room:setPlayerMark(player, "dengnan-turn", mark)
-  end,
   enabled_at_play = function(self, player)
     return player:usedSkillTimes(dengnan.name, Player.HistoryGame) == 0
   end,
 })
 
 dengnan:addEffect(fk.TurnEnd, {
-  can_refresh = function(self, event, target, player, data)
-    if target == player and player:getMark("dengnan-turn") ~= 0 and player:hasSkill(dengnan.name, true) then
-      local mark = player:getTableMark("dengnan-turn")
-      player.room.logic:getActualDamageEvents(1, function(e)
-        table.removeOne(mark, e.data.to.id)
+  can_refresh = function (self, event, target, player, data)
+    if player:usedSkillTimes(dengnan.name, Player.HistoryTurn) > 0 then
+      local infos = {}
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        local use = e.data
+        if use.from == player and table.contains(use.card.skillNames, dengnan.name) then
+          table.insert(infos, use.tos)
+        end
       end, Player.HistoryTurn)
-      return #mark == 0
+      local damage_record = {}
+      player.room.logic:getActualDamageEvents(1, function (e)
+        local damage = e.data
+        damage_record[damage.to] = damage_record[damage.to] or 1
+      end, Player.HistoryTurn)
+      return table.find(infos, function (tos)
+        return table.every(tos, function (to)
+          return damage_record[to]
+        end)
+      end)
     end
   end,
-  on_refresh = function(self, event, target, player, data)
-    player:setSkillUseHistory(dengnan.name, 0, Player.HistoryGame)
+  on_refresh = function (self, event, target, player, data)
+    for _, skill in ipairs(player:getSkillNameList()) do
+      player:setSkillUseHistory(skill, 0, Player.HistoryGame)
+      player:setSkillUseHistory(skill, 0, Player.HistoryRound)
+      player:setSkillUseHistory(skill, 0, Player.HistoryTurn)
+      player:setSkillUseHistory(skill, 0, Player.HistoryPhase)
+    end
   end,
 })
 

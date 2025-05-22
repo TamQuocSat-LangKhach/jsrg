@@ -36,8 +36,8 @@ zhangdeng_viewas:addEffect("viewas", {
     src = src[1]
     src:broadcastSkillInvoke("zhangdeng")
     room:notifySkillInvoked(src, "zhangdeng", "support", {player})
-    room:addPlayerMark(src, "zhangdeng-turn", 1)
-    if src:getMark("zhangdeng-turn") == 2 and not src.faceup then
+    src:addSkillUseHistory("zhangdeng", 1)
+    if src:usedSkillTimes("zhangdeng", Player.HistoryTurn) > 1 and not src.faceup then
       src:turnOver()
     end
   end,

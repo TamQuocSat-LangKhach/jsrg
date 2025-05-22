@@ -88,6 +88,15 @@ Fk:loadTranslationTable{
   ["~js__liuyong"] = "刘公嗣！你睁开眼看看这八百里蜀川吧！",
 }
 
+General:new(extension, "js_re__liuyong", "shu", 3):addSkills { "re__danxinl", "re__fengxiang" }
+Fk:loadTranslationTable{
+  ["js_re__liuyong"] = "刘永",
+  ["#js_re__liuyong"] = "甘陵王",
+  ["illustrator:js_re__liuyong"] = "凡果_PALE HOWL",
+
+  ["~js_re__liuyong"] = "无长缨在手，徒拔剑四顾。",
+}
+
 General:new(extension, "js__gaoxiang", "shu", 4):addSkills { "js__chiying" }
 Fk:loadTranslationTable{
   ["js__gaoxiang"] = "高翔",
@@ -120,6 +129,17 @@ Fk:loadTranslationTable{
   ["illustrator:js__guozhao"] = "君桓文化",
 
   ["~js__guozhao"] = "曹元仲，你为何害我？",
+}
+
+General:new(extension, "js_re__guozhao", "wei", 3, 3, General.Female):addSkills { "re__pianchong", "js__zunwei" }
+Fk:loadTranslationTable{
+  ["js_re__guozhao"] = "郭照",
+  ["#js_re__guozhao"] = "碧海青天",
+  ["illustrator:js_re__guozhao"] = "凡果_喵叽",
+
+  ["$js__zunwei_js_re__guozhao1"] = "皇后位尊，当居后宫之极。",
+  ["$js__zunwei_js_re__guozhao2"] = "位尊着霞帔，名重戴凤冠。",
+  ["~js_re__guozhao"] = "君恩易逝难再复……",
 }
 
 local premeditate = fk.CreateCard{

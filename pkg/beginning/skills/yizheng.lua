@@ -58,7 +58,7 @@ yizheng:addEffect(fk.EventPhaseChanging, {
     return target == player and player:getMark("@@js__yizheng") > 0 and data.phase == Player.Draw and
       not data.skipped
   end,
-  on_use = function(self, event, target, player, data)
+  on_refresh = function(self, event, target, player, data)
     player.room:setPlayerMark(player, "@@js__yizheng", 0)
     data.skipped = true
   end,

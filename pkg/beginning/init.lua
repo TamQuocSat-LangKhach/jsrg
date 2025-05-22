@@ -107,7 +107,14 @@ General:new(extension, "js__dongbai", "qun", 3, 3, General.Female):addSkills { "
 Fk:loadTranslationTable{
   ["js__dongbai"] = "董白",
   ["#js__dongbai"] = "魔姬",
-  ["illustrator:js__dongbai"] = "SoniaTang",
+  ["illustrator:js__dongbai"] = "alien",
+}
+
+General:new(extension, "js_re__dongbai", "qun", 3, 3, General.Female):addSkills { "shichong", "re__lianzhu" }
+Fk:loadTranslationTable{
+  ["js_re__dongbai"] = "董白",
+  ["#js_re__dongbai"] = "魔姬",
+  ["illustrator:js__dongbai"] = "铁杵",
 }
 
 General:new(extension, "js__nanhualaoxian", "qun", 3):addSkills { "shoushu", "xundao", "xuanhua" }
@@ -131,7 +138,14 @@ General:new(extension, "js__kongrong", "qun", 3):addSkills { "js__lirang", "zhen
 Fk:loadTranslationTable{
   ["js__kongrong"] = "孔融",
   ["#js__kongrong"] = "北海太守",
-  ["illustrator:js__kongrong"] = "凝聚永恒",
+  ["illustrator:js__kongrong"] = "JanusLausDeo",
+}
+
+General:new(extension, "js_re__kongrong", "qun", 3):addSkills { "re__lirang", "re__zhengyi" }
+Fk:loadTranslationTable{
+  ["js_re__kongrong"] = "孔融",
+  ["#js_re__kongrong"] = "北海太守",
+  ["illustrator:js_re__kongrong"] = "zoo",
 }
 
 General:new(extension, "js__duanwei", "qun", 4):addSkills { "langmie" }
@@ -183,13 +197,6 @@ Fk:loadTranslationTable{
   ["js__wangyun"] = "王允",
   ["#js__wangyun"] = "居功自矜",
   ["illustrator:js__wangyun"] = "凡果",
-}
-
-General:new(extension, "js_re__wangyun", "qun", 3):addSkills { "re__shelun", "re__fayi" }
-Fk:loadTranslationTable{
-  ["js_re__wangyun"] = "王允",
-  ["#js_re__wangyun"] = "居功自矜",
-  --["illustrator:js_re__wangyun"] = "",
 }
 
 return extension

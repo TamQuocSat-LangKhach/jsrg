@@ -21,13 +21,31 @@ Fk:loadTranslationTable{
   ["~js__sunce"] = "天不假年……天不假年！",
 }
 
+local re_sunce = General:new(extension, "js_re__sunce", "wu", 4)
+re_sunce:addSkills { "re__duxing", "zhihengs", "zhasi", "re__bashi" }
+re_sunce:addRelatedSkill("ex__zhiheng")
+Fk:loadTranslationTable{
+  ["js_re__sunce"] = "孙策",
+  ["#js_re__sunce"] = "问鼎的霸王",
+  ["illustrator:js_re__sunce"] = "KayaK&小罗没想好",
+}
+
 local xugong = General:new(extension, "js__xugong", "wu", 3)
 xugong.subkingdom = "qun"
 xugong:addSkills { "js__biaozhao", "js__yechou" }
 Fk:loadTranslationTable{
   ["js__xugong"] = "许贡",
   ["#js__xugong"] = "独计击流",
-  ["illustrator:js__xugong"] = "君桓文化",
+  ["illustrator:js__xugong"] = "鬼画府",
+}
+
+local xugong2 = General:new(extension, "js_re__xugong", "wu", 3)
+xugong2.subkingdom = "qun"
+xugong2:addSkills { "re__biaozhao", "js__yechou" }
+Fk:loadTranslationTable{
+  ["js_re__xugong"] = "许贡",
+  ["#js_re__xugong"] = "独计击流",
+  ["illustrator:js_re__xugong"] = "zoo",
 }
 
 General:new(extension, "js__chunyuqiong", "qun", 4):addSkills { "js__cangchu", "js__shishou" }
@@ -86,6 +104,13 @@ Fk:loadTranslationTable{
   ["js__chendeng"] = "陈登",
   ["#js__chendeng"] = "惊涛弄潮",
   ["illustrator:js__chendeng"] = "鬼画府",
+}
+
+General:new(extension, "js_re__chendeng", "qun", 3):addSkills { "lunshi", "re__guitu" }
+Fk:loadTranslationTable{
+  ["js_re__chendeng"] = "陈登",
+  ["#js_re__chendeng"] = "惊涛弄潮",
+  ["illustrator:js_re__chendeng"] = "鬼画府",
 }
 
 General:new(extension, "js__zhenji", "qun", 3, 3, General.Female):addSkills { "jixiang", "chengxian" }

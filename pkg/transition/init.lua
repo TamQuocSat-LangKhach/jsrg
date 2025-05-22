@@ -79,7 +79,7 @@ General:new(extension, "js__hansui", "qun", 4):addSkills { "js__niluan", "huchou
 Fk:loadTranslationTable{
   ["js__hansui"] = "韩遂",
   ["#js__hansui"] = "雄踞北疆",
-  ["illustrator:js__hansui"] = "盲特",
+  ["illustrator:js__hansui"] = "鱼仔",
 }
 
 General:new(extension, "js__zhangchu", "qun", 3, 3, General.Female):addSkills { "huozhong", "js__rihui" }

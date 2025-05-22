@@ -5,9 +5,10 @@ local cuifeng = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["cuifeng"] = "摧锋",
-  [":cuifeng"] = "限定技，出牌阶段，你可以视为使用一张唯一目标的伤害类牌（无距离限制），若此牌未造成伤害或造成的伤害数大于1，此回合结束时重置〖摧锋〗。",
+  [":cuifeng"] = "限定技，出牌阶段，你可以视为使用一张唯一目标的伤害类牌（无距离限制），此回合结束时，若此牌目标角色本回合受到的伤害不为1，"..
+  "你重置你的所有技能。",
 
-  ["#cuifeng"] = "摧锋：视为使用一种伤害牌！若没造成伤害或造成伤害大于1则回合结束时重置！",
+  ["#cuifeng"] = "摧锋：视为使用一种伤害牌！若目标本回合受到的伤害不为1则回合结束时重置所有技能！",
 }
 
 local U = require "packages/utility/utility"
@@ -17,7 +18,7 @@ cuifeng:addEffect("viewas", {
   prompt = "#cuifeng",
   interaction = function(self, player)
     if player:getMark(cuifeng.name) == 0 then
-      local names = table.filter(Fk:getAllCardNames("t"), function (name)
+      local names = table.filter(Fk:getAllCardNames("bt"), function (name)
         local card = Fk:cloneCard(name)
         return card.is_damage_card and card.skill.target_num == 1
       end)
@@ -33,26 +34,42 @@ cuifeng:addEffect("viewas", {
     card.skillName = cuifeng.name
     return card
   end,
-  after_use = function (self, player, use)
-    if player.dead then return end
-    local yes = use.damageDealt == nil
-    if not yes then
-      local n = 0
-      for _, p in ipairs(player.room.players) do
-        if use.damageDealt[p] then
-          n = n + use.damageDealt[p]
+  enabled_at_play = function(self, player)
+    return player:usedSkillTimes(cuifeng.name, Player.HistoryGame) == 0
+  end,
+})
+
+cuifeng:addEffect(fk.TurnEnd, {
+  can_refresh = function (self, event, target, player, data)
+    if player:usedSkillTimes(cuifeng.name, Player.HistoryTurn) > 0 then
+      local infos = {}
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function (e)
+        local use = e.data
+        if use.from == player and table.contains(use.card.skillNames, cuifeng.name) then
+          table.insert(infos, use.tos)
         end
-      end
-      yes = n > 1
-    end
-    if yes then
-      player.room.logic:getCurrentEvent():findParent(GameEvent.Turn):addCleaner(function()
-        player:setSkillUseHistory(cuifeng.name, 0, Player.HistoryGame)
+      end, Player.HistoryTurn)
+      local damage_record = {}
+      player.room.logic:getActualDamageEvents(1, function (e)
+        local damage = e.data
+        damage_record[damage.to] = (damage_record[damage.to] or 0) + damage.damage
+      end, Player.HistoryTurn)
+      return table.find(infos, function (tos)
+        local n = 0
+        for _, p in ipairs(tos) do
+          n = n + (damage_record[p] or 0)
+        end
+        return n ~= 1
       end)
     end
   end,
-  enabled_at_play = function(self, player)
-    return player:usedSkillTimes(cuifeng.name, Player.HistoryGame) == 0
+  on_refresh = function (self, event, target, player, data)
+    for _, skill in ipairs(player:getSkillNameList()) do
+      player:setSkillUseHistory(skill, 0, Player.HistoryGame)
+      player:setSkillUseHistory(skill, 0, Player.HistoryRound)
+      player:setSkillUseHistory(skill, 0, Player.HistoryTurn)
+      player:setSkillUseHistory(skill, 0, Player.HistoryPhase)
+    end
   end,
 })
 

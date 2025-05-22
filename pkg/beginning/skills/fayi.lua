@@ -4,9 +4,9 @@ local fayi = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["fayi"] = "伐异",
-  [":fayi"] = "当你参与议事结束后，你可以对一名意见与你不同的角色造成1点伤害。",
+  [":fayi"] = "当你参与议事结束后，你可以对任意名意见与你不同的角色各造成1点伤害。",
 
-  ["#fayi-choose"] = "伐异：你可以对一名意见与你不同的角色造成1点伤害",
+  ["#fayi-choose"] = "伐异：你可以对任意名意见与你不同的角色造成伤害",
 }
 
 local U = require "packages/utility/utility"
@@ -24,26 +24,32 @@ fayi:addEffect(U.DiscussionFinished, {
     local targets = table.filter(data.tos, function(p)
       return not p.dead and data.results[p] and data.results[player].opinion ~= data.results[p].opinion
     end)
-    local to = room:askToChoosePlayers(player, {
+    local tos = room:askToChoosePlayers(player, {
       targets = targets,
       min_num = 1,
-      max_num = 1,
+      max_num = 9,
       prompt = "#fayi-choose",
       skill_name = fayi.name,
       cancelable = true,
     })
-    if #to > 0 then
-      event:setCostData(self, {tos = to})
+    if #tos > 0 then
+      room:sortByAction(tos)
+      event:setCostData(self, {tos = tos})
       return true
     end
   end,
   on_use = function(self, event, target, player, data)
-    player.room:damage{
-      from = player,
-      to = event:getCostData(self).tos[1],
-      damage = 1,
-      skillName = fayi.name,
-    }
+    local room = player.room
+    for _, p in ipairs(event:getCostData(self).tos) do
+      if not p.dead then
+        room:damage{
+          from = player,
+          to = p,
+          damage = 1,
+          skillName = fayi.name,
+        }
+      end
+    end
   end,
 })
 

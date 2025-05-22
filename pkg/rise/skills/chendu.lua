@@ -5,7 +5,7 @@ local chendu = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["chendu"] = "陈笃",
-  [":chendu"] = "锁定技，当你的牌因使用、打出或弃置进入弃牌堆后，若数量大于你的体力值，你将这些牌分配给其他角色（若不为你的回合，"..
+  [":chendu"] = "锁定技，当你的牌因使用、打出或弃置进入弃牌堆后，若数量大于你的体力值（至多为2），你将这些牌分配给其他角色（若不为你的回合，"..
   "则选择的角色必须包含当前回合角色）。",
 
   ["#chendu1-give"] = "陈笃：请将这些牌任意分配给其他角色",
@@ -63,7 +63,7 @@ chendu:addEffect(fk.AfterCardsMove, {
         return table.contains(player.room.discard_pile, id)
       end)
       cards = player.room.logic:moveCardsHoldingAreaCheck(cards)
-      if #cards > player.hp and #cards > 0 and #player.room:getOtherPlayers(player, false) > 0 then
+      if #cards > math.min(player.hp, 2) and #cards > 0 and #player.room:getOtherPlayers(player, false) > 0 then
         event:setCostData(self, {cards = cards})
         return true
       end

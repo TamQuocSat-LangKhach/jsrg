@@ -4,14 +4,13 @@ local fennan = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["fennan"] = "奋难",
-  [":fennan"] = "出牌阶段限X次，你可以令一名角色选择一项：1.令你翻面，然后你移动其场上一张本回合未移动过的牌；2.你观看并重铸其至多X张手牌"..
-  "（X为你装备区内牌的数量）。",
+  [":fennan"] = "出牌阶段限两次，你可以令一名角色选择一项：1.令你翻面，然后你移动其场上一张本回合未移动过的牌；2.你观看并重铸其至多三张手牌。",
 
   ["#fennan"] = "奋难：令一名角色选择：你翻面，然后移动其场上一张牌；你观看并重铸其手牌",
   ["fennan1"] = "%src翻面，然后其移动场上一张牌",
   ["fennan2"] = "%src观看并重铸你的手牌",
   ["#fennan-move"] = "奋难：请将 %dest 场上一张牌移动给另一名角色",
-  ["#fennan-recast"] = "奋难：选择 %dest 至多%arg张手牌令其重铸",
+  ["#fennan-recast"] = "奋难：选择 %dest 至多三张手牌令其重铸",
 }
 
 fennan:addEffect("active", {
@@ -20,7 +19,7 @@ fennan:addEffect("active", {
   card_num = 0,
   target_num = 1,
   can_use = function(self, player)
-    return player:usedSkillTimes(fennan.name, Player.HistoryPhase) < #player:getCardIds("e")
+    return player:usedSkillTimes(fennan.name, Player.HistoryPhase) < 2
   end,
   card_filter = Util.FalseFunc,
   target_filter = function (self, player, to_select, selected)
@@ -72,14 +71,13 @@ fennan:addEffect("active", {
         exclude_ids = cards,
       })
     else
-      local n = #player:getCardIds("e")
       local cards = room:askToChooseCards(player, {
         target = target,
         min = 0,
-        max = n,
+        max = 3,
         flag = { card_data = {{ target.general, target:getCardIds("h") }} },
         skill_name = fennan.name,
-        prompt = "#fennan-recast::"..target.id..":"..n,
+        prompt = "#fennan-recast::"..target.id,
       })
       if #cards > 0 then
         room:recastCard(cards, target, fennan.name)

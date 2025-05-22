@@ -6,7 +6,7 @@ local tuwei = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["tuwei"] = "突围",
-  [":tuwei"] = "魏势力技，出牌阶段开始时，你可以获得攻击范围内任意名角色各一张牌；回合结束时，这些角色中本回合未受到过伤害的角色各获得你的一张牌。",
+  [":tuwei"] = "魏势力技，出牌阶段开始时，你可以获得攻击范围内任意名角色各一张牌；回合结束时，这些角色中本回合未成为过牌的目标的角色各获得你的一张牌。",
 
   ["#tuwei-choose"] = "突围：你可以获得攻击范围内任意名角色各一张牌",
 }
@@ -62,8 +62,10 @@ tuwei:addEffect(fk.TurnEnd, {
   can_trigger = function(self, event, target, player, data)
     if target == player and player:getMark("tuwei-turn") ~= 0 and not player:isNude() then
       local tos = player:getMark("tuwei-turn")
-      player.room.logic:getActualDamageEvents(1, function(e)
-        table.removeOne(tos, e.data.to.id)
+      player.room.logic:getEventsOfScope(GameEvent.UseCard, 1, function(e)
+        for _, p in ipairs(e.data.tos) do
+          table.removeOne(tos, p.id)
+        end
       end, Player.HistoryTurn)
       tos = table.map(tos, Util.Id2PlayerMapper)
       tos = table.filter(tos, function (p)

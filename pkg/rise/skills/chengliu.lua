@@ -4,11 +4,11 @@ local chengliu = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["chengliu"] = "乘流",
-  [":chengliu"] = "准备阶段，你可以对一名装备区内牌数小于你的角色造成1点伤害，然后你可以弃置装备区内的一张牌，对一名本回合未以此法"..
-  "选择过的角色重复此流程。",
+  [":chengliu"] = "准备阶段，你可以对一名装备区内牌数小于你的角色造成1点伤害，本回合你以此法造成的伤害值+1，"..
+  "然后你可以弃置装备区内的一张牌，对一名本回合未以此法选择过的角色重复此流程。",
 
   ["#chengliu-invoke"] = "乘流：对一名装备数小于你的角色造成1点伤害，然后你可以弃置一张装备重复此流程",
-  ["#chengliu-discard"] = "乘流：是否弃置一张装备，继续造成伤害？",
+  ["#chengliu-discard"] = "乘流：是否弃置一张装备，继续造成%arg点伤害？",
 }
 
 chengliu:addEffect(fk.EventPhaseStart, {
@@ -61,7 +61,7 @@ chengliu:addEffect(fk.EventPhaseStart, {
         targets = targets,
         pattern = ".|.|.|equip",
         skill_name = chengliu.name,
-        prompt = "#chengliu-discard",
+        prompt = "#chengliu-discard:::"..(1 + #player:getTableMark("chengliu-turn")),
         cancelable = true,
         will_throw = true,
       })
@@ -73,7 +73,7 @@ chengliu:addEffect(fk.EventPhaseStart, {
           room:damage({
             from = player,
             to = to,
-            damage = 1,
+            damage = #player:getTableMark("chengliu-turn"),
             skillName = chengliu.name,
           })
         end

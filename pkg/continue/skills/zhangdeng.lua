@@ -5,11 +5,11 @@ local zhangdeng = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["zhangdeng"] = "帐灯",
-  [":zhangdeng"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内第二次发动时，\
+  [":zhangdeng"] = "当一名武将牌背面朝上的角色需要使用【酒】时，若你的武将牌背面朝上，其可以视为使用之。当本技能于一回合内不为第一次发动时，\
   你翻面至正面朝上。",
 
   ["#zhangdeng"] = "帐灯：你可以视为使用【酒】",
-  ["#zhangdeng-choose"] = "帐灯：要发动哪位角色的“帐灯”？若为第二次发动，其翻面至正面朝上",
+  ["#zhangdeng-choose"] = "帐灯：要发动哪位角色的“帐灯”？若为不为第一次发动，其翻面至正面朝上",
   ["#zhangdeng_tip"] = "翻至正面",
 }
 
@@ -17,7 +17,7 @@ Fk:addTargetTip{
   name = "zhangdeng",
   target_tip = function(self, player, to_select, selected, selected_cards, card, selectable)
     if not selectable then return end
-    if to_select:getMark("zhangdeng-turn") == 1 then
+    if to_select:usedSkillTimes(zhangdeng.name, Player.HistoryTurn) > 0 then
       return "#zhangdeng_tip"
     end
   end,
@@ -52,8 +52,7 @@ zhangdeng:addEffect("viewas", {
     src = src[1]
     src:broadcastSkillInvoke(zhangdeng.name)
     room:notifySkillInvoked(src, zhangdeng.name, "support", {player})
-    room:addPlayerMark(src, "zhangdeng-turn", 1)
-    if src:getMark("zhangdeng-turn") == 2 and not src.faceup then
+    if src:usedSkillTimes(zhangdeng.name, Player.HistoryTurn) > 1 and not src.faceup then
       src:turnOver()
     end
   end,
@@ -68,9 +67,5 @@ zhangdeng:addEffect("viewas", {
     end)
   end,
 })
-
-zhangdeng:addLoseEffect(function (self, player, is_death)
-  player.room:setPlayerMark(player, "zhangdeng-turn", 0)
-end)
 
 return zhangdeng
