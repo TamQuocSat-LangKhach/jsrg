@@ -31,6 +31,28 @@ guanjue:addEffect(fk.CardUsing, {
   end,
 })
 
+
+guanjue:addEffect(fk.CardResponding, {
+  anim_type = "offensive",
+  can_trigger = function(self, event, target, player, data)
+    return target == player and player:hasSkill(guanjue.name) and
+      data.card.suit ~= Card.NoSuit and
+      table.find(player.room:getOtherPlayers(player, false), function (p)
+        return not table.contains(p:getTableMark("@guanjue-turn"), data.card:getSuitString(true))
+      end)
+  end,
+  on_use = function(self, event, target, player, data)
+    local room = player.room
+    for _, p in ipairs(room:getOtherPlayers(player, false)) do
+      room:doIndicate(player, {p})
+      room:addTableMarkIfNeed(p, "@guanjue-turn", data.card:getSuitString(true))
+    end
+  end,
+})
+
+
+
+
 guanjue:addEffect("prohibit", {
   prohibit_use = function(self, player, card)
     return card and table.contains(player:getTableMark("@guanjue-turn"), card:getSuitString(true))
