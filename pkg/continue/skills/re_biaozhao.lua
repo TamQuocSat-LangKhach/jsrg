@@ -4,8 +4,8 @@ local biaozhao = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["re__biaozhao"] = "表召",
-  [":re__biaozhao"] = "准备阶段，你可以选择一名其他角色，直到你下回合开始时或你进入濒死状态，除其以外的所有角色对其使用牌无次数限制，\
-  其对你使用牌造成伤害+1。",
+  [":re__biaozhao"] = "准备阶段，你可以选择一名其他角色，直到你下回合开始时或你进入濒死状态，除其以外的所有角色对其使用牌无次数限制，"..
+  "其对你使用牌造成伤害+1。",
 
   ["#re__biaozhao-choose"] = "表召：选择一名角色，所有角色对其使用牌无次数限制，其使用牌对你造成伤害+1",
   ["@@re__biaozhao"] = "表召",
@@ -63,7 +63,7 @@ biaozhao:addEffect(fk.DamageCaused, {
   anim_type = "negative",
   is_delay_effect = true,
   can_trigger = function(self, event, target, player, data)
-    return target and data.card and table.contains(target:getTableMark("@@re__biaozhao"), player.id)
+    return data.to == player and target and data.card and table.contains(target:getTableMark("@@re__biaozhao"), player.id)
   end,
   on_use = function(self, event, target, player, data)
     data:changeDamage(1)

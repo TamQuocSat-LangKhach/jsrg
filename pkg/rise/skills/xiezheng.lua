@@ -77,8 +77,7 @@ xiezheng:addEffect(fk.EventPhaseStart, {
 
 xiezheng:addEffect(fk.Damage, {
   can_refresh = function(self, event, target, player, data)
-    return target == player and data.card and data.card.trueName == "slash" and
-      table.contains(data.card.skillNames, "enemy_at_the_gates_skill")
+    return target == player and data.card and data.card.trueName == "slash"
   end,
   on_refresh = function(self, event, target, player, data)
     local e = player.room.logic:getCurrentEvent().parent

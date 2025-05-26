@@ -57,7 +57,7 @@ zhenglue:addEffect(fk.TurnEnd, {
 })
 zhenglue:addEffect(fk.Damage, {
   can_trigger = function(self, event, target, player, data)
-    return target == player and player:hasSkill(zhenglue.name) and target:getMark("@@caocao_lie") > 0 and
+    return target == player and player:hasSkill(zhenglue.name) and data.to:getMark("@@caocao_lie") > 0 and
       player:usedEffectTimes(self.name, Player.HistoryTurn) == 0
   end,
   on_cost = function(self, event, target, player, data)
