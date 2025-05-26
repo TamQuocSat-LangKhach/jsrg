@@ -52,11 +52,10 @@ tuigu:addEffect(fk.AfterCardsMove, {
     local room = player.room
     local cards = {}
     for _, move in ipairs(data) do
-      if move.to == player and move.toArea == Card.PlayerHand and move.skillName == "demobilized" then
+      if move.to == player and move.toArea == Card.PlayerHand and move.skillName == "demobilized_skill" then
         for _, info in ipairs(move.moveInfo) do
-          local id = info.cardId
-          if room:getCardArea(id) == Card.PlayerHand and room:getCardOwner(id) == player then
-            table.insertIfNeed(cards, id)
+          if table.contains(player:getCardIds("h"), info.cardId) then
+            table.insertIfNeed(cards, info.cardId)
           end
         end
       end
@@ -127,7 +126,7 @@ tuigu:addEffect(fk.RoundEnd, {
   can_trigger = function(self, event, target, player, data)
     return player:hasSkill(tuigu.name) and
     #player.room.logic:getEventsOfScope(GameEvent.Turn, 1, function (e)
-      return e.data == player
+      return e.data.who == player
     end, Player.HistoryRound) == 0
   end,
   on_cost = Util.TrueFunc,

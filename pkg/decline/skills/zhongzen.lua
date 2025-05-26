@@ -54,13 +54,25 @@ zhongzen:addEffect(fk.EventPhaseEnd, {
       local n = 0
       player.room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
         for _, move in ipairs(e.data) do
-          if move.from == player and move.moveReason == fk.ReasonDiscard then
-            for _, info in ipairs(move.moveInfo) do
-              if Fk:getCardById(info.cardId).suit == Card.Spade and
-                (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
-                n = n + 1
-                if n > player.hp then
-                  return true
+          if move.from == player then
+            if move.moveReason == fk.ReasonDiscard then
+              for _, info in ipairs(move.moveInfo) do
+                if Fk:getCardById(info.cardId).suit == Card.Spade and
+                  (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
+                  n = n + 1
+                  if n > player.hp then
+                    return true
+                  end
+                end
+              end
+            elseif move.moveReason == fk.ReasonJustMove and move.toArea == Card.Void then
+              for _, info in ipairs(move.moveInfo) do
+                if Fk:getCardById(info.cardId).suit == Card.Spade and
+                  (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
+                  n = n + 1
+                  if n > player.hp then
+                    return true
+                  end
                 end
               end
             end

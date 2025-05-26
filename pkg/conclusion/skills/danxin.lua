@@ -60,7 +60,7 @@ danxin:addEffect(fk.AfterCardsMove, {
       if table.contains(use.card.skillNames, danxin.name) then
         local ids = {}
         for _, move in ipairs(data) do
-          if move.to == player and move.toArea == Card.PlayerHand then
+          if move.to == player and move.toArea == Card.PlayerHand and move.skillName == "sincere_treat_skill" then
             for _, info in ipairs(move.moveInfo) do
               if table.contains(player:getCardIds("h"), info.cardId) then
                 table.insertIfNeed(ids, info.cardId)

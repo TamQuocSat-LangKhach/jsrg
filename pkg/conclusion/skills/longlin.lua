@@ -60,11 +60,17 @@ longlin:addEffect(fk.TargetSpecified, {
 
 longlin:addEffect(fk.Damage, {
   can_refresh = function(self, event, target, player, data)
-    if data.card and data.card.trueName == "duel" and table.contains(data.card.skillNames, longlin.name) and
-      data.to == player and not data.to.dead then
-      local skill_event = player.room.logic:getCurrentEvent():findParent(GameEvent.SkillEffect)
-      if skill_event and skill_event.data.skill.name == longlin.name and skill_event.data.who == player then
-        return true
+    if target == player and data.card and data.card.trueName == "duel" and
+      table.contains(data.card.skillNames, longlin.name) and not data.to.dead then
+      local e = player.room.logic:getCurrentEvent().parent
+      while e do
+        if e.event == GameEvent.SkillEffect then
+          local dat = e.data
+          if dat.skill.name == longlin.name and dat.who == player then
+            return true
+          end
+        end
+        e = e.parent
       end
     end
   end,
@@ -75,9 +81,8 @@ longlin:addEffect(fk.Damage, {
 
 longlin:addEffect("prohibit", {
   prohibit_use = function(self, player, card)
-    if player:getMark("@@longlin-phase") > 0 then
-      local subcards = card:isVirtual() and card.subcards or {card.id}
-      return #subcards > 0 and table.every(subcards, function(id)
+    if card and player:getMark("@@longlin-phase") > 0 then
+      return table.find(Card:getIdList(card), function(id)
         return table.contains(player:getCardIds("h"), id)
       end)
     end

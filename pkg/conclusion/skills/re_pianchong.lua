@@ -39,11 +39,70 @@ pianchong:addEffect(fk.EventPhaseStart, {
     local n = 0
     room.logic:getEventsOfScope(GameEvent.MoveCards, 1, function (e)
       for _, move in ipairs(e.data) do
-        if move.from == player and move.toArea == Card.DiscardPile then
-          for _, info in ipairs(move.moveInfo) do
-            if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
-              Fk:getCardById(info.cardId).color == color then
-              n = n + 1
+        if move.toArea == Card.DiscardPile then
+          if move.from == player then
+            for _, info in ipairs(move.moveInfo) do
+              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) and
+                Fk:getCardById(info.cardId).color == color then
+                n = n + 1
+              end
+            end
+          elseif move.from == nil then
+            if table.contains({fk.ReasonUse, fk.ReasonResponse}, move.moveReason) then
+              local parent_event = e.parent
+              if parent_event ~= nil then
+                local card_ids = {}
+                if parent_event.event == GameEvent.UseCard or parent_event.event == GameEvent.RespondCard then
+                  local use = parent_event.data
+                  if use.from == player then
+                    parent_event:searchEvents(GameEvent.MoveCards, 1, function(e2)
+                      if e2.parent and e2.parent.id == parent_event.id then
+                        for _, move2 in ipairs(e2.data) do
+                          if move2.from == player and (move2.moveReason == fk.ReasonUse or move2.moveReason == fk.ReasonResponse) then
+                            for _, info in ipairs(move2.moveInfo) do
+                              if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
+                                table.insertIfNeed(card_ids, info.cardId)
+                              end
+                            end
+                          end
+                        end
+                      end
+                    end)
+                  end
+                end
+                if #card_ids > 0 then
+                  for _, info in ipairs(move.moveInfo) do
+                    if table.contains(card_ids, info.cardId) and Fk:getCardById(info.cardId).color == color then
+                      n = n + 1
+                    end
+                  end
+                end
+              end
+            elseif move.moveReason == fk.ReasonPutIntoDiscardPile then
+              local pindian_event = e:findParent(GameEvent.Pindian)
+              if pindian_event then
+                local card_ids = {}
+                pindian_event:searchEvents(GameEvent.MoveCards, 1, function(e2)
+                  if e2.parent and e2.parent.id == pindian_event.id then
+                    for _, move2 in ipairs(e2.data) do
+                      if move2.from == player and move2.moveReason == fk.ReasonPut and move2.toArea == Card.Processing then
+                        for _, info in ipairs(move2.moveInfo) do
+                          if (info.fromArea == Card.PlayerHand or info.fromArea == Card.PlayerEquip) then
+                            table.insertIfNeed(card_ids, info.cardId)
+                          end
+                        end
+                      end
+                    end
+                  end
+                end)
+                if #card_ids > 0 then
+                  for _, info in ipairs(move.moveInfo) do
+                    if table.contains(card_ids, info.cardId) and Fk:getCardById(info.cardId).color == color then
+                      n = n + 1
+                    end
+                  end
+                end
+              end
             end
           end
         end
