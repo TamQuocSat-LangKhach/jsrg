@@ -65,7 +65,7 @@ premeditate_rule:addEffect("visibility", {
   card_visible = function (self, player, card)
     local owner = Fk:currentRoom():getCardOwner(card)
     if owner and owner:getVirualEquip(card.id) and owner:getVirualEquip(card.id).name == "premeditate" then
-      return false
+      return player == owner
     end
   end,
 })
