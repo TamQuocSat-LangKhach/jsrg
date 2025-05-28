@@ -69,6 +69,7 @@ jianlou:addEffect(fk.AfterCardsMove, {
         skill_name = jianlou.name,
         prompt = "#jianlou-prey",
       })
+      card = {card}
     end
     room:moveCardTo(card, Card.PlayerHand, player, fk.ReasonJustMove, jianlou.name, nil, true, player)
     if player.dead or not table.contains(player:getCardIds("h"), card[1]) then return end
