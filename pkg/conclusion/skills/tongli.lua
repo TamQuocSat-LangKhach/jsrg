@@ -4,8 +4,8 @@ local tongli = fk.CreateSkill {
 
 Fk:loadTranslationTable{
   ["js__tongli"] = "同礼",
-  [":js__tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你手牌中的花色数等于你此阶段已使用牌数，你可以展示手牌，\
-  令此牌效果额外结算一次。",
+  [":js__tongli"] = "当你于出牌阶段内使用基本牌或普通锦囊牌指定目标后，若你手牌中的花色数等于你此阶段已使用牌数，你可以展示手牌，"..
+  "令此牌效果额外结算一次。",
 
   ["@js__tongli-phase"] = "同礼",
 
@@ -18,7 +18,7 @@ tongli:addEffect(fk.TargetSpecified, {
   can_trigger = function(self, event, target, player, data)
     if target == player and player:hasSkill(tongli.name) and player.phase == Player.Play and
       (data.card.type == Card.TypeBasic or data.card:isCommonTrick()) and
-      not player:isKongcheng() then
+      data.firstTarget and not player:isKongcheng() then
       local suits = {}
       for _, id in ipairs(player:getCardIds("h")) do
         table.insertIfNeed(suits, Fk:getCardById(id).suit)
