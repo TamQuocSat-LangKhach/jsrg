@@ -125,7 +125,7 @@ pingjian:addEffect(fk.EventLoseSkill, {
 
 pingjian:addEffect("invalidity", {
   invalidity_func = function (self, from, skill)
-    return not from:hasSkill(pingjian.name) and from:getMark("js_fangke_skills") ~= 0 and
+    return not from:hasSkill(pingjian.name, true) and from:getMark("js_fangke_skills") ~= 0 and
       table.contains(from:getTableMark("js_fangke_skills"), skill.name)
   end,
 })
